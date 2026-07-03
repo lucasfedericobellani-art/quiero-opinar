@@ -28,57 +28,10 @@ const topicRules = [
   { id: "historia", words: ["historia", "me paso", "me ocurrio", "cuento", "relato", "experiencia", "anecdota", "vivencia"] }
 ];
 
-const seedOpinions = [
-  {
-    id: createId(),
-    author: "Anonimo #1842",
-    topic: "economia",
-    text: "La conversacion economica necesita menos slogans y mas explicaciones simples sobre como cada medida afecta a una familia comun.",
-    views: 284,
-    likes: 18,
-    createdAt: createPastDate(54),
-    replies: [
-      createReply("Totalmente. Si no se entiende en la mesa de casa, no se entendio.", 7, createPastDate(42)),
-      createReply("Tambien haria falta comparar propuestas con datos verificables.", 4, createPastDate(31))
-    ],
-    liked: false
-  },
-  {
-    id: createId(),
-    author: "Anonimo #2091",
-    topic: "seguridad",
-    text: "Me gustaria ver foros barriales donde se puedan reportar problemas concretos sin convertir todo en pelea partidaria.",
-    views: 176,
-    likes: 11,
-    createdAt: createPastDate(39),
-    replies: [createReply("La clave seria moderar fuerte los ataques personales.", 3, createPastDate(26))],
-    liked: false
-  },
-  {
-    id: createId(),
-    author: "Anonimo #3310",
-    topic: "cine",
-    text: "El cine argentino deberia tener una seccion propia para recomendaciones: hay joyas que casi nadie encuentra en plataformas.",
-    views: 98,
-    likes: 24,
-    createdAt: createPastDate(22),
-    replies: [],
-    liked: false
-  },
-  {
-    id: createId(),
-    author: "Anonimo #4478",
-    topic: "formula-1",
-    text: "La Formula 1 se volvio mucho mas interesante cuando empezas a mirar estrategia, neumaticos y decisiones de boxes.",
-    views: 143,
-    likes: 16,
-    createdAt: createPastDate(16),
-    replies: [createReply("Las carreras se entienden distinto cuando miras los tiempos por vuelta.", 5, createPastDate(9))],
-    liked: false
-  }
-];
+const seedOpinions = [];
 
 let opinions = [];
+const resetStorageKey = "quiero-opinar:reset-done";
 
 const welcomeOverlay = document.querySelector("#welcomeOverlay");
 const welcomeStepOne = document.querySelector("#welcomeStepOne");
@@ -307,9 +260,18 @@ function getVisibleTopics() {
   return topics.filter((topic) => topic.id !== "todos");
 }
 
+function getVisibleOpinions() {
+  return opinions.filter((opinion) => !opinion.hidden);
+}
+
+function getOpinionById(opinionId) {
+  return opinions.find((item) => item.id === opinionId);
+}
+
 function getTopicOpinions(topicId) {
-  if (topicId === "todos") return opinions;
-  return opinions.filter((opinion) => opinion.topic === topicId);
+  const visibleOpinions = getVisibleOpinions();
+  if (topicId === "todos") return visibleOpinions;
+  return visibleOpinions.filter((opinion) => opinion.topic === topicId);
 }
 
 function getTopicScore(topicId) {
@@ -423,6 +385,7 @@ async function publishOpinion(rawText, rawTopic, form) {
   const text = rawText.trim();
   if (!text) return;
 
+  const clientIp = await resolveClientIp();
   const opinion = {
     id: createId(),
     author: createAnonymousId(),
@@ -432,7 +395,9 @@ async function publishOpinion(rawText, rawTopic, form) {
     likes: 0,
     createdAt: new Date().toISOString(),
     replies: [],
-    liked: false
+    liked: false,
+    hidden: false,
+    ip: clientIp
   };
 
   opinions.unshift(opinion);
@@ -531,8 +496,8 @@ function openTopic(topicId) {
 }
 
 function openOpinion(opinionId) {
-  const opinion = opinions.find((item) => item.id === opinionId);
-  if (!opinion) return;
+  const opinion = getOpinionById(opinionId);
+  if (!opinion || opinion.hidden) return;
 
   lastViewBeforeDetail = currentView === "detail" ? lastViewBeforeDetail : currentView;
   selectedOpinionId = opinionId;
@@ -697,9 +662,9 @@ function renderTopicDetail() {
 
 function renderDetail() {
   detailShell.innerHTML = "";
-  const opinion = opinions.find((item) => item.id === selectedOpinionId);
+  const opinion = getOpinionById(selectedOpinionId);
 
-  if (!opinion) {
+  if (!opinion || opinion.hidden) {
     const empty = document.createElement("p");
     empty.className = "opinion-card";
     empty.textContent = "No se encontro esta opinion.";
@@ -801,6 +766,32 @@ function normalizeReply(reply) {
   return createReply(reply);
 }
 
+async function resolveClientIp() {
+  const cachedIp = window.sessionStorage.getItem("quiero-opinar:client-ip");
+  if (cachedIp) return cachedIp;
+
+  try {
+    const response = await fetch("https://api.ipify.org?format=json");
+    if (!response.ok) return "";
+    const payload = await response.json();
+    const ip = payload?.ip || "";
+    if (ip) {
+      window.sessionStorage.setItem("quiero-opinar:client-ip", ip);
+    }
+    return ip;
+  } catch {
+    return "";
+  }
+}
+
+function resetPersistedContentIfNeeded() {
+  if (window.localStorage.getItem(resetStorageKey)) return;
+
+  window.localStorage.removeItem("quiero-opinar:opinions");
+  window.localStorage.removeItem("quiero-opinar:topics");
+  window.localStorage.setItem(resetStorageKey, "1");
+}
+
 function createLocalDataStore() {
   const opinionsKey = "quiero-opinar:opinions";
   const topicsKey = "quiero-opinar:topics";
@@ -852,14 +843,23 @@ function createLocalDataStore() {
   };
 }
 
+async function clearFirebaseCollectionIfNeeded(db, firestore, collectionName) {
+  const { collection, getDocs, deleteDoc, doc } = firestore;
+  const snapshot = await getDocs(collection(db, collectionName));
+  await Promise.all(snapshot.docs.map((item) => deleteDoc(doc(db, collectionName, item.id))));
+}
+
 async function createFirebaseDataStore() {
   const config = window.QO_FIREBASE_CONFIG;
+  const appCheckConfig = window.QO_FIREBASE_APPCHECK_CONFIG || {};
   if (!window.QO_USE_FIREBASE || !isValidFirebaseConfig(config)) {
     return createLocalDataStore();
   }
 
-  const [{ initializeApp }, firestore] = await Promise.all([
+  const [{ initializeApp }, firebaseAuth, appCheckModule, firestore] = await Promise.all([
     import("https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js"),
+    import("https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js"),
+    import("https://www.gstatic.com/firebasejs/10.14.1/firebase-app-check.js"),
     import("https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js")
   ]);
 
@@ -874,8 +874,36 @@ async function createFirebaseDataStore() {
     setDoc
   } = firestore;
 
+  const { getAuth, signInAnonymously } = firebaseAuth;
+  const { initializeAppCheck, ReCaptchaV3Provider } = appCheckModule;
+
   const app = initializeApp(config);
   const db = getFirestore(app);
+  const auth = getAuth(app);
+
+  try {
+    await clearFirebaseCollectionIfNeeded(db, firestore, "opinions");
+    await clearFirebaseCollectionIfNeeded(db, firestore, "topics");
+  } catch (error) {
+    console.warn("No se pudieron limpiar los datos remotos previos.", error);
+  }
+
+  if (appCheckConfig.enabled && appCheckConfig.siteKey) {
+    if (appCheckConfig.debugToken) {
+      window.FIREBASE_APPCHECK_DEBUG_TOKEN = appCheckConfig.debugToken;
+    }
+
+    initializeAppCheck(app, {
+      provider: new ReCaptchaV3Provider(appCheckConfig.siteKey),
+      isTokenAutoRefreshEnabled: true
+    });
+  }
+
+  try {
+    await signInAnonymously(auth);
+  } catch (error) {
+    console.warn("No se pudo autenticar anonimamente en Firebase.", error);
+  }
 
   async function loadTopicsFromFirestore() {
     const snapshot = await getDocs(collection(db, "topics"));
@@ -940,7 +968,9 @@ function normalizeOpinion(opinion) {
     likes: Number(opinion.likes || 0),
     createdAt: normalizeDateValue(opinion.createdAt),
     replies: Array.isArray(opinion.replies) ? opinion.replies.map(normalizeReply) : [],
-    liked: Boolean(opinion.liked)
+    liked: Boolean(opinion.liked),
+    hidden: Boolean(opinion.hidden),
+    ip: opinion.ip || ""
   };
 }
 
@@ -966,7 +996,9 @@ function sanitizeOpinionForRemote(opinion) {
       text: reply.text,
       likes: reply.likes,
       createdAt: reply.createdAt
-    }))
+    })),
+    hidden: Boolean(opinion.hidden),
+    ip: opinion.ip || ""
   };
 }
 
@@ -1005,6 +1037,8 @@ function render() {
 }
 
 async function initializeAppData() {
+  resetPersistedContentIfNeeded();
+
   try {
     dataStore = await createFirebaseDataStore();
     await dataStore.subscribe(() => render());

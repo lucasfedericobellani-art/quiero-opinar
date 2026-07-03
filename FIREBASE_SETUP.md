@@ -31,12 +31,24 @@ window.QO_FIREBASE_CONFIG = {
   messagingSenderId: "...",
   appId: "..."
 };
+
+window.QO_FIREBASE_APPCHECK_CONFIG = {
+  enabled: false,
+  siteKey: "",
+  debugToken: ""
+};
 ```
 
 Mientras `QO_USE_FIREBASE` este en `false`, la web usa `localStorage`.
 
-## 4. Limitaciones de esta primera etapa
+## 4. Activar autenticacion anonima y App Check
 
-- Las opiniones, respuestas, vistas y likes ya pueden persistir en Firestore.
-- La IP no se guarda todavia porque eso no debe hacerse desde frontend.
-- Para IP, un like por IP, rate limit y moderacion seria mejor sumar Cloud Functions o un backend serverless.
+1. En Firebase Console, entrar a Authentication y habilitar el metodo "Anonymous".
+2. En App Check, registrar la app web y copiar el site key de reCAPTCHA v3.
+3. Poner `enabled: true` y el `siteKey` en `firebase-config.js`.
+4. Si hace falta probar localmente, cargar un `debugToken` de App Check.
+
+## 5. Siguiente mejora recomendada
+
+- Para IP, un like por IP, rate limit y moderacion mas robusta, conviene sumar Cloud Functions o un backend serverless.
+- A futuro, se puede agregar moderacion automatica y un flujo de reportes con funciones de backend.
