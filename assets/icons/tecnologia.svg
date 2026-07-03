@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Tecnologia">
+  <rect width="64" height="64" rx="18" fill="#120900"/>
+  <rect x="22" y="22" width="20" height="20" rx="4" fill="none" stroke="#ffb000" stroke-width="4"/>
+  <path d="M18 28h4M18 36h4M42 28h4M42 36h4M28 18v4M36 18v4M28 42v4M36 42v4" stroke="#ffb000" stroke-width="4" stroke-linecap="round"/>
+</svg>

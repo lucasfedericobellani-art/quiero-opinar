@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Quiero Opinar</title>
+    <link rel="icon" type="image/svg+xml" href="assets/logo.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <div class="welcome-overlay" id="welcomeOverlay" aria-live="polite">
+      <section class="modal" id="welcomeStepOne" role="dialog" aria-modal="true" aria-labelledby="welcomeTitle">
+        <p class="modal-kicker">quieroopinar.com.ar</p>
+        <h1 id="welcomeTitle">Bienvenido</h1>
+        <p class="welcome-note">
+          Bienvenido a la plataforma donde la libertad de expresion existe.
+          Por cuestiones legales no se permite publicar discursos de odio,
+          amenazas, datos privados ni incitaciones a la violencia.
+        </p>
+        <button class="primary-button" id="nextWelcomeButton" type="button">Siguiente</button>
+      </section>
+
+      <section class="modal hidden" id="welcomeStepTwo" role="dialog" aria-modal="true" aria-labelledby="privacyTitle">
+        <p class="modal-kicker">privacidad y seguridad</p>
+        <h1 id="privacyTitle">Antes de entrar</h1>
+        <p class="welcome-note">
+          Esta plataforma no te pedira datos personales. Solo se almacena la IP
+          por motivos legales y de seguridad. No compartiremos nada, salvo que
+          se incumplan las normas.
+        </p>
+        <button class="primary-button" id="enterButton" type="button">Quiero opinar</button>
+      </section>
+    </div>
+
+    <div class="legal-overlay hidden" id="legalOverlay" aria-live="polite">
+      <section class="modal legal-modal" role="dialog" aria-modal="true" aria-labelledby="legalTitle">
+        <p class="modal-kicker">terminos de uso</p>
+        <h1 id="legalTitle">Terminos y condiciones</h1>
+        <div class="legal-copy">
+          <p>
+            Al publicar una opinion, respuesta o cualquier contenido en Quiero Opinar,
+            la persona usuaria declara que actua por cuenta propia y acepta asumir
+            plena responsabilidad civil, penal, administrativa y de cualquier otra
+            naturaleza por lo que escriba, publique o difunda.
+          </p>
+          <p>
+            Quiero Opinar funciona como un espacio tecnico de publicacion y debate.
+            El titular, administrador o responsable operativo del sitio no avala,
+            edita, certifica ni comparte necesariamente las opiniones publicadas por
+            terceros. Cada publicacion pertenece exclusivamente a quien la emite.
+          </p>
+          <p>
+            No se permiten discursos de odio, amenazas, hostigamiento, datos privados
+            de terceros, incitaciones a la violencia, calumnias, injurias, apologia
+            del delito ni ningun contenido contrario a la ley. El sitio podra ocultar,
+            moderar, conservar o remover contenido ante denuncias, riesgos legales,
+            solicitudes de autoridad competente o incumplimientos de estas condiciones.
+          </p>
+          <p>
+            Al opinar, la persona acepta que se registre su direccion IP, fecha, hora,
+            identificadores tecnicos y datos estrictamente necesarios para seguridad,
+            prevencion de abuso, auditoria y eventual cumplimiento de requerimientos
+            legales. Esa informacion no sera vendida ni compartida con fines
+            comerciales.
+          </p>
+          <p>
+            Si una autoridad judicial, administrativa o competente solicita informacion
+            por una publicacion, el sitio podra entregar los registros disponibles
+            conforme a la normativa aplicable. Al usar la plataforma, la persona usuaria
+            libera al titular y a los administradores del sitio de responsabilidad por
+            sus propias expresiones y acepta responder personalmente ante cualquier
+            reclamo, denuncia, dano, perjuicio, sancion o consecuencia derivada de lo
+            que publique.
+          </p>
+        </div>
+        <button class="primary-button" id="legalCloseButton" type="button">Entendido</button>
+      </section>
+    </div>
+
+    <header class="site-header">
+      <button class="brand nav-home" type="button" aria-label="Inicio de Quiero Opinar">
+        <img class="brand-mark" src="assets/logo.svg" alt="" aria-hidden="true">
+      </button>
+      <button class="header-title nav-home" type="button" aria-label="Inicio de Quiero Opinar">QUIERO OPINAR</button>
+      <button class="mobile-menu-toggle" id="mobileMenuToggle" type="button" aria-controls="topNav" aria-expanded="false" aria-label="Abrir menu">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+      <nav class="top-nav" id="topNav" aria-label="Navegacion principal">
+        <button class="nav-button" id="aboutNavButton" type="button">¿Que es Quiero Opinar?</button>
+        <button class="nav-button" id="topicsNavButton" type="button">Temas</button>
+        <button class="nav-button" id="legalOpenButton" type="button">Terminos y condiciones</button>
+      </nav>
+    </header>
+
+    <main class="page-shell">
+      <section class="app-view" id="homeView">
+        <section class="composer-panel hero-card" aria-labelledby="composerTitle">
+          <div class="composer-intro brand-block">
+            <p class="section-label">opiniones anonimas</p>
+            <h1 id="composerTitle">Quiero opinar</h1>
+          </div>
+          <form class="opinion-form" id="opinionForm">
+            <div class="field topic-field">
+              <label class="field-label" for="topicIdea">Tema</label>
+              <input class="topic-input" id="topicIdea" name="topicIdea" type="text" placeholder="Ej: Formula 1" autocomplete="off">
+            </div>
+            <div class="field opinion-field">
+              <label class="field-label" for="opinionText">Escribi tu opinion</label>
+              <textarea id="opinionText" name="opinionText" placeholder="Escribi tu opinion..." required></textarea>
+            </div>
+            <p class="terms-note">Al publicar, declaras conocer y aceptar los terminos y condiciones, y asumis plena responsabilidad por el contenido emitido.</p>
+          </form>
+          <button class="primary-button opinion-button" type="submit" form="opinionForm">Opinar</button>
+        </section>
+
+        <section class="content-grid">
+          <aside class="topics-panel" id="topicsTrending" aria-labelledby="topicsTitle">
+            <div class="panel-heading">
+              <p class="section-label">ahora</p>
+              <h2 id="topicsTitle">
+                <span class="desktop-copy">Opiniones trending</span>
+                <span class="mobile-copy">T&oacute;picos trending</span>
+              </h2>
+            </div>
+            <div class="topic-list" id="topicList"></div>
+          </aside>
+
+          <section class="feed-panel" id="feed" aria-labelledby="feedTitle">
+            <div class="panel-heading horizontal">
+              <div>
+                <p class="section-label live-label">en vivo <span class="live-dot" aria-hidden="true"></span></p>
+                <h2 id="feedTitle">Ultimas opiniones</h2>
+              </div>
+              <div class="feed-actions">
+                <span class="pill" id="activeTopicPill">Todos</span>
+              </div>
+            </div>
+            <div class="feed-list" id="feedList"></div>
+          </section>
+        </section>
+      </section>
+
+      <section class="app-view hidden" id="aboutView" aria-labelledby="aboutTitle">
+        <div class="about-hero">
+          <div>
+            <p class="section-label">proposito</p>
+            <h1 id="aboutTitle">Que es Quiero Opinar</h1>
+            <p>
+              Quiero Opinar es un espacio anonimo para leer, escribir y responder
+              opiniones sobre lo que esta pasando. La idea es que la conversacion
+              arranque por el contenido, no por el nombre de quien habla.
+            </p>
+          </div>
+          <img src="assets/logo.svg" alt="" aria-hidden="true">
+        </div>
+
+        <div class="about-grid">
+          <article>
+            <h2>Libertad para expresarse</h2>
+            <p>
+              La plataforma esta pensada para que cualquier persona pueda decir lo
+              que piensa, contar una historia, abrir un debate o responder una idea
+              sin tener que crear un perfil publico.
+            </p>
+          </article>
+          <article>
+            <h2>Conversaciones ordenadas</h2>
+            <p>
+              Cada opinion se organiza por temas. Si el tema existe, se suma ahi; si
+              no existe, puede nacer un nuevo tablero para que otras personas lo sigan.
+            </p>
+          </article>
+          <article>
+            <h2>Anonimato con responsabilidad</h2>
+            <p>
+              No se piden datos personales para opinar, pero al publicar se aceptan
+              los terminos y condiciones y cada persona asume responsabilidad por lo
+              que escribe.
+            </p>
+          </article>
+          <article>
+            <h2>Sin odio ni violencia</h2>
+            <p>
+              El objetivo es discutir ideas. No se permiten discursos de odio,
+              amenazas, incitaciones a la violencia ni publicaciones que vulneren
+              derechos de terceros.
+            </p>
+          </article>
+        </div>
+
+        <div class="about-actions">
+          <button class="primary-button nav-home" type="button">Ver opiniones en vivo</button>
+          <button class="ghost-button" id="aboutTopicsButton" type="button">Explorar temas</button>
+        </div>
+      </section>
+
+      <section class="app-view hidden" id="topicsView" aria-labelledby="topicsBoardTitle">
+        <div class="view-heading">
+          <button class="ghost-button nav-home" type="button">Volver a opiniones</button>
+          <p class="section-label">dashboard</p>
+          <h1 id="topicsBoardTitle">Temas de conversacion</h1>
+          <p>Elegi un tablero para ver las opiniones activas de ese tema.</p>
+        </div>
+        <div class="topic-search-wrap">
+          <label class="sr-only" for="topicSearchInput">Buscar temas</label>
+          <input class="topic-input" id="topicSearchInput" type="search" placeholder="Buscar tema...">
+        </div>
+        <div class="board-grid" id="boardGrid"></div>
+      </section>
+
+      <section class="app-view hidden" id="topicDetailView" aria-labelledby="topicDetailTitle">
+        <div class="view-heading topic-detail-heading">
+          <button class="ghost-button" id="backFromTopicButton" type="button">Volver a temas</button>
+          <p class="section-label">tema abierto</p>
+          <div class="topic-title-row">
+            <span class="topic-icon-slot" id="topicDetailIcon" aria-hidden="true"></span>
+            <h1 id="topicDetailTitle">Tema</h1>
+          </div>
+          <p id="topicDetailDescription">Todas las opiniones de este tema.</p>
+        </div>
+        <div class="feed-list topic-detail-list" id="topicDetailList"></div>
+      </section>
+
+      <section class="app-view hidden" id="detailView" aria-labelledby="detailTitle">
+        <div class="view-heading">
+          <button class="ghost-button" id="backFromDetailButton" type="button">Volver</button>
+          <p class="section-label">hilo abierto</p>
+          <h1 id="detailTitle">Opinion</h1>
+        </div>
+        <div class="detail-shell" id="detailShell"></div>
+      </section>
+    </main>
+
+    <button class="floating-opinion-trigger" id="floatingOpinionTrigger" type="button" aria-controls="floatingOpinion" aria-expanded="false" aria-label="Abrir formulario para opinar">
+      <img class="floating-trigger-icon" src="assets/logo.svg" alt="" aria-hidden="true">
+      <span>Opin&aacute;</span>
+    </button>
+
+    <aside class="floating-opinion" id="floatingOpinion" aria-labelledby="floatingOpinionTitle" aria-hidden="true">
+      <div class="floating-opinion-header">
+        <div>
+          <p class="section-label">opinar ahora</p>
+          <h2 id="floatingOpinionTitle">Dej&aacute; tu opini&oacute;n</h2>
+        </div>
+        <button class="floating-close" id="floatingOpinionClose" type="button" aria-label="Cerrar formulario">&times;</button>
+      </div>
+      <form class="floating-opinion-form" id="floatingOpinionForm">
+        <label class="sr-only" for="floatingOpinionText">Escribi tu opinion</label>
+        <textarea id="floatingOpinionText" placeholder="Escribi tu opinion..." required></textarea>
+        <label class="sr-only" for="floatingTopicIdea">Tema</label>
+        <input class="topic-input" id="floatingTopicIdea" type="text" placeholder="Tema, ej: agro">
+        <p class="terms-note">Al publicar, declaras conocer y aceptar los terminos y condiciones.</p>
+        <button class="primary-button" type="submit">Opinar</button>
+      </form>
+    </aside>
+
+    <footer class="site-footer">
+      <p>© 2026 QuieroOpinar. Todos los derechos reservados.</p>
+      <p>
+        Plataforma de opiniones anonimas. No solicitamos registro para publicar.
+        El uso del sitio implica aceptar nuestros Terminos y Condiciones y Politica de Privacidad.
+      </p>
+      <nav class="footer-links" aria-label="Links legales">
+        <button type="button" class="footer-link legal-trigger">Terminos y Condiciones</button>
+        <button type="button" class="footer-link legal-trigger">Politica de Privacidad</button>
+        <button type="button" class="footer-link legal-trigger">Reglas de Comunidad</button>
+        <a class="footer-link" href="mailto:contacto@quieroopinar.com.ar">Contacto</a>
+      </nav>
+      <p class="footer-warning">
+        No se permite publicar amenazas, incitacion a la violencia, doxxing, spam ni contenido ilegal.
+      </p>
+    </footer>
+
+    <template id="opinionTemplate">
+      <article class="opinion-card">
+        <button class="open-opinion" type="button" aria-label="Abrir opinion completa">
+          <div class="opinion-meta">
+            <span class="author"></span>
+            <span class="topic"></span>
+            <span class="date-stamp"></span>
+          </div>
+          <p class="opinion-text"></p>
+        </button>
+        <div class="opinion-stats">
+          <span class="views"></span>
+          <span class="replies"></span>
+          <button class="like-button" type="button" aria-label="Me gusta">
+            <span aria-hidden="true">♡</span>
+            <span class="likes"></span>
+          </button>
+        </div>
+        <div class="thread"></div>
+        <form class="reply-form">
+          <label class="sr-only">Responder opinion</label>
+          <input type="text" placeholder="Responder como Anonimo..." required>
+          <button type="submit">Responder</button>
+        </form>
+      </article>
+    </template>
+
+    <script src="app.js"></script>
+  </body>
+</html>

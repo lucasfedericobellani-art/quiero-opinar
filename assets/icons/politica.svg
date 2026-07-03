@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Politica">
+  <rect width="64" height="64" rx="18" fill="#120900"/>
+  <path d="M18 28h28L32 17 18 28Z" fill="none" stroke="#ffb000" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M22 28v16M32 28v16M42 28v16M18 47h28" stroke="#ffb000" stroke-width="4" stroke-linecap="round"/>
+</svg>

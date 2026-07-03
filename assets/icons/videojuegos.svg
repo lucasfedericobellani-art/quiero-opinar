@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Videojuegos">
+  <rect width="64" height="64" rx="18" fill="#120900"/>
+  <path d="M21 28h22a8 8 0 0 1 8 8v5a6 6 0 0 1-10 4l-3-3H26l-3 3a6 6 0 0 1-10-4v-5a8 8 0 0 1 8-8Z" fill="none" stroke="#ffb000" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M24 34v8M20 38h8M40 36h.1M46 40h.1" stroke="#ffb000" stroke-width="4" stroke-linecap="round"/>
+</svg>
