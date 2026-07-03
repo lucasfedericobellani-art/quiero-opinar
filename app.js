@@ -28,7 +28,7 @@ const topicRules = [
   { id: "historia", words: ["historia", "me paso", "me ocurrio", "cuento", "relato", "experiencia", "anecdota", "vivencia"] }
 ];
 
-const opinions = [
+const seedOpinions = [
   {
     id: createId(),
     author: "Anonimo #1842",
@@ -77,6 +77,8 @@ const opinions = [
     liked: false
   }
 ];
+
+let opinions = [];
 
 const welcomeOverlay = document.querySelector("#welcomeOverlay");
 const welcomeStepOne = document.querySelector("#welcomeStepOne");
@@ -131,6 +133,7 @@ let selectedTopicId = null;
 let isMainComposerVisible = true;
 let isFloatingOpinionOpen = false;
 let isMobileMenuOpen = false;
+let dataStore = createLocalDataStore();
 
 nextWelcomeButton.addEventListener("click", () => {
   welcomeStepOne.classList.add("hidden");
@@ -234,14 +237,14 @@ document.addEventListener("click", (event) => {
   closeFloatingOpinionPanel(false);
 });
 
-opinionForm.addEventListener("submit", (event) => {
+opinionForm.addEventListener("submit", async (event) => {
   event.preventDefault();
-  publishOpinion(opinionText.value, topicIdea.value, opinionForm);
+  await publishOpinion(opinionText.value, topicIdea.value, opinionForm);
 });
 
-floatingOpinionForm.addEventListener("submit", (event) => {
+floatingOpinionForm.addEventListener("submit", async (event) => {
   event.preventDefault();
-  publishOpinion(floatingOpinionText.value, floatingTopicIdea.value, floatingOpinionForm);
+  await publishOpinion(floatingOpinionText.value, floatingTopicIdea.value, floatingOpinionForm);
 });
 
 function closeLegalModal() {
@@ -416,7 +419,7 @@ function goHome() {
   render();
 }
 
-function publishOpinion(rawText, rawTopic, form) {
+async function publishOpinion(rawText, rawTopic, form) {
   const text = rawText.trim();
   if (!text) return;
 
@@ -433,6 +436,8 @@ function publishOpinion(rawText, rawTopic, form) {
   };
 
   opinions.unshift(opinion);
+  await dataStore.saveTopics(topics);
+  await dataStore.addOpinion(opinion);
   form.reset();
   if (form === floatingOpinionForm) closeFloatingOpinionPanel(false);
   activeTopic = "todos";
@@ -532,6 +537,7 @@ function openOpinion(opinionId) {
   lastViewBeforeDetail = currentView === "detail" ? lastViewBeforeDetail : currentView;
   selectedOpinionId = opinionId;
   opinion.views += 1;
+  dataStore.updateOpinion(opinion);
   render();
   showView("detail");
 }
@@ -723,10 +729,11 @@ function createOpinionCard(opinion, isDetail) {
 
   const likeButton = card.querySelector(".like-button");
   likeButton.classList.toggle("liked", opinion.liked);
-  likeButton.addEventListener("click", () => {
+  likeButton.addEventListener("click", async () => {
     if (opinion.liked) return;
     opinion.liked = true;
     opinion.likes += 1;
+    await dataStore.updateOpinion(opinion);
     render();
   });
 
@@ -746,10 +753,11 @@ function createOpinionCard(opinion, isDetail) {
       </button>
     `;
 
-    item.querySelector(".like-button").addEventListener("click", () => {
+    item.querySelector(".like-button").addEventListener("click", async () => {
       if (normalizedReply.liked) return;
       normalizedReply.liked = true;
       normalizedReply.likes += 1;
+      await dataStore.updateOpinion(opinion);
       render();
     });
 
@@ -758,13 +766,14 @@ function createOpinionCard(opinion, isDetail) {
 
   const replyForm = card.querySelector(".reply-form");
   const replyInput = replyForm.querySelector("input");
-  replyForm.addEventListener("submit", (event) => {
+  replyForm.addEventListener("submit", async (event) => {
     event.preventDefault();
     const reply = replyInput.value.trim();
     if (!reply) return;
 
     opinion.replies.push(createReply(reply));
     opinion.views += 1;
+    await dataStore.updateOpinion(opinion);
     selectedOpinionId = opinion.id;
     render();
     showView("detail");
@@ -779,8 +788,186 @@ function getTopicIconMarkup(topic, large = false) {
 }
 
 function normalizeReply(reply) {
-  if (typeof reply !== "string") return reply;
+  if (typeof reply !== "string") {
+    return {
+      id: reply.id || createId(),
+      author: reply.author || "Anonimo",
+      text: reply.text || "",
+      likes: Number(reply.likes || 0),
+      createdAt: normalizeDateValue(reply.createdAt),
+      liked: Boolean(reply.liked)
+    };
+  }
   return createReply(reply);
+}
+
+function createLocalDataStore() {
+  const opinionsKey = "quiero-opinar:opinions";
+  const topicsKey = "quiero-opinar:topics";
+
+  function loadStoredOpinions() {
+    try {
+      const stored = window.localStorage.getItem(opinionsKey);
+      if (!stored) return seedOpinions;
+      const parsed = JSON.parse(stored);
+      return Array.isArray(parsed) ? parsed.map(normalizeOpinion) : seedOpinions;
+    } catch {
+      return seedOpinions;
+    }
+  }
+
+  function loadStoredTopics() {
+    try {
+      const stored = window.localStorage.getItem(topicsKey);
+      if (!stored) return topics;
+      const parsed = JSON.parse(stored);
+      return Array.isArray(parsed) ? parsed : topics;
+    } catch {
+      return topics;
+    }
+  }
+
+  function saveOpinions(nextOpinions) {
+    window.localStorage.setItem(opinionsKey, JSON.stringify(nextOpinions));
+  }
+
+  return {
+    name: "local",
+    async subscribe(onChange) {
+      topics = loadStoredTopics();
+      opinions = loadStoredOpinions();
+      onChange(opinions);
+      saveOpinions(opinions);
+      return () => {};
+    },
+    async saveTopics(nextTopics) {
+      window.localStorage.setItem(topicsKey, JSON.stringify(nextTopics));
+    },
+    async addOpinion(opinion) {
+      saveOpinions(opinions);
+    },
+    async updateOpinion(opinion) {
+      saveOpinions(opinions);
+    }
+  };
+}
+
+async function createFirebaseDataStore() {
+  const config = window.QO_FIREBASE_CONFIG;
+  if (!window.QO_USE_FIREBASE || !isValidFirebaseConfig(config)) {
+    return createLocalDataStore();
+  }
+
+  const [{ initializeApp }, firestore] = await Promise.all([
+    import("https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js"),
+    import("https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js")
+  ]);
+
+  const {
+    getFirestore,
+    collection,
+    doc,
+    getDocs,
+    onSnapshot,
+    orderBy,
+    query,
+    setDoc
+  } = firestore;
+
+  const app = initializeApp(config);
+  const db = getFirestore(app);
+
+  async function loadTopicsFromFirestore() {
+    const snapshot = await getDocs(collection(db, "topics"));
+    const remoteTopics = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
+    if (remoteTopics.length) topics = mergeTopics(remoteTopics);
+  }
+
+  return {
+    name: "firebase",
+    async subscribe(onChange) {
+      await loadTopicsFromFirestore();
+      return onSnapshot(query(collection(db, "opinions"), orderBy("createdAt", "desc")), (snapshot) => {
+        opinions = snapshot.docs.map((item) => normalizeOpinion({ id: item.id, ...item.data() }));
+        onChange(opinions);
+      });
+    },
+    async saveTopics(nextTopics) {
+      await Promise.all(
+        nextTopics
+          .filter((topic) => topic.id !== "todos")
+          .map((topic) => setDoc(doc(db, "topics", topic.id), topic, { merge: true }))
+      );
+    },
+    async addOpinion(opinion) {
+      await setDoc(doc(db, "opinions", opinion.id), sanitizeOpinionForRemote(opinion));
+    },
+    async updateOpinion(opinion) {
+      await setDoc(doc(db, "opinions", opinion.id), sanitizeOpinionForRemote(opinion), { merge: true });
+    }
+  };
+}
+
+function isValidFirebaseConfig(config) {
+  return Boolean(
+    config?.apiKey &&
+    config?.projectId &&
+    !String(config.apiKey).startsWith("PEGAR_") &&
+    !String(config.projectId).startsWith("PEGAR_")
+  );
+}
+
+function mergeTopics(remoteTopics) {
+  const byId = new Map(topics.map((topic) => [topic.id, topic]));
+  remoteTopics.forEach((topic) => {
+    byId.set(topic.id, {
+      icon: "assets/icons/generic.svg",
+      description: "Tema creado por la comunidad",
+      ...byId.get(topic.id),
+      ...topic
+    });
+  });
+  return Array.from(byId.values());
+}
+
+function normalizeOpinion(opinion) {
+  return {
+    id: opinion.id || createId(),
+    author: opinion.author || "Anonimo",
+    topic: opinion.topic || "sin-tema",
+    text: opinion.text || "",
+    views: Number(opinion.views || 0),
+    likes: Number(opinion.likes || 0),
+    createdAt: normalizeDateValue(opinion.createdAt),
+    replies: Array.isArray(opinion.replies) ? opinion.replies.map(normalizeReply) : [],
+    liked: Boolean(opinion.liked)
+  };
+}
+
+function normalizeDateValue(value) {
+  if (value?.toDate) return value.toDate().toISOString();
+  if (typeof value === "string") return value;
+  if (value instanceof Date) return value.toISOString();
+  return new Date().toISOString();
+}
+
+function sanitizeOpinionForRemote(opinion) {
+  return {
+    id: opinion.id,
+    author: opinion.author,
+    topic: opinion.topic,
+    text: opinion.text,
+    views: opinion.views,
+    likes: opinion.likes,
+    createdAt: opinion.createdAt,
+    replies: opinion.replies.map((reply) => ({
+      id: reply.id,
+      author: reply.author,
+      text: reply.text,
+      likes: reply.likes,
+      createdAt: reply.createdAt
+    }))
+  };
 }
 
 function formatDate(value) {
@@ -817,6 +1004,19 @@ function render() {
   renderDetail();
 }
 
-setupComposerVisibilityObserver();
-updateFloatingOpinionVisibility();
-render();
+async function initializeAppData() {
+  try {
+    dataStore = await createFirebaseDataStore();
+    await dataStore.subscribe(() => render());
+  } catch (error) {
+    console.warn("No se pudo conectar Firebase. Usando almacenamiento local.", error);
+    dataStore = createLocalDataStore();
+    await dataStore.subscribe(() => render());
+  }
+
+  setupComposerVisibilityObserver();
+  updateFloatingOpinionVisibility();
+  render();
+}
+
+initializeAppData();

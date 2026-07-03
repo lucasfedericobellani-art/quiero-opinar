@@ -1,0 +1,58 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isText(value, max) {
+      return value is string && value.size() > 0 && value.size() <= max;
+    }
+
+    function isOpinion() {
+      return request.resource.data.keys().hasOnly([
+        "id",
+        "author",
+        "topic",
+        "text",
+        "views",
+        "likes",
+        "createdAt",
+        "replies"
+      ]) &&
+      isText(request.resource.data.id, 120) &&
+      isText(request.resource.data.author, 80) &&
+      isText(request.resource.data.topic, 80) &&
+      isText(request.resource.data.text, 5000) &&
+      request.resource.data.views is int &&
+      request.resource.data.views >= 0 &&
+      request.resource.data.likes is int &&
+      request.resource.data.likes >= 0 &&
+      request.resource.data.createdAt is string &&
+      request.resource.data.replies is list &&
+      request.resource.data.replies.size() <= 500;
+    }
+
+    function isTopic() {
+      return request.resource.data.keys().hasOnly([
+        "id",
+        "name",
+        "description",
+        "icon"
+      ]) &&
+      isText(request.resource.data.id, 80) &&
+      isText(request.resource.data.name, 80) &&
+      isText(request.resource.data.description, 180) &&
+      isText(request.resource.data.icon, 180);
+    }
+
+    match /opinions/{opinionId} {
+      allow read: if true;
+      allow create, update: if isOpinion();
+      allow delete: if false;
+    }
+
+    match /topics/{topicId} {
+      allow read: if true;
+      allow create, update: if isTopic();
+      allow delete: if false;
+    }
+  }
+}
