@@ -506,6 +506,7 @@ function showView(viewName) {
 
 function openFloatingOpinionPanel() {
   isFloatingOpinionOpen = true;
+  updateViewportMetrics();
   updateFloatingOpinionVisibility();
   window.setTimeout(() => {
     try {
@@ -513,6 +514,8 @@ function openFloatingOpinionPanel() {
     } catch {
       floatingOpinionText.focus();
     }
+    updateViewportMetrics();
+    floatingOpinion.scrollTop = 0;
   }, 160);
 }
 
@@ -534,6 +537,17 @@ function updateFloatingOpinionVisibility() {
   floatingOpinionTrigger.setAttribute("aria-expanded", String(isFloatingOpinionOpen));
   floatingOpinion.classList.toggle("is-open", isFloatingOpinionOpen);
   floatingOpinion.setAttribute("aria-hidden", String(!isFloatingOpinionOpen));
+}
+
+function updateViewportMetrics() {
+  const viewport = window.visualViewport;
+  const viewportHeight = viewport?.height || window.innerHeight;
+  const keyboardOffset = viewport
+    ? Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop)
+    : 0;
+
+  document.documentElement.style.setProperty("--visual-viewport-height", `${viewportHeight}px`);
+  document.documentElement.style.setProperty("--keyboard-offset", `${keyboardOffset}px`);
 }
 
 function isMobileViewport() {
@@ -613,6 +627,16 @@ function renderTopics() {
     button.addEventListener("click", () => openTopic(topic.id));
     topicList.append(button);
   });
+}
+
+function setupViewportMetrics() {
+  updateViewportMetrics();
+  window.addEventListener("resize", updateViewportMetrics);
+
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener("resize", updateViewportMetrics);
+    window.visualViewport.addEventListener("scroll", updateViewportMetrics);
+  }
 }
 
 function renderBoard() {
@@ -1104,6 +1128,7 @@ function render() {
 
 async function initializeAppData() {
   resetPersistedContentIfNeeded();
+  setupViewportMetrics();
 
   try {
     dataStore = await createFirebaseDataStore();
