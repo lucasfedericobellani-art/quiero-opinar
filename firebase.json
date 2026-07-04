@@ -1,5 +1,46 @@
 {
+  "hosting": {
+    "public": ".",
+    "ignore": [
+      "firebase.json",
+      ".firebaserc",
+      "firestore.rules",
+      "FIREBASE_SETUP.md",
+      "**/.*",
+      "**/node_modules/**",
+      ".git/**",
+      ".firebase/**",
+      ".agents/**",
+      ".codex/**",
+      ".tools/**",
+      "firebase-debug.log",
+      "firepit-log.txt",
+      "admin.html",
+      "admin.js",
+      "panel.html"
+    ],
+    "redirects": [
+      {
+        "source": "/app.html",
+        "destination": "/",
+        "type": 302
+      }
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ],
+    "cleanUrls": true,
+    "trailingSlash": false
+  },
   "firestore": {
     "rules": "firestore.rules"
+  },
+  "auth": {
+    "providers": {
+      "anonymous": true
+    }
   }
 }

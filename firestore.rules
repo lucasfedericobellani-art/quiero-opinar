@@ -31,8 +31,10 @@ service cloud.firestore {
       request.resource.data.replies is list &&
       request.resource.data.replies.size() <= 500 &&
       request.resource.data.hidden is bool &&
-      (request.resource.data.ip is string || request.resource.data.ip is null) &&
-      request.resource.data.ip.size() <= 100;
+      (request.resource.data.ip == null || (
+        request.resource.data.ip is string &&
+        request.resource.data.ip.size() <= 100
+      ));
     }
 
     function isTopic() {

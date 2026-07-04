@@ -31,7 +31,7 @@ const topicRules = [
 const seedOpinions = [];
 
 let opinions = [];
-const resetStorageKey = "quiero-opinar:reset-done";
+const resetStorageKey = "quiero-opinar:reset-2026-07-03";
 
 const welcomeOverlay = document.querySelector("#welcomeOverlay");
 const welcomeStepOne = document.querySelector("#welcomeStepOne");
@@ -843,12 +843,6 @@ function createLocalDataStore() {
   };
 }
 
-async function clearFirebaseCollectionIfNeeded(db, firestore, collectionName) {
-  const { collection, getDocs, deleteDoc, doc } = firestore;
-  const snapshot = await getDocs(collection(db, collectionName));
-  await Promise.all(snapshot.docs.map((item) => deleteDoc(doc(db, collectionName, item.id))));
-}
-
 async function createFirebaseDataStore() {
   const config = window.QO_FIREBASE_CONFIG;
   const appCheckConfig = window.QO_FIREBASE_APPCHECK_CONFIG || {};
@@ -880,13 +874,6 @@ async function createFirebaseDataStore() {
   const app = initializeApp(config);
   const db = getFirestore(app);
   const auth = getAuth(app);
-
-  try {
-    await clearFirebaseCollectionIfNeeded(db, firestore, "opinions");
-    await clearFirebaseCollectionIfNeeded(db, firestore, "topics");
-  } catch (error) {
-    console.warn("No se pudieron limpiar los datos remotos previos.", error);
-  }
 
   if (appCheckConfig.enabled && appCheckConfig.siteKey) {
     if (appCheckConfig.debugToken) {

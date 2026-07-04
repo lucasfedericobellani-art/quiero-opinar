@@ -1,37 +1,41 @@
 # Firebase setup para Quiero Opinar
 
-Esta web ya tiene una capa de datos preparada para Firestore.
+Esta web ya esta configurada para usar Firestore en el proyecto `quiero-opinar-app`.
 
-## 1. Crear proyecto
+## 1. Revisar servicios en Firebase Console
 
-1. Entrar a Firebase Console.
-2. Crear un proyecto, por ejemplo `quiero-opinar`.
-3. Crear una app web dentro del proyecto.
-4. Copiar la configuracion `firebaseConfig`.
+1. Firestore Database debe estar creado.
+2. Authentication debe tener habilitado el metodo `Anonymous`.
+3. Hosting debe estar habilitado para el proyecto.
 
-## 2. Activar Firestore
+La configuracion publica de la app esta en `firebase-config.js` y `QO_USE_FIREBASE` debe quedar en `true`.
 
-1. Ir a Firestore Database.
-2. Crear base de datos.
-3. Elegir modo produccion.
-4. Pegar las reglas de `firestore.rules`.
+## 2. Vaciar opiniones viejas antes de publicar
 
-## 3. Conectar la web
+El borrado de datos remotos no debe hacerse desde el navegador publico. Hacerlo una sola vez con Firebase CLI autenticada:
 
-Editar `firebase-config.js`:
+```sh
+firebase login
+firebase use quiero-opinar-app
+firebase firestore:delete opinions --recursive --force --project quiero-opinar-app
+firebase firestore:delete topics --recursive --force --project quiero-opinar-app
+```
+
+La coleccion `topics` se puede borrar para volver a los temas base del codigo. Las opiniones arrancan vacias porque `seedOpinions` esta en `[]`.
+
+## 3. Publicar reglas y web
+
+```sh
+firebase deploy --only firestore:rules,hosting --project quiero-opinar-app
+```
+
+`firebase.json` publica la web desde esta carpeta, pero excluye archivos internos como reglas, documentacion, `.git`, `admin.html`, `admin.js` y `panel.html`.
+
+## 4. App Check
+
+App Check esta preparado pero desactivado:
 
 ```js
-window.QO_USE_FIREBASE = true;
-
-window.QO_FIREBASE_CONFIG = {
-  apiKey: "...",
-  authDomain: "...",
-  projectId: "...",
-  storageBucket: "...",
-  messagingSenderId: "...",
-  appId: "..."
-};
-
 window.QO_FIREBASE_APPCHECK_CONFIG = {
   enabled: false,
   siteKey: "",
@@ -39,16 +43,9 @@ window.QO_FIREBASE_APPCHECK_CONFIG = {
 };
 ```
 
-Mientras `QO_USE_FIREBASE` este en `false`, la web usa `localStorage`.
-
-## 4. Activar autenticacion anonima y App Check
-
-1. En Firebase Console, entrar a Authentication y habilitar el metodo "Anonymous".
-2. En App Check, registrar la app web y copiar el site key de reCAPTCHA v3.
-3. Poner `enabled: true` y el `siteKey` en `firebase-config.js`.
-4. Si hace falta probar localmente, cargar un `debugToken` de App Check.
+Para endurecer la publicacion, registrar la app web en App Check con reCAPTCHA v3, poner `enabled: true` y cargar el `siteKey`.
 
 ## 5. Siguiente mejora recomendada
 
 - Para IP, un like por IP, rate limit y moderacion mas robusta, conviene sumar Cloud Functions o un backend serverless.
-- A futuro, se puede agregar moderacion automatica y un flujo de reportes con funciones de backend.
+- El panel admin actual no debe publicarse como seguridad real; para moderacion remota conviene usar Firebase Auth con usuarios administradores.
