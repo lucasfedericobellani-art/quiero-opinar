@@ -4,6 +4,8 @@ const loginForm = document.querySelector("#adminLoginForm");
 const loginError = document.querySelector("#loginError");
 const adminSummary = document.querySelector("#adminSummary");
 const adminOpinionList = document.querySelector("#adminOpinionList");
+const adminSearchForm = document.querySelector("#adminSearchForm");
+const adminSearchInput = document.querySelector("#adminSearchInput");
 const logoutButton = document.querySelector("#logoutButton");
 const refreshButton = document.querySelector("#refreshButton");
 
@@ -12,6 +14,7 @@ const adminEmails = (window.QO_ADMIN_EMAILS || []).map((email) => email.toLowerC
 let auth = null;
 let db = null;
 let opinions = [];
+let adminSearchQuery = "";
 let unsubscribeOpinions = null;
 
 function showLogin(message = "") {
@@ -51,7 +54,8 @@ function normalizeOpinion(opinion) {
     likes: Number(opinion.likes || 0),
     createdAt: normalizeDateValue(opinion.createdAt),
     replies: Array.isArray(opinion.replies) ? opinion.replies : [],
-    hidden: Boolean(opinion.hidden)
+    hidden: Boolean(opinion.hidden),
+    ip: opinion.ip || ""
   };
 }
 
@@ -67,18 +71,70 @@ function formatDate(value) {
   });
 }
 
+function normalizeText(value) {
+  return String(value)
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
+function getOpinionNumberMap() {
+  const ordered = opinions.slice().sort((a, b) => {
+    const dateDiff = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+    if (dateDiff !== 0) return dateDiff;
+    return a.id.localeCompare(b.id);
+  });
+
+  return new Map(ordered.map((opinion, index) => [opinion.id, index + 1]));
+}
+
+function getFilteredOpinions() {
+  const query = adminSearchQuery.trim();
+  if (!query) return opinions;
+
+  const numberMap = getOpinionNumberMap();
+  const normalizedQuery = normalizeText(query).replace(/^opinion\s*#?\s*/, "").trim();
+  const exactNumber = normalizedQuery.match(/^#?(\d+)$/)?.[1] || "";
+  const terms = normalizedQuery.split(/[^a-z0-9.:-]+/).filter(Boolean);
+
+  return opinions.filter((opinion) => {
+    const opinionNumber = String(numberMap.get(opinion.id) || "");
+    if (exactNumber && opinionNumber === exactNumber) return true;
+
+    const repliesText = opinion.replies.map((reply) => {
+      return typeof reply === "string" ? reply : reply?.text || "";
+    }).join(" ");
+    const haystack = normalizeText([
+      `opinion #${opinionNumber}`,
+      opinion.author,
+      opinion.topic,
+      opinion.text,
+      opinion.ip,
+      repliesText
+    ].join(" "));
+
+    if (!terms.length) return haystack.includes(normalizedQuery);
+    return terms.every((term) => haystack.includes(term));
+  });
+}
+
 function renderAdminList() {
-  if (!opinions.length) {
-    adminOpinionList.innerHTML = '<p class="admin-empty">No hay opiniones para moderar.</p>';
+  const visibleOpinions = getFilteredOpinions();
+  const numberMap = getOpinionNumberMap();
+
+  if (!visibleOpinions.length) {
+    adminOpinionList.innerHTML = opinions.length
+      ? '<p class="admin-empty">No se encontraron opiniones con esa busqueda.</p>'
+      : '<p class="admin-empty">No hay opiniones para moderar.</p>';
     return;
   }
 
-  adminOpinionList.innerHTML = opinions.map((opinion) => `
+  adminOpinionList.innerHTML = visibleOpinions.map((opinion) => `
     <article class="admin-opinion-card">
       <div class="admin-opinion-head">
         <div>
           <p class="section-label">${escapeHtml(opinion.topic)} · ${formatDate(opinion.createdAt)}</p>
-          <h3>${escapeHtml(opinion.author)}</h3>
+          <h3>Opinion #${numberMap.get(opinion.id) || 0}</h3>
         </div>
         <div class="admin-actions">
           <button class="ghost-button" type="button" data-action="toggle-hidden" data-id="${escapeHtml(opinion.id)}">${opinion.hidden ? "Mostrar" : "Ocultar"}</button>
@@ -91,6 +147,7 @@ function renderAdminList() {
         <span>${opinion.likes} likes</span>
         <span>${opinion.replies.length} respuestas</span>
         <span>${opinion.hidden ? "Oculta" : "Visible"}</span>
+        <span>IP: ${escapeHtml(opinion.ip || "No registrada")}</span>
       </div>
     </article>
   `).join("");
@@ -98,7 +155,10 @@ function renderAdminList() {
 
 function renderSummary() {
   const hiddenCount = opinions.filter((opinion) => opinion.hidden).length;
-  adminSummary.textContent = `${opinions.length} opiniones cargadas · ${hiddenCount} ocultas`;
+  const filteredCount = getFilteredOpinions().length;
+  adminSummary.textContent = adminSearchQuery.trim()
+    ? `${filteredCount} de ${opinions.length} opiniones encontradas · ${hiddenCount} ocultas`
+    : `${opinions.length} opiniones cargadas · ${hiddenCount} ocultas`;
 }
 
 function userIsAllowedAdmin(user) {
@@ -181,6 +241,16 @@ async function initializeAdmin() {
   });
 
   refreshButton.addEventListener("click", () => {
+    renderSummary();
+    renderAdminList();
+  });
+
+  adminSearchForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+  });
+
+  adminSearchInput.addEventListener("input", () => {
+    adminSearchQuery = adminSearchInput.value;
     renderSummary();
     renderAdminList();
   });

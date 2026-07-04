@@ -680,6 +680,30 @@ button {
   outline: none;
 }
 
+.admin-search-form {
+  margin: 0 0 16px;
+}
+
+.admin-search-input {
+  width: 100%;
+  min-height: 46px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #080809;
+  color: var(--text-hot);
+  outline: none;
+}
+
+.admin-search-input::placeholder {
+  color: rgba(255, 138, 31, 0.48);
+}
+
+.admin-search-input:focus {
+  border-color: var(--accent-hot);
+  box-shadow: 0 0 0 4px rgba(255, 122, 0, 0.14);
+}
+
 .admin-error {
   min-height: 20px;
   margin: 0;
