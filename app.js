@@ -30,6 +30,10 @@ const topicRules = [
 
 const seedOpinions = [];
 
+const trendingWindowHours = 6;
+const trendingRefreshHours = 12;
+const trendingTopicLimit = 5;
+
 let opinions = [];
 const resetStorageKey = "quiero-opinar:reset-2026-07-03";
 
@@ -281,6 +285,30 @@ function getTopicScore(topicId) {
   }, 0);
 }
 
+function getRecentTopicActivity() {
+  const now = Date.now();
+  const windowStart = now - trendingWindowHours * 60 * 60 * 1000;
+  const counts = new Map();
+
+  getVisibleOpinions().forEach((opinion) => {
+    const createdAt = new Date(opinion.createdAt).getTime();
+    if (Number.isNaN(createdAt) || createdAt < windowStart) return;
+    counts.set(opinion.topic, (counts.get(opinion.topic) || 0) + 1);
+  });
+
+  return getVisibleTopics()
+    .map((topic) => ({
+      ...topic,
+      recentCount: counts.get(topic.id) || 0
+    }))
+    .filter((topic) => topic.recentCount > 0)
+    .sort((a, b) => {
+      if (b.recentCount !== a.recentCount) return b.recentCount - a.recentCount;
+      return a.name.localeCompare(b.name);
+    })
+    .slice(0, trendingTopicLimit);
+}
+
 function resolveSelectedTopic(topicPrompt, text) {
   const prompt = topicPrompt.trim();
   const detectedFromPrompt = detectTopic(prompt);
@@ -510,26 +538,27 @@ function openOpinion(opinionId) {
 function renderTopics() {
   topicList.innerHTML = "";
 
-  const trendingTopics = getVisibleTopics()
-    .map((topic) => ({
-      ...topic,
-      count: getTopicOpinions(topic.id).length,
-      score: getTopicScore(topic.id)
-    }))
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 5);
+  const trendingTopics = getRecentTopicActivity();
+
+  if (!trendingTopics.length) {
+    const empty = document.createElement("p");
+    empty.className = "topic-empty";
+    empty.textContent = "Todavia no hay opiniones activas en las ultimas 6 horas.";
+    topicList.append(empty);
+    return;
+  }
 
   trendingTopics.forEach((topic) => {
     const button = document.createElement("button");
     button.className = `topic-button${activeTopic === topic.id ? " active" : ""}`;
     button.type = "button";
     button.setAttribute("aria-label", `Abrir tema ${topic.name}`);
+    const countLabel = topic.recentCount === 1 ? "1 opinion" : `${topic.recentCount} opiniones`;
     button.innerHTML = `
       <span class="topic-button-content">
         <strong>${getTopicIconMarkup(topic)}<span class="topic-button-name">${topic.name}</span></strong>
-        <span class="topic-count">${topic.count} opiniones activas</span>
       </span>
-      <span class="topic-score">${topic.score}</span>
+      <span class="topic-count">${countLabel}</span>
     `;
     button.addEventListener("click", () => openTopic(topic.id));
     topicList.append(button);
@@ -1038,6 +1067,7 @@ async function initializeAppData() {
   setupComposerVisibilityObserver();
   updateFloatingOpinionVisibility();
   render();
+  window.setInterval(renderTopics, trendingRefreshHours * 60 * 60 * 1000);
 }
 
 initializeAppData();
