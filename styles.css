@@ -1568,8 +1568,8 @@ button {
   .site-header {
     align-items: center;
     grid-template-columns: max-content minmax(0, 1fr) 38px;
-    min-height: 52px;
-    padding: 8px 12px;
+    min-height: 44px;
+    padding: 5px 12px 4px;
     overflow: hidden;
   }
 
@@ -1579,8 +1579,8 @@ button {
   }
 
   .mobile-menu-toggle {
-    width: 38px;
-    height: 38px;
+    width: 36px;
+    height: 36px;
   }
 
   .top-nav {
@@ -1590,11 +1590,11 @@ button {
 
   .page-shell {
     width: calc(100% - 16px);
-    padding-top: 14px;
+    padding-top: 8px;
   }
 
   .content-grid {
-    gap: 12px;
+    gap: 10px;
   }
 
   .modal {
