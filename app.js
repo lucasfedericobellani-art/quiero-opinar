@@ -532,6 +532,7 @@ function closeFloatingOpinionPanel(restoreFocus = true) {
 
 function updateFloatingOpinionVisibility() {
   const shouldShowTrigger = isMobileViewport() || currentView !== "home" || !isMainComposerVisible || isFloatingOpinionOpen;
+  document.body.classList.toggle("mobile-composer-open", isFloatingOpinionOpen && isMobileViewport());
   floatingOpinionTrigger.classList.toggle("is-visible", shouldShowTrigger);
   floatingOpinionTrigger.classList.toggle("is-open", isFloatingOpinionOpen);
   floatingOpinionTrigger.setAttribute("aria-expanded", String(isFloatingOpinionOpen));
