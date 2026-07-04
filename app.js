@@ -226,6 +226,9 @@ floatingOpinionForm.addEventListener("submit", async (event) => {
 floatingOpinionForm.querySelector('button[type="submit"]')?.addEventListener("pointerdown", (event) => {
   if (!isMobileViewport()) return;
   event.preventDefault();
+  if (isPublishingOpinion) return;
+  if (!canPublishOpinion(floatingOpinionText.value, floatingTopicIdea.value, floatingOpinionForm)) return;
+  closeFloatingOpinionPanel(false);
   floatingOpinionForm.requestSubmit();
 });
 
