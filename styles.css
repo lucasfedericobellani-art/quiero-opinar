@@ -1601,6 +1601,7 @@ button {
 
   .content-grid {
     gap: 10px;
+    margin-top: 0;
   }
 
   .modal {

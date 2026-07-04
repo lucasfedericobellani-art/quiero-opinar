@@ -218,6 +218,12 @@ floatingOpinionForm.addEventListener("submit", async (event) => {
   await publishOpinion(floatingOpinionText.value, floatingTopicIdea.value, floatingOpinionForm);
 });
 
+floatingOpinionForm.querySelector('button[type="submit"]')?.addEventListener("pointerdown", (event) => {
+  if (!isMobileViewport()) return;
+  event.preventDefault();
+  floatingOpinionForm.requestSubmit();
+});
+
 function closeLegalModal() {
   legalOverlay.classList.add("hidden");
   legalOpenButton.focus();
