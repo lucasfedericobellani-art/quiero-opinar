@@ -23,7 +23,7 @@ const topicRules = [
   { id: "politica", words: ["politica", "gobierno", "presidente", "diputado", "senado", "partido", "eleccion", "voto", "ministro", "congreso", "estado"] },
   { id: "seguridad", words: ["seguridad", "robo", "delito", "policia", "justicia", "barrio", "calle", "violencia", "denuncia", "prevencion"] },
   { id: "cine", words: ["cine", "pelicula", "peliculas", "serie", "series", "actor", "actriz", "director", "netflix", "streaming", "documental"] },
-  { id: "tecnologia", words: ["tecnologia", "internet", "ia", "inteligencia artificial", "app", "software", "celular", "celulares", "telefono", "telefonos", "smartphone", "smartphones", "movil", "moviles", "samsung", "galaxy", "iphone", "apple", "android", "xiaomi", "motorola", "huawei", "notebook", "notebooks", "computadora", "computadoras", "pc", "tablet", "programacion", "datos"] },
+  { id: "tecnologia", words: ["tecnologia", "internet", "ia", "inteligencia artificial", "app", "software", "celular", "celulares", "celu", "celus", "telefono", "telefonos", "smartphone", "smartphones", "movil", "moviles", "samsung", "galaxy", "iphone", "apple", "android", "xiaomi", "motorola", "moto g", "huawei", "notebook", "notebooks", "computadora", "computadoras", "pc", "tablet", "redes", "wifi", "programacion", "datos"] },
   { id: "deportes", words: ["deporte", "deportes", "futbol", "basquet", "tenis", "club", "torneo", "partido", "seleccion", "gol", "cancha"] },
   { id: "historia", words: ["historia", "me paso", "me ocurrio", "cuento", "relato", "experiencia", "anecdota", "vivencia"] }
 ];
@@ -56,6 +56,7 @@ const topicList = document.querySelector("#topicList");
 const feedList = document.querySelector("#feedList");
 const opinionTemplate = document.querySelector("#opinionTemplate");
 const activeTopicPill = document.querySelector("#activeTopicPill");
+const searchInputs = document.querySelectorAll(".search-input");
 const legalOverlay = document.querySelector("#legalOverlay");
 const legalOpenButton = document.querySelector("#legalOpenButton");
 const legalCloseButton = document.querySelector("#legalCloseButton");
@@ -87,6 +88,7 @@ let currentView = "home";
 let lastViewBeforeDetail = "home";
 let selectedOpinionId = null;
 let selectedTopicId = null;
+let searchQuery = "";
 let isMainComposerVisible = true;
 let isFloatingOpinionOpen = false;
 let isMobileMenuOpen = false;
@@ -160,6 +162,10 @@ homeButtons.forEach((button) => {
 backFromDetailButton.addEventListener("click", () => showView(lastViewBeforeDetail));
 backFromTopicButton.addEventListener("click", () => showView("topics"));
 topicSearchInput.addEventListener("input", renderBoard);
+searchInputs.forEach((input) => {
+  input.addEventListener("input", () => updateSearchQuery(input.value));
+  input.form?.addEventListener("submit", (event) => event.preventDefault());
+});
 
 mobileMenuToggle.addEventListener("click", () => {
   setMobileMenuOpen(!isMobileMenuOpen);
@@ -356,6 +362,12 @@ function getOpinionAuthorLabel(opinion) {
   return getContributionLabel(`opinion:${opinion.id}`);
 }
 
+function getOpinionNumber(opinion) {
+  const label = getOpinionAuthorLabel(opinion);
+  const match = label.match(/\d+/);
+  return match ? match[0] : "";
+}
+
 function getReplyAuthorLabel(opinion, reply, index) {
   return getContributionLabel(`reply:${opinion.id}:${reply.id || index}`);
 }
@@ -458,6 +470,15 @@ function goHome() {
   activeTopic = "todos";
   showView("home");
   render();
+}
+
+function updateSearchQuery(value) {
+  searchQuery = value.trim();
+  searchInputs.forEach((input) => {
+    if (input.value !== value) input.value = value;
+  });
+  if (currentView !== "home") showView("home");
+  renderFeed();
 }
 
 async function publishOpinion(rawText, rawTopic, form) {
@@ -717,20 +738,41 @@ function renderBoard() {
 
 function renderFeed() {
   feedList.innerHTML = "";
-  activeTopicPill.textContent = getTopicName(activeTopic);
+  activeTopicPill.textContent = searchQuery ? "Busqueda" : getTopicName(activeTopic);
 
-  const filteredOpinions = getTopicOpinions(activeTopic);
+  const sourceOpinions = searchQuery ? getVisibleOpinions() : getTopicOpinions(activeTopic);
+  const filteredOpinions = getSearchResults(sourceOpinions);
 
   if (!filteredOpinions.length) {
     const empty = document.createElement("p");
     empty.className = "opinion-card";
-    empty.textContent = "Todavia no hay opiniones en este tema. Podes abrir el primer hilo.";
+    empty.textContent = searchQuery
+      ? "No se encontraron opiniones relacionadas con esa busqueda."
+      : "Todavia no hay opiniones en este tema. Podes abrir el primer hilo.";
     feedList.append(empty);
     return;
   }
 
   filteredOpinions.forEach((opinion) => {
     feedList.append(createOpinionCard(opinion, false));
+  });
+}
+
+function getSearchResults(sourceOpinions) {
+  const query = searchQuery.trim();
+  if (!query) return sourceOpinions;
+
+  const normalizedQuery = normalizeText(query).replace(/^opinion\s*#?\s*/, "").trim();
+  const exactNumber = normalizedQuery.match(/^#?(\d+)$/)?.[1] || "";
+  const terms = normalizedQuery.split(/[^a-z0-9]+/).filter(Boolean);
+
+  return sourceOpinions.filter((opinion) => {
+    const opinionNumber = getOpinionNumber(opinion);
+    if (exactNumber && opinionNumber === exactNumber) return true;
+
+    const haystack = normalizeText(`${getOpinionAuthorLabel(opinion)} ${getTopicName(opinion.topic)} ${opinion.text}`);
+    if (!terms.length) return haystack.includes(normalizedQuery);
+    return terms.every((term) => haystack.includes(term));
   });
 }
 
@@ -1049,10 +1091,13 @@ function mergeTopics(remoteTopics) {
 }
 
 function normalizeOpinion(opinion) {
+  const detectedTopic = detectTopic(opinion.text || "");
+  const normalizedTopic = opinion.topic || "sin-tema";
+
   return {
     id: opinion.id || createId(),
     author: opinion.author || "Opinion",
-    topic: opinion.topic || "sin-tema",
+    topic: normalizedTopic === "sin-tema" && detectedTopic.score > 0 ? detectedTopic.id : normalizedTopic,
     text: opinion.text || "",
     views: Number(opinion.views || 0),
     likes: Number(opinion.likes || 0),

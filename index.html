@@ -84,6 +84,10 @@
       <button class="brand nav-home" type="button" aria-label="Inicio de Quiero Opinar">
         <img class="brand-mark" src="assets/logo.svg" alt="" aria-hidden="true">
       </button>
+      <form class="search-form header-search" role="search">
+        <label class="sr-only" for="desktopSearchInput">Buscar opiniones</label>
+        <input class="search-input" id="desktopSearchInput" type="search" placeholder="Buscar opinion # o palabra">
+      </form>
       <button class="header-title nav-home" type="button" aria-label="Inicio de Quiero Opinar">QUIERO OPINAR</button>
       <button class="mobile-menu-toggle" id="mobileMenuToggle" type="button" aria-controls="topNav" aria-expanded="false" aria-label="Abrir menu">
         <span></span>
@@ -128,6 +132,10 @@
               </h2>
             </div>
             <div class="topic-list" id="topicList"></div>
+            <form class="search-form mobile-search" role="search">
+              <label class="sr-only" for="mobileSearchInput">Buscar opiniones</label>
+              <input class="search-input" id="mobileSearchInput" type="search" placeholder="Buscar opinion # o palabra">
+            </form>
           </aside>
 
           <section class="feed-panel" id="feed" aria-labelledby="feedTitle">
