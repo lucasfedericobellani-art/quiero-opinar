@@ -1362,7 +1362,8 @@ button {
 @media (max-width: 980px) {
   .site-header {
     grid-template-columns: max-content minmax(0, 1fr) 42px;
-    gap: 12px;
+    column-gap: 12px;
+    row-gap: 0;
     padding-inline: 12px;
   }
 
@@ -1395,6 +1396,10 @@ button {
   }
 
   .top-nav {
+    position: absolute;
+    left: 12px;
+    right: 12px;
+    top: calc(100% - 1px);
     grid-column: 1 / -1;
     justify-self: stretch;
     display: grid;
@@ -1415,6 +1420,7 @@ button {
   }
 
   .top-nav.is-open {
+    position: static;
     gap: 10px;
     max-height: 190px;
     margin-top: 4px;
@@ -1568,8 +1574,8 @@ button {
   .site-header {
     align-items: center;
     grid-template-columns: max-content minmax(0, 1fr) 38px;
-    min-height: 44px;
-    padding: 5px 12px 4px;
+    min-height: 40px;
+    padding: 4px 12px 3px;
     overflow: hidden;
   }
 
@@ -1590,7 +1596,7 @@ button {
 
   .page-shell {
     width: calc(100% - 16px);
-    padding-top: 8px;
+    padding-top: 6px;
   }
 
   .content-grid {
