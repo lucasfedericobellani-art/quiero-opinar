@@ -1,0 +1,9 @@
+.agents
+.codex
+.firebase
+.git
+.tools
+.env*
+firebase-debug.log
+firepit-log.txt
+FIREBASE_SETUP.md
