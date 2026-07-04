@@ -1,87 +1,70 @@
-const ADMIN_STORAGE_KEY = 'quiero-opinar:admin-session';
-const ADMIN_USERNAME = 'admin';
-const ADMIN_PASSWORD = 'quiero-opinar2026';
+const loginView = document.querySelector("#loginView");
+const adminView = document.querySelector("#adminView");
+const loginForm = document.querySelector("#adminLoginForm");
+const loginError = document.querySelector("#loginError");
+const adminSummary = document.querySelector("#adminSummary");
+const adminOpinionList = document.querySelector("#adminOpinionList");
+const logoutButton = document.querySelector("#logoutButton");
+const refreshButton = document.querySelector("#refreshButton");
 
-const loginView = document.querySelector('#loginView');
-const adminView = document.querySelector('#adminView');
-const loginForm = document.querySelector('#adminLoginForm');
-const loginError = document.querySelector('#loginError');
-const adminSummary = document.querySelector('#adminSummary');
-const adminOpinionList = document.querySelector('#adminOpinionList');
-const logoutButton = document.querySelector('#logoutButton');
-const refreshButton = document.querySelector('#refreshButton');
+const adminEmails = (window.QO_ADMIN_EMAILS || []).map((email) => email.toLowerCase());
 
+let auth = null;
+let db = null;
 let opinions = [];
-let currentSession = null;
+let unsubscribeOpinions = null;
 
-function getStoredSession() {
-  try {
-    return JSON.parse(window.localStorage.getItem(ADMIN_STORAGE_KEY));
-  } catch {
-    return null;
-  }
-}
-
-function saveSession(session) {
-  window.localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(session));
-}
-
-function clearSession() {
-  window.localStorage.removeItem(ADMIN_STORAGE_KEY);
-}
-
-function deriveAdminState() {
-  const session = getStoredSession();
-  if (session?.username === ADMIN_USERNAME && session?.password === ADMIN_PASSWORD) {
-    currentSession = session;
-    return true;
-  }
-  currentSession = null;
-  return false;
-}
-
-function showLogin() {
-  loginView.classList.remove('hidden');
-  adminView.classList.add('hidden');
+function showLogin(message = "") {
+  loginView.classList.remove("hidden");
+  adminView.classList.add("hidden");
+  loginError.textContent = message;
 }
 
 function showAdmin() {
-  loginView.classList.add('hidden');
-  adminView.classList.remove('hidden');
+  loginView.classList.add("hidden");
+  adminView.classList.remove("hidden");
+  loginError.textContent = "";
 }
 
 function escapeHtml(value) {
   return String(value)
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#039;');
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function normalizeDateValue(value) {
+  if (value?.toDate) return value.toDate().toISOString();
+  if (typeof value === "string") return value;
+  return new Date().toISOString();
 }
 
 function normalizeOpinion(opinion) {
   return {
-    id: opinion.id || '',
-    author: opinion.author || 'Anonimo',
-    topic: opinion.topic || 'sin-tema',
-    text: opinion.text || '',
+    id: opinion.id || "",
+    author: opinion.author || "Opinion",
+    topic: opinion.topic || "sin-tema",
+    text: opinion.text || "",
     views: Number(opinion.views || 0),
     likes: Number(opinion.likes || 0),
-    createdAt: opinion.createdAt || new Date().toISOString(),
+    createdAt: normalizeDateValue(opinion.createdAt),
     replies: Array.isArray(opinion.replies) ? opinion.replies : [],
     hidden: Boolean(opinion.hidden)
   };
 }
 
-function loadOpinionsFromStorage() {
-  try {
-    const stored = window.localStorage.getItem('quiero-opinar:opinions');
-    if (!stored) return [];
-    const parsed = JSON.parse(stored);
-    return Array.isArray(parsed) ? parsed.map(normalizeOpinion) : [];
-  } catch {
-    return [];
-  }
+function formatDate(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+
+  return date.toLocaleString("es-AR", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
 }
 
 function renderAdminList() {
@@ -94,11 +77,12 @@ function renderAdminList() {
     <article class="admin-opinion-card">
       <div class="admin-opinion-head">
         <div>
-          <p class="section-label">${escapeHtml(opinion.topic)}</p>
+          <p class="section-label">${escapeHtml(opinion.topic)} · ${formatDate(opinion.createdAt)}</p>
           <h3>${escapeHtml(opinion.author)}</h3>
         </div>
         <div class="admin-actions">
-          <button class="ghost-button" type="button" data-action="toggle-hidden" data-id="${opinion.id}">${opinion.hidden ? 'Mostrar' : 'Ocultar'}</button>
+          <button class="ghost-button" type="button" data-action="toggle-hidden" data-id="${escapeHtml(opinion.id)}">${opinion.hidden ? "Mostrar" : "Ocultar"}</button>
+          <button class="ghost-button danger-button" type="button" data-action="delete" data-id="${escapeHtml(opinion.id)}">Eliminar</button>
         </div>
       </div>
       <p class="admin-opinion-text">${escapeHtml(opinion.text)}</p>
@@ -106,76 +90,131 @@ function renderAdminList() {
         <span>${opinion.views} vistas</span>
         <span>${opinion.likes} likes</span>
         <span>${opinion.replies.length} respuestas</span>
-        <span>${opinion.hidden ? 'Oculta' : 'Visible'}</span>
+        <span>${opinion.hidden ? "Oculta" : "Visible"}</span>
       </div>
     </article>
-  `).join('');
+  `).join("");
 }
 
-async function refreshOpinions() {
-  opinions = loadOpinionsFromStorage();
-  opinions.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-  adminSummary.textContent = `${opinions.length} opiniones cargadas`;
-  renderAdminList();
+function renderSummary() {
+  const hiddenCount = opinions.filter((opinion) => opinion.hidden).length;
+  adminSummary.textContent = `${opinions.length} opiniones cargadas · ${hiddenCount} ocultas`;
 }
 
-function persistOpinions(nextOpinions) {
-  opinions = nextOpinions;
-  window.localStorage.setItem('quiero-opinar:opinions', JSON.stringify(nextOpinions));
+function userIsAllowedAdmin(user) {
+  return Boolean(user?.email && adminEmails.includes(user.email.toLowerCase()));
 }
 
-async function toggleOpinionVisibility(opinionId) {
-  const nextOpinions = opinions.map((opinion) => {
-    if (opinion.id !== opinionId) return opinion;
-    return { ...opinion, hidden: !opinion.hidden };
-  });
-  persistOpinions(nextOpinions);
-  await refreshOpinions();
+async function startOpinionSubscription(firestoreModule) {
+  if (unsubscribeOpinions) unsubscribeOpinions();
+
+  const { collection, onSnapshot, orderBy, query } = firestoreModule;
+  unsubscribeOpinions = onSnapshot(
+    query(collection(db, "opinions"), orderBy("createdAt", "desc")),
+    (snapshot) => {
+      opinions = snapshot.docs.map((item) => normalizeOpinion({ id: item.id, ...item.data() }));
+      renderSummary();
+      renderAdminList();
+    },
+    (error) => {
+      adminSummary.textContent = "No se pudieron cargar las opiniones.";
+      console.error("Error cargando opiniones.", error);
+    }
+  );
 }
 
-loginForm.addEventListener('submit', (event) => {
-  event.preventDefault();
-  const username = document.querySelector('#adminUsername').value.trim();
-  const password = document.querySelector('#adminPassword').value;
-
-  if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
-    const session = { username, password };
-    saveSession(session);
-    currentSession = session;
-    loginError.textContent = '';
-    showAdmin();
-    refreshOpinions();
+async function initializeAdmin() {
+  const config = window.QO_FIREBASE_CONFIG;
+  if (!config?.apiKey || !config?.projectId) {
+    showLogin("Falta configurar Firebase.");
     return;
   }
 
-  loginError.textContent = 'Credenciales invalidas.';
-});
+  const [{ initializeApp }, authModule, firestoreModule] = await Promise.all([
+    import("https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js"),
+    import("https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js"),
+    import("https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js")
+  ]);
 
-logoutButton.addEventListener('click', () => {
-  clearSession();
-  currentSession = null;
-  showLogin();
-});
+  const app = initializeApp(config);
+  auth = authModule.getAuth(app);
+  db = firestoreModule.getFirestore(app);
 
-refreshButton.addEventListener('click', () => {
-  refreshOpinions();
-});
+  authModule.onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+      if (unsubscribeOpinions) unsubscribeOpinions();
+      showLogin();
+      return;
+    }
 
-adminOpinionList.addEventListener('click', async (event) => {
-  const button = event.target.closest('button[data-action="toggle-hidden"]');
-  if (!button) return;
-  const opinionId = button.getAttribute('data-id');
-  if (!opinionId) return;
-  await toggleOpinionVisibility(opinionId);
-});
+    if (!userIsAllowedAdmin(user)) {
+      await authModule.signOut(auth);
+      showLogin("Ese email no esta habilitado como administrador.");
+      return;
+    }
 
-function initAdmin() {
-  if (deriveAdminState()) {
     showAdmin();
-    refreshOpinions();
-  } else {
-    showLogin();
-  }
+    await startOpinionSubscription(firestoreModule);
+  });
+
+  loginForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const email = document.querySelector("#adminEmail").value.trim().toLowerCase();
+    const password = document.querySelector("#adminPassword").value;
+
+    if (!adminEmails.includes(email)) {
+      showLogin("Ese email no esta habilitado como administrador.");
+      return;
+    }
+
+    try {
+      await authModule.signInWithEmailAndPassword(auth, email, password);
+      loginForm.reset();
+    } catch (error) {
+      console.error("Error de login admin.", error);
+      showLogin("Credenciales invalidas o proveedor de email/password no habilitado.");
+    }
+  });
+
+  logoutButton.addEventListener("click", async () => {
+    await authModule.signOut(auth);
+  });
+
+  refreshButton.addEventListener("click", () => {
+    renderSummary();
+    renderAdminList();
+  });
+
+  adminOpinionList.addEventListener("click", async (event) => {
+    const button = event.target.closest("button[data-action]");
+    if (!button) return;
+
+    const opinionId = button.getAttribute("data-id");
+    const action = button.getAttribute("data-action");
+    const opinion = opinions.find((item) => item.id === opinionId);
+    if (!opinion) return;
+
+    const { deleteDoc, doc, updateDoc } = firestoreModule;
+    button.disabled = true;
+
+    try {
+      if (action === "toggle-hidden") {
+        await updateDoc(doc(db, "opinions", opinionId), { hidden: !opinion.hidden });
+      }
+
+      if (action === "delete" && window.confirm("Eliminar esta opinion de forma permanente?")) {
+        await deleteDoc(doc(db, "opinions", opinionId));
+      }
+    } catch (error) {
+      console.error("No se pudo moderar la opinion.", error);
+      window.alert("No se pudo aplicar la accion. Revisar permisos de administrador.");
+    } finally {
+      button.disabled = false;
+    }
+  });
 }
 
-initAdmin();
+initializeAdmin().catch((error) => {
+  console.error("No se pudo iniciar el panel admin.", error);
+  showLogin("No se pudo iniciar el panel de administrador.");
+});

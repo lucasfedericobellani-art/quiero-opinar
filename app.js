@@ -33,6 +33,7 @@ const seedOpinions = [];
 const trendingWindowHours = 6;
 const trendingRefreshHours = 12;
 const trendingTopicLimit = 6;
+const blockedLinkPattern = /(?:https?:\/\/|www\.|[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}|(?:[a-z0-9-]+\.)+[a-z]{2,}(?:\/|\b))/i;
 
 let opinions = [];
 const resetStorageKey = "quiero-opinar:reset-2026-07-03";
@@ -493,15 +494,28 @@ function submitSearch(value, sourceInput) {
   showView("search");
 }
 
+function containsBlockedLink(value) {
+  return blockedLinkPattern.test(value);
+}
+
+function rejectLinkedContent() {
+  window.alert("No se pueden publicar links en opiniones ni respuestas.");
+}
+
 async function publishOpinion(rawText, rawTopic, form) {
   const text = rawText.trim();
+  const topic = rawTopic.trim();
   if (!text) return;
+  if (containsBlockedLink(text) || containsBlockedLink(topic)) {
+    rejectLinkedContent();
+    return;
+  }
 
   const clientIp = await resolveClientIp();
   const opinion = {
     id: createId(),
     author: createAnonymousId(),
-    topic: resolveSelectedTopic(rawTopic, text),
+    topic: resolveSelectedTopic(topic, text),
     text,
     views: 1,
     likes: 0,
@@ -922,6 +936,10 @@ function createOpinionCard(opinion, isDetail) {
     event.preventDefault();
     const reply = replyInput.value.trim();
     if (!reply) return;
+    if (containsBlockedLink(reply)) {
+      rejectLinkedContent();
+      return;
+    }
 
     opinion.replies.push(createReply(reply));
     opinion.views += 1;

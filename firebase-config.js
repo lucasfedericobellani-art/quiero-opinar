@@ -15,3 +15,7 @@ window.QO_FIREBASE_APPCHECK_CONFIG = {
   siteKey: "",
   debugToken: ""
 };
+
+window.QO_ADMIN_EMAILS = [
+  "lucasfedericobellani@gmail.com"
+];

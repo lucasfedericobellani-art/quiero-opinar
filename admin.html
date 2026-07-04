@@ -17,8 +17,8 @@
         <h1 id="loginTitle">Panel de moderacion</h1>
         <p class="admin-copy">Esta zona no se muestra en la navegacion publica. Solo el administrador puede entrar con credenciales validas.</p>
         <form class="admin-login-form" id="adminLoginForm">
-          <label class="field-label" for="adminUsername">Usuario</label>
-          <input id="adminUsername" name="adminUsername" type="text" autocomplete="username" required>
+          <label class="field-label" for="adminEmail">Email</label>
+          <input id="adminEmail" name="adminEmail" type="email" autocomplete="username" required>
           <label class="field-label" for="adminPassword">Password</label>
           <input id="adminPassword" name="adminPassword" type="password" autocomplete="current-password" required>
           <button class="primary-button" type="submit">Entrar</button>
@@ -43,6 +43,6 @@
     </main>
 
     <script src="firebase-config.js"></script>
-    <script src="admin.js"></script>
+    <script src="admin.js" type="module"></script>
   </body>
 </html>

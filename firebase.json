@@ -15,8 +15,6 @@
       ".tools/**",
       "firebase-debug.log",
       "firepit-log.txt",
-      "admin.html",
-      "admin.js",
       "panel.html"
     ],
     "redirects": [
@@ -24,12 +22,6 @@
         "source": "/app.html",
         "destination": "/",
         "type": 302
-      }
-    ],
-    "rewrites": [
-      {
-        "source": "**",
-        "destination": "/index.html"
       }
     ],
     "cleanUrls": true,
@@ -40,7 +32,8 @@
   },
   "auth": {
     "providers": {
-      "anonymous": true
+      "anonymous": true,
+      "emailPassword": true
     }
   }
 }

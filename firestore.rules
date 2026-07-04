@@ -6,6 +6,16 @@ service cloud.firestore {
       return value is string && value.size() > 0 && value.size() <= max;
     }
 
+    function hasNoLinks(value) {
+      return value is string &&
+        !value.matches(".*([hH][tT][tT][pP][sS]?://|[wW][wW][wW]\\.|[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}|[a-zA-Z0-9-]+\\.[a-zA-Z]{2,}(/|[[:space:]]|$)).*");
+    }
+
+    function isAdmin() {
+      return request.auth != null &&
+        request.auth.token.email in ["lucasfedericobellani@gmail.com"];
+    }
+
     function isOpinion() {
       return request.resource.data.keys().hasOnly([
         "id",
@@ -22,7 +32,9 @@ service cloud.firestore {
       isText(request.resource.data.id, 120) &&
       isText(request.resource.data.author, 80) &&
       isText(request.resource.data.topic, 80) &&
+      hasNoLinks(request.resource.data.topic) &&
       isText(request.resource.data.text, 5000) &&
+      hasNoLinks(request.resource.data.text) &&
       request.resource.data.views is int &&
       request.resource.data.views >= 0 &&
       request.resource.data.likes is int &&
@@ -52,8 +64,13 @@ service cloud.firestore {
 
     match /opinions/{opinionId} {
       allow read: if true;
-      allow create, update: if request.auth != null && isOpinion();
-      allow delete: if false;
+      allow create: if request.auth != null && isOpinion() && request.resource.data.hidden == false;
+      allow update: if isAdmin() || (
+        request.auth != null &&
+        isOpinion() &&
+        request.resource.data.hidden == resource.data.hidden
+      );
+      allow delete: if isAdmin();
     }
 
     match /topics/{topicId} {
