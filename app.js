@@ -23,7 +23,7 @@ const topicRules = [
   { id: "politica", words: ["politica", "gobierno", "presidente", "diputado", "senado", "partido", "eleccion", "voto", "ministro", "congreso", "estado"] },
   { id: "seguridad", words: ["seguridad", "robo", "delito", "policia", "justicia", "barrio", "calle", "violencia", "denuncia", "prevencion"] },
   { id: "cine", words: ["cine", "pelicula", "peliculas", "serie", "series", "actor", "actriz", "director", "netflix", "streaming", "documental"] },
-  { id: "tecnologia", words: ["tecnologia", "internet", "ia", "inteligencia artificial", "app", "software", "celular", "iphone", "android", "programacion", "datos"] },
+  { id: "tecnologia", words: ["tecnologia", "internet", "ia", "inteligencia artificial", "app", "software", "celular", "celulares", "telefono", "telefonos", "smartphone", "smartphones", "movil", "moviles", "samsung", "galaxy", "iphone", "apple", "android", "xiaomi", "motorola", "huawei", "notebook", "notebooks", "computadora", "computadoras", "pc", "tablet", "programacion", "datos"] },
   { id: "deportes", words: ["deporte", "deportes", "futbol", "basquet", "tenis", "club", "torneo", "partido", "seleccion", "gol", "cancha"] },
   { id: "historia", words: ["historia", "me paso", "me ocurrio", "cuento", "relato", "experiencia", "anecdota", "vivencia"] }
 ];
@@ -32,7 +32,7 @@ const seedOpinions = [];
 
 const trendingWindowHours = 6;
 const trendingRefreshHours = 12;
-const trendingTopicLimit = 5;
+const trendingTopicLimit = 6;
 
 let opinions = [];
 const resetStorageKey = "quiero-opinar:reset-2026-07-03";
@@ -485,9 +485,8 @@ async function publishOpinion(rawText, rawTopic, form) {
   form.reset();
   if (form === floatingOpinionForm) closeFloatingOpinionPanel(false);
   activeTopic = "todos";
-  selectedOpinionId = opinion.id;
   render();
-  openOpinion(opinion.id);
+  showView("home");
 }
 
 function showView(viewName) {
