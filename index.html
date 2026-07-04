@@ -115,6 +115,7 @@
               <label class="field-label" for="opinionText">Escribi tu opinion</label>
               <textarea id="opinionText" name="opinionText" placeholder="Escribi tu opinion..." required></textarea>
             </div>
+            <p class="form-error hidden" id="opinionFormError" role="alert"></p>
             <p class="terms-note">Al publicar, declaras conocer y aceptar los terminos y condiciones, y asumis plena responsabilidad por el contenido emitido.</p>
           </form>
           <button class="primary-button opinion-button" type="submit" form="opinionForm">Opinar</button>
@@ -274,6 +275,7 @@
         <textarea id="floatingOpinionText" placeholder="Escribi tu opinion..." required></textarea>
         <label class="sr-only" for="floatingTopicIdea">Tema</label>
         <input class="topic-input" id="floatingTopicIdea" type="text" placeholder="Tema, ej: agro">
+        <p class="form-error hidden" id="floatingOpinionError" role="alert"></p>
         <div class="floating-legal-row">
           <p class="terms-note">Al publicar, declaras conocer y aceptar los terminos y condiciones.</p>
           <button class="primary-button" type="submit">Opinar</button>

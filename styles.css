@@ -383,6 +383,15 @@ button {
   line-height: 1.45;
 }
 
+.form-error {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: #ffb14a;
+  font-size: 0.84rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
 .opinion-form textarea {
   width: 100%;
   min-height: 46px;
@@ -1686,7 +1695,7 @@ button {
   .floating-opinion-form {
     min-height: 0;
     display: grid;
-    grid-template-rows: minmax(0, 1fr) auto auto;
+    grid-template-rows: minmax(0, 1fr) auto auto auto;
     gap: 14px;
     overflow: hidden;
   }
@@ -1728,6 +1737,15 @@ button {
     color: rgba(255, 138, 31, 0.74);
     font-size: 0.72rem;
     line-height: 1.35;
+  }
+
+  .floating-opinion .form-error {
+    margin: -4px 0 0;
+    padding: 10px 12px;
+    border: 1px solid rgba(255, 138, 31, 0.32);
+    border-radius: 8px;
+    background: rgba(255, 122, 0, 0.08);
+    font-size: 0.82rem;
   }
 
   .floating-legal-row {

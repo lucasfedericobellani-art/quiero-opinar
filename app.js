@@ -53,6 +53,8 @@ const floatingOpinionClose = document.querySelector("#floatingOpinionClose");
 const floatingOpinionForm = document.querySelector("#floatingOpinionForm");
 const floatingOpinionText = document.querySelector("#floatingOpinionText");
 const floatingTopicIdea = document.querySelector("#floatingTopicIdea");
+const opinionFormError = document.querySelector("#opinionFormError");
+const floatingOpinionError = document.querySelector("#floatingOpinionError");
 const topicList = document.querySelector("#topicList");
 const feedList = document.querySelector("#feedList");
 const opinionTemplate = document.querySelector("#opinionTemplate");
@@ -216,6 +218,8 @@ opinionForm.addEventListener("submit", async (event) => {
 
 floatingOpinionForm.addEventListener("submit", async (event) => {
   event.preventDefault();
+  if (!canPublishOpinion(floatingOpinionText.value, floatingTopicIdea.value, floatingOpinionForm)) return;
+  closeFloatingOpinionPanel(false);
   await publishOpinion(floatingOpinionText.value, floatingTopicIdea.value, floatingOpinionForm);
 });
 
@@ -505,8 +509,36 @@ function containsBlockedLink(value) {
   return blockedLinkPattern.test(value);
 }
 
-function rejectLinkedContent() {
-  window.alert("No se pueden publicar links en opiniones ni respuestas.");
+function getFormErrorElement(form) {
+  if (form === floatingOpinionForm) return floatingOpinionError;
+  if (form === opinionForm) return opinionFormError;
+  return null;
+}
+
+function showFormError(form, message) {
+  const error = getFormErrorElement(form);
+  if (!error) return;
+  error.textContent = message;
+  error.classList.remove("hidden");
+}
+
+function clearFormError(form) {
+  const error = getFormErrorElement(form);
+  if (!error) return;
+  error.textContent = "";
+  error.classList.add("hidden");
+}
+
+function canPublishOpinion(rawText, rawTopic, form) {
+  const text = rawText.trim();
+  const topic = rawTopic.trim();
+  clearFormError(form);
+  if (!text) return false;
+  if (containsBlockedLink(text) || containsBlockedLink(topic)) {
+    showFormError(form, "No se pueden publicar links en opiniones ni respuestas.");
+    return false;
+  }
+  return true;
 }
 
 async function publishOpinion(rawText, rawTopic, form) {
@@ -514,11 +546,7 @@ async function publishOpinion(rawText, rawTopic, form) {
 
   const text = rawText.trim();
   const topic = rawTopic.trim();
-  if (!text) return;
-  if (containsBlockedLink(text) || containsBlockedLink(topic)) {
-    rejectLinkedContent();
-    return;
-  }
+  if (!canPublishOpinion(text, topic, form)) return;
 
   isPublishingOpinion = true;
   if (form === floatingOpinionForm) closeFloatingOpinionPanel(false);
