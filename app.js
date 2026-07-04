@@ -225,7 +225,7 @@ function closeMobileMenu(restoreFocus = true) {
 }
 
 function createAnonymousId() {
-  return `Anonimo #${Math.floor(1000 + Math.random() * 9000)}`;
+  return "Anonimo";
 }
 
 function createId() {
@@ -317,6 +317,47 @@ function getRecentTopicActivity() {
       return a.name.localeCompare(b.name);
     })
     .slice(0, trendingTopicLimit);
+}
+
+function getContributionNumberMap() {
+  const entries = [];
+
+  getVisibleOpinions().forEach((opinion) => {
+    entries.push({
+      key: `opinion:${opinion.id}`,
+      createdAt: opinion.createdAt,
+      fallback: opinion.id
+    });
+
+    opinion.replies.forEach((reply, index) => {
+      entries.push({
+        key: `reply:${opinion.id}:${reply.id || index}`,
+        createdAt: reply.createdAt,
+        fallback: `${opinion.id}:${reply.id || index}`
+      });
+    });
+  });
+
+  entries.sort((a, b) => {
+    const dateDiff = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+    if (dateDiff !== 0) return dateDiff;
+    return a.fallback.localeCompare(b.fallback);
+  });
+
+  return new Map(entries.map((entry, index) => [entry.key, index + 1]));
+}
+
+function getContributionLabel(key) {
+  const number = getContributionNumberMap().get(key);
+  return `Anonimo #${number || 0}`;
+}
+
+function getOpinionAuthorLabel(opinion) {
+  return getContributionLabel(`opinion:${opinion.id}`);
+}
+
+function getReplyAuthorLabel(opinion, reply, index) {
+  return getContributionLabel(`reply:${opinion.id}:${reply.id || index}`);
 }
 
 function resolveSelectedTopic(topicPrompt, text) {
@@ -635,7 +676,7 @@ function renderBoard() {
       card.className = "board-card";
       card.type = "button";
       card.innerHTML = `
-        <strong>${opinion.author}</strong>
+        <strong>${getOpinionAuthorLabel(opinion)}</strong>
         ${escapeHtml(truncateText(opinion.text, 130))}
         <span>${formatDate(opinion.createdAt)} - ${opinion.views} vistas - ${opinion.replies.length} respuestas - ${opinion.likes} me gusta</span>
       `;
@@ -715,7 +756,7 @@ function renderDetail() {
 
 function createOpinionCard(opinion, isDetail) {
   const card = opinionTemplate.content.firstElementChild.cloneNode(true);
-  card.querySelector(".author").textContent = opinion.author;
+  card.querySelector(".author").textContent = getOpinionAuthorLabel(opinion);
   card.querySelector(".topic").textContent = getTopicName(opinion.topic);
   card.querySelector(".date-stamp").textContent = formatDate(opinion.createdAt);
   card.querySelector(".opinion-text").textContent = opinion.text;
@@ -748,7 +789,7 @@ function createOpinionCard(opinion, isDetail) {
     const item = document.createElement("div");
     item.className = "reply-card";
     item.innerHTML = `
-      <p class="reply"><strong>${normalizedReply.author}:</strong> ${escapeHtml(normalizedReply.text)}</p>
+      <p class="reply"><strong>${getReplyAuthorLabel(opinion, normalizedReply, index)}:</strong> ${escapeHtml(normalizedReply.text)}</p>
       <span class="date-stamp reply-date">${formatDate(normalizedReply.createdAt)}</span>
       <button class="like-button${normalizedReply.liked ? " liked" : ""}" type="button" aria-label="Me gusta respuesta">
         <span aria-hidden="true">+</span>
