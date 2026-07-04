@@ -621,7 +621,7 @@ function renderTopics() {
     button.setAttribute("aria-label", `Abrir tema ${topic.name}`);
     button.innerHTML = `
       <span class="topic-button-content">
-        <strong>${getTopicIconMarkup(topic)}<span class="topic-button-name">${topic.name}</span></strong>
+        <strong><span class="topic-button-name">${topic.name}</span></strong>
       </span>
       <span class="topic-count" aria-label="${topic.recentCount} opiniones recientes">${topic.recentCount}</span>
     `;

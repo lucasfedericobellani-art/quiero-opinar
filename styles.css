@@ -1446,11 +1446,12 @@ button {
   }
 
   .topic-button {
-    flex: 0 0 118px;
+    flex: 0 0 auto;
     grid-template-columns: 1fr;
     justify-items: center;
-    min-height: 108px;
-    padding: 10px 8px;
+    min-height: 42px;
+    max-width: 180px;
+    padding: 8px 12px;
     text-align: center;
     scroll-snap-align: start;
   }
@@ -1463,13 +1464,8 @@ button {
   }
 
   .topic-button strong {
-    font-size: 0.72rem;
-    line-height: 1.15;
-  }
-
-  .topic-button .topic-icon {
-    width: 36px;
-    height: 36px;
+    font-size: 0.76rem;
+    line-height: 1.2;
   }
 
   .topic-score,
@@ -1478,10 +1474,7 @@ button {
   }
 
   .topic-count {
-    justify-self: center;
-    min-width: 0;
-    padding: 5px 8px;
-    font-size: 0.72rem;
+    display: none;
   }
 }
 
