@@ -651,7 +651,7 @@ button {
 }
 
 .admin-card {
-  width: min(860px, 100%);
+  width: min(1180px, 100%);
   padding: clamp(24px, 4vw, 36px);
   border: 1px solid var(--line-strong);
   border-radius: 16px;
@@ -725,6 +725,12 @@ button {
   gap: 10px;
 }
 
+.admin-toolbar-actions .active {
+  border-color: var(--accent-hot);
+  color: var(--text-hot);
+  background: rgba(255, 122, 0, 0.12);
+}
+
 .admin-list {
   display: grid;
   gap: 12px;
@@ -784,6 +790,181 @@ button {
 .admin-empty {
   margin: 0;
   color: var(--muted);
+}
+
+.analytics-head,
+.analytics-filters,
+.analytics-grid,
+.analytics-charts,
+.analytics-tables {
+  display: grid;
+  gap: 12px;
+}
+
+.analytics-head {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  margin: 8px 0 18px;
+}
+
+.analytics-head h2 {
+  margin: 4px 0 0;
+  color: var(--text-hot);
+}
+
+.analytics-filters {
+  grid-template-columns: repeat(5, minmax(140px, 1fr));
+  margin-bottom: 18px;
+}
+
+.analytics-filters label {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.analytics-filters select,
+.analytics-filters input {
+  min-height: 42px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #080809;
+  color: var(--text-hot);
+  outline: none;
+}
+
+.analytics-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-bottom: 18px;
+}
+
+.analytics-kpi,
+.analytics-card {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(17, 17, 19, 0.82);
+  box-shadow: inset 0 1px 0 rgba(255, 177, 74, 0.06);
+}
+
+.analytics-kpi {
+  padding: 14px;
+}
+
+.analytics-kpi span,
+.analytics-kpi small {
+  display: block;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.analytics-kpi strong {
+  display: block;
+  margin-top: 8px;
+  color: var(--text-hot);
+  font-size: 1.45rem;
+}
+
+.analytics-charts,
+.analytics-tables {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-bottom: 18px;
+}
+
+.analytics-card {
+  padding: 16px;
+}
+
+.analytics-card h3 {
+  margin: 0 0 14px;
+  color: var(--text-hot);
+}
+
+.analytics-bar-row {
+  display: grid;
+  grid-template-columns: minmax(92px, 1fr) minmax(100px, 2fr) auto;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 10px;
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+
+.analytics-bar-row div {
+  height: 9px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 122, 0, 0.08);
+}
+
+.analytics-bar-row i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #ff7a00, #ffb14a);
+  transition: width 240ms ease;
+}
+
+.analytics-donut-card {
+  display: grid;
+  justify-items: start;
+}
+
+.analytics-donut {
+  width: 132px;
+  height: 132px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: conic-gradient(#ff8a1f calc(var(--value) * 1%), rgba(255, 122, 0, 0.12) 0);
+}
+
+.analytics-donut strong {
+  width: 86px;
+  height: 86px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #080809;
+  color: var(--text-hot);
+}
+
+.analytics-legend {
+  display: grid;
+  gap: 6px;
+  margin-top: 12px;
+  color: var(--muted);
+}
+
+.analytics-table-wrap {
+  overflow-x: auto;
+}
+
+.analytics-table-card table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 560px;
+}
+
+.analytics-table-card th,
+.analytics-table-card td {
+  padding: 9px 8px;
+  border-bottom: 1px solid var(--line);
+  color: var(--muted);
+  text-align: left;
+  font-size: 0.82rem;
+}
+
+.analytics-table-card th {
+  color: var(--text-hot);
+}
+
+.analytics-note {
+  margin-top: 18px;
 }
 
 .site-footer {
@@ -1602,6 +1783,18 @@ button {
   .admin-opinion-head {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .analytics-head,
+  .analytics-filters,
+  .analytics-grid,
+  .analytics-charts,
+  .analytics-tables {
+    grid-template-columns: 1fr;
+  }
+
+  .analytics-bar-row {
+    grid-template-columns: 1fr;
   }
 
   .site-header {

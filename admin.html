@@ -33,16 +33,79 @@
             <h1 id="adminTitle">Gestionar opiniones</h1>
           </div>
           <div class="admin-toolbar-actions">
+            <button class="ghost-button active" id="moderationTabButton" type="button">Moderacion</button>
+            <button class="ghost-button" id="analyticsTabButton" type="button">Analytics</button>
             <button class="ghost-button" id="refreshButton" type="button">Actualizar</button>
             <button class="ghost-button" id="logoutButton" type="button">Cerrar sesion</button>
           </div>
         </div>
-        <p class="admin-copy" id="adminSummary">Cargando opiniones...</p>
-        <form class="admin-search-form" id="adminSearchForm" role="search">
-          <label class="sr-only" for="adminSearchInput">Buscar opiniones</label>
-          <input id="adminSearchInput" class="admin-search-input" type="search" placeholder="Buscar por opinion #, palabra o IP" autocomplete="off">
-        </form>
-        <div class="admin-list" id="adminOpinionList"></div>
+        <section id="moderationPanel">
+          <p class="admin-copy" id="adminSummary">Cargando opiniones...</p>
+          <form class="admin-search-form" id="adminSearchForm" role="search">
+            <label class="sr-only" for="adminSearchInput">Buscar opiniones</label>
+            <input id="adminSearchInput" class="admin-search-input" type="search" placeholder="Buscar por opinion #, palabra o IP" autocomplete="off">
+          </form>
+          <div class="admin-list" id="adminOpinionList"></div>
+        </section>
+
+        <section class="hidden" id="analyticsPanel" aria-labelledby="analyticsTitle">
+          <div class="analytics-head">
+            <div>
+              <p class="section-label">metricas</p>
+              <h2 id="analyticsTitle">Analytics</h2>
+            </div>
+            <div class="admin-toolbar-actions">
+              <button class="ghost-button" type="button" data-export="csv">CSV</button>
+              <button class="ghost-button" type="button" data-export="excel">Excel</button>
+              <button class="ghost-button" type="button" data-export="pdf">PDF</button>
+            </div>
+          </div>
+
+          <form class="analytics-filters" id="analyticsFilters">
+            <label>
+              Periodo
+              <select id="analyticsDateRange">
+                <option value="today">Hoy</option>
+                <option value="yesterday">Ayer</option>
+                <option value="7d" selected>Ultimos 7 dias</option>
+                <option value="30d">Ultimos 30 dias</option>
+                <option value="90d">Ultimos 90 dias</option>
+                <option value="month">Este mes</option>
+                <option value="previousMonth">Mes anterior</option>
+                <option value="year">Este año</option>
+                <option value="custom">Personalizado</option>
+              </select>
+            </label>
+            <label>
+              Desde
+              <input id="analyticsDateFrom" type="date">
+            </label>
+            <label>
+              Hasta
+              <input id="analyticsDateTo" type="date">
+            </label>
+            <label>
+              Tema
+              <select id="analyticsTopicFilter">
+                <option value="all">Todos</option>
+              </select>
+            </label>
+            <label>
+              Tipo
+              <select id="analyticsTypeFilter">
+                <option value="all">Opiniones y respuestas</option>
+                <option value="opinions">Solo opiniones</option>
+                <option value="replies">Solo respuestas</option>
+              </select>
+            </label>
+          </form>
+
+          <div class="analytics-grid" id="analyticsKpis"></div>
+          <div class="analytics-charts" id="analyticsCharts"></div>
+          <div class="analytics-tables" id="analyticsTables"></div>
+          <div class="analytics-alerts" id="analyticsAlerts"></div>
+          <p class="admin-copy analytics-note">Las metricas de sesiones, origen de trafico, geolocalizacion, genero, reportes y shares requieren tracking adicional en la web publica. El dashboard las deja preparadas sin inventar datos.</p>
+        </section>
       </section>
     </main>
 
