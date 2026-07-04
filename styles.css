@@ -1435,25 +1435,20 @@ button {
   .topic-list {
     width: 100%;
     max-width: 100%;
-    display: flex;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 10px;
-    overflow-x: auto;
-    overflow-y: hidden;
-    padding: 2px 2px 4px;
-    scroll-snap-type: x proximity;
-    overscroll-behavior-inline: contain;
-    -webkit-overflow-scrolling: touch;
+    overflow: visible;
+    padding: 2px;
   }
 
   .topic-button {
-    flex: 0 0 auto;
     grid-template-columns: 1fr;
     justify-items: center;
     min-height: 42px;
-    max-width: 180px;
+    max-width: none;
     padding: 8px 12px;
     text-align: center;
-    scroll-snap-align: start;
   }
 
   .topic-button-content,
