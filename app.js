@@ -97,6 +97,7 @@ let searchQuery = "";
 let isMainComposerVisible = true;
 let isFloatingOpinionOpen = false;
 let isMobileMenuOpen = false;
+let isPublishingOpinion = false;
 let dataStore = createLocalDataStore();
 
 nextWelcomeButton.addEventListener("click", () => {
@@ -509,6 +510,8 @@ function rejectLinkedContent() {
 }
 
 async function publishOpinion(rawText, rawTopic, form) {
+  if (isPublishingOpinion) return;
+
   const text = rawText.trim();
   const topic = rawTopic.trim();
   if (!text) return;
@@ -517,29 +520,35 @@ async function publishOpinion(rawText, rawTopic, form) {
     return;
   }
 
-  const clientIp = await resolveClientIp();
-  const opinion = {
-    id: createId(),
-    author: createAnonymousId(),
-    topic: resolveSelectedTopic(topic, text),
-    text,
-    views: 1,
-    likes: 0,
-    createdAt: new Date().toISOString(),
-    replies: [],
-    liked: false,
-    hidden: false,
-    ip: clientIp
-  };
-
-  opinions.unshift(opinion);
-  await dataStore.saveTopics(topics);
-  await dataStore.addOpinion(opinion);
-  form.reset();
+  isPublishingOpinion = true;
   if (form === floatingOpinionForm) closeFloatingOpinionPanel(false);
-  activeTopic = "todos";
-  render();
-  showView("home");
+
+  try {
+    const clientIp = await resolveClientIp();
+    const opinion = {
+      id: createId(),
+      author: createAnonymousId(),
+      topic: resolveSelectedTopic(topic, text),
+      text,
+      views: 1,
+      likes: 0,
+      createdAt: new Date().toISOString(),
+      replies: [],
+      liked: false,
+      hidden: false,
+      ip: clientIp
+    };
+
+    opinions.unshift(opinion);
+    await dataStore.saveTopics(topics);
+    await dataStore.addOpinion(opinion);
+    form.reset();
+    activeTopic = "todos";
+    render();
+    showView("home");
+  } finally {
+    isPublishingOpinion = false;
+  }
 }
 
 function showView(viewName) {
