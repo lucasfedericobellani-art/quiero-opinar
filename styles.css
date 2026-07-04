@@ -597,6 +597,10 @@ button {
   justify-self: end;
 }
 
+.floating-legal-row {
+  display: contents;
+}
+
 .admin-page {
   min-height: 100vh;
   background: linear-gradient(180deg, #090807 0%, #050505 100%);
@@ -1541,6 +1545,13 @@ button {
     padding: 0 14px 0 11px;
   }
 
+  body.mobile-composer-open .floating-opinion-trigger {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: translateY(14px) scale(0.94);
+  }
+
   .floating-opinion {
     inset: 0;
     bottom: auto;
@@ -1562,9 +1573,10 @@ button {
 
   .floating-opinion-header {
     align-items: center;
-    min-height: 54px;
+    justify-content: flex-start;
+    min-height: 38px;
     margin: 0;
-    padding-bottom: 18px;
+    padding-bottom: 12px;
   }
 
   .floating-opinion-header > div {
@@ -1576,34 +1588,20 @@ button {
   }
 
   .floating-opinion h2 {
-    margin: 0;
-    color: #f3f3f3;
-    font-size: 1rem;
-    font-weight: 800;
+    display: none;
   }
 
   .floating-close {
     order: -1;
-    width: 44px;
-    height: 44px;
-    flex-basis: 44px;
+    width: 34px;
+    height: 34px;
+    flex-basis: 34px;
     border: 0;
     background: transparent;
-    color: #ffffff;
-    font-size: 2.3rem;
-    font-weight: 300;
+    color: var(--accent-hot);
+    font-size: 1.65rem;
+    font-weight: 500;
     line-height: 1;
-  }
-
-  .floating-publish-top {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: auto;
-    min-width: 104px;
-    min-height: 44px;
-    padding: 0 18px;
-    border-color: rgba(255, 177, 74, 0.42);
   }
 
   .floating-opinion-form {
@@ -1645,17 +1643,29 @@ button {
   }
 
   .floating-opinion .terms-note {
-    padding: 14px 0 0;
-    border-top: 1px solid rgba(255, 138, 31, 0.22);
+    min-width: 0;
+    padding: 0;
+    border-top: 0;
     color: rgba(255, 138, 31, 0.74);
-    font-size: 0.78rem;
+    font-size: 0.72rem;
+    line-height: 1.35;
+  }
+
+  .floating-legal-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 12px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(255, 138, 31, 0.22);
   }
 
   .floating-opinion .primary-button {
-    justify-self: stretch;
-  }
-
-  .floating-opinion-form > .primary-button {
-    display: none;
+    justify-self: end;
+    width: auto;
+    min-width: 82px;
+    min-height: 38px;
+    padding: 0 14px;
+    font-size: 0.86rem;
   }
 }
