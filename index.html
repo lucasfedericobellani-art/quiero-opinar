@@ -87,6 +87,7 @@
       <form class="search-form header-search" role="search">
         <label class="sr-only" for="desktopSearchInput">Buscar opiniones</label>
         <input class="search-input" id="desktopSearchInput" type="search" placeholder="Buscar opinion # o palabra">
+        <button class="search-button" type="submit">Buscar</button>
       </form>
       <button class="header-title nav-home" type="button" aria-label="Inicio de Quiero Opinar">QUIERO OPINAR</button>
       <button class="mobile-menu-toggle" id="mobileMenuToggle" type="button" aria-controls="topNav" aria-expanded="false" aria-label="Abrir menu">
@@ -132,11 +133,15 @@
               </h2>
             </div>
             <div class="topic-list" id="topicList"></div>
+          </aside>
+
+          <section class="search-panel mobile-search-panel" aria-label="Buscar opiniones">
             <form class="search-form mobile-search" role="search">
               <label class="sr-only" for="mobileSearchInput">Buscar opiniones</label>
               <input class="search-input" id="mobileSearchInput" type="search" placeholder="Buscar opinion # o palabra">
+              <button class="search-button" type="submit">Buscar</button>
             </form>
-          </aside>
+          </section>
 
           <section class="feed-panel" id="feed" aria-labelledby="feedTitle">
             <div class="panel-heading horizontal">
@@ -241,6 +246,16 @@
           <h1 id="detailTitle">Opinion</h1>
         </div>
         <div class="detail-shell" id="detailShell"></div>
+      </section>
+
+      <section class="app-view hidden" id="searchView" aria-labelledby="searchTitle">
+        <div class="view-heading">
+          <button class="ghost-button nav-home" type="button">Volver a opiniones</button>
+          <p class="section-label">busqueda</p>
+          <h1 id="searchTitle">Resultados</h1>
+          <p id="searchDescription">Opiniones relacionadas con tu busqueda.</p>
+        </div>
+        <div class="feed-list search-results-list" id="searchResultsList"></div>
       </section>
     </main>
 

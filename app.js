@@ -66,6 +66,7 @@ const aboutView = document.querySelector("#aboutView");
 const topicsView = document.querySelector("#topicsView");
 const topicDetailView = document.querySelector("#topicDetailView");
 const detailView = document.querySelector("#detailView");
+const searchView = document.querySelector("#searchView");
 const aboutNavButton = document.querySelector("#aboutNavButton");
 const topicsNavButton = document.querySelector("#topicsNavButton");
 const mobileMenuToggle = document.querySelector("#mobileMenuToggle");
@@ -78,6 +79,9 @@ const topicDetailTitle = document.querySelector("#topicDetailTitle");
 const topicDetailDescription = document.querySelector("#topicDetailDescription");
 const topicDetailList = document.querySelector("#topicDetailList");
 const detailShell = document.querySelector("#detailShell");
+const searchTitle = document.querySelector("#searchTitle");
+const searchDescription = document.querySelector("#searchDescription");
+const searchResultsList = document.querySelector("#searchResultsList");
 const backFromDetailButton = document.querySelector("#backFromDetailButton");
 const backFromTopicButton = document.querySelector("#backFromTopicButton");
 const homeButtons = document.querySelectorAll(".nav-home");
@@ -163,8 +167,11 @@ backFromDetailButton.addEventListener("click", () => showView(lastViewBeforeDeta
 backFromTopicButton.addEventListener("click", () => showView("topics"));
 topicSearchInput.addEventListener("input", renderBoard);
 searchInputs.forEach((input) => {
-  input.addEventListener("input", () => updateSearchQuery(input.value));
-  input.form?.addEventListener("submit", (event) => event.preventDefault());
+  input.addEventListener("input", () => syncSearchInputs(input.value));
+  input.form?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    submitSearch(input.value, input);
+  });
 });
 
 mobileMenuToggle.addEventListener("click", () => {
@@ -472,13 +479,18 @@ function goHome() {
   render();
 }
 
-function updateSearchQuery(value) {
-  searchQuery = value.trim();
+function syncSearchInputs(value) {
   searchInputs.forEach((input) => {
     if (input.value !== value) input.value = value;
   });
-  if (currentView !== "home") showView("home");
-  renderFeed();
+}
+
+function submitSearch(value, sourceInput) {
+  searchQuery = value.trim();
+  syncSearchInputs(searchQuery);
+  sourceInput?.blur();
+  renderSearchResults();
+  showView("search");
 }
 
 async function publishOpinion(rawText, rawTopic, form) {
@@ -517,6 +529,7 @@ function showView(viewName) {
   topicsView.classList.toggle("hidden", viewName !== "topics");
   topicDetailView.classList.toggle("hidden", viewName !== "topicDetail");
   detailView.classList.toggle("hidden", viewName !== "detail");
+  searchView.classList.toggle("hidden", viewName !== "search");
   if (viewName === "home") isMainComposerVisible = true;
   closeMobileMenu(false);
   closeFloatingOpinionPanel(false);
@@ -738,17 +751,14 @@ function renderBoard() {
 
 function renderFeed() {
   feedList.innerHTML = "";
-  activeTopicPill.textContent = searchQuery ? "Busqueda" : getTopicName(activeTopic);
+  activeTopicPill.textContent = getTopicName(activeTopic);
 
-  const sourceOpinions = searchQuery ? getVisibleOpinions() : getTopicOpinions(activeTopic);
-  const filteredOpinions = getSearchResults(sourceOpinions);
+  const filteredOpinions = getTopicOpinions(activeTopic);
 
   if (!filteredOpinions.length) {
     const empty = document.createElement("p");
     empty.className = "opinion-card";
-    empty.textContent = searchQuery
-      ? "No se encontraron opiniones relacionadas con esa busqueda."
-      : "Todavia no hay opiniones en este tema. Podes abrir el primer hilo.";
+    empty.textContent = "Todavia no hay opiniones en este tema. Podes abrir el primer hilo.";
     feedList.append(empty);
     return;
   }
@@ -758,8 +768,8 @@ function renderFeed() {
   });
 }
 
-function getSearchResults(sourceOpinions) {
-  const query = searchQuery.trim();
+function getSearchResults(sourceOpinions, queryValue = searchQuery) {
+  const query = queryValue.trim();
   if (!query) return sourceOpinions;
 
   const normalizedQuery = normalizeText(query).replace(/^opinion\s*#?\s*/, "").trim();
@@ -773,6 +783,38 @@ function getSearchResults(sourceOpinions) {
     const haystack = normalizeText(`${getOpinionAuthorLabel(opinion)} ${getTopicName(opinion.topic)} ${opinion.text}`);
     if (!terms.length) return haystack.includes(normalizedQuery);
     return terms.every((term) => haystack.includes(term));
+  });
+}
+
+function renderSearchResults() {
+  searchResultsList.innerHTML = "";
+
+  const query = searchQuery.trim();
+  searchTitle.textContent = query ? `Resultados para "${query}"` : "Resultados";
+  searchDescription.textContent = query
+    ? "Opiniones relacionadas con tu busqueda."
+    : "Escribi un numero de opinion o una palabra para buscar.";
+
+  if (!query) {
+    const empty = document.createElement("p");
+    empty.className = "opinion-card";
+    empty.textContent = "Escribi un numero de opinion o una palabra para buscar.";
+    searchResultsList.append(empty);
+    return;
+  }
+
+  const results = getSearchResults(getVisibleOpinions(), query);
+
+  if (!results.length) {
+    const empty = document.createElement("p");
+    empty.className = "opinion-card";
+    empty.textContent = "No se encontraron opiniones relacionadas con esa busqueda.";
+    searchResultsList.append(empty);
+    return;
+  }
+
+  results.forEach((opinion) => {
+    searchResultsList.append(createOpinionCard(opinion, false));
   });
 }
 
@@ -1169,6 +1211,7 @@ function render() {
   renderBoard();
   renderTopicDetail();
   renderDetail();
+  renderSearchResults();
 }
 
 async function initializeAppData() {
