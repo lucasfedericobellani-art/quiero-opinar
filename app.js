@@ -225,7 +225,7 @@ function closeMobileMenu(restoreFocus = true) {
 }
 
 function createAnonymousId() {
-  return "Anonimo";
+  return "Opinion";
 }
 
 function createId() {
@@ -240,7 +240,7 @@ function createPastDate(minutesAgo) {
 function createReply(text, likes = 0, createdAt = new Date().toISOString()) {
   return {
     id: createId(),
-    author: "Anonimo",
+    author: "Opinion",
     text,
     likes,
     createdAt,
@@ -349,7 +349,7 @@ function getContributionNumberMap() {
 
 function getContributionLabel(key) {
   const number = getContributionNumberMap().get(key);
-  return `Anonimo #${number || 0}`;
+  return `Opinion #${number || 0}`;
 }
 
 function getOpinionAuthorLabel(opinion) {
@@ -835,7 +835,7 @@ function normalizeReply(reply) {
   if (typeof reply !== "string") {
     return {
       id: reply.id || createId(),
-      author: reply.author || "Anonimo",
+      author: reply.author || "Opinion",
       text: reply.text || "",
       likes: Number(reply.likes || 0),
       createdAt: normalizeDateValue(reply.createdAt),
@@ -1027,7 +1027,7 @@ function mergeTopics(remoteTopics) {
 function normalizeOpinion(opinion) {
   return {
     id: opinion.id || createId(),
-    author: opinion.author || "Anonimo",
+    author: opinion.author || "Opinion",
     topic: opinion.topic || "sin-tema",
     text: opinion.text || "",
     views: Number(opinion.views || 0),
