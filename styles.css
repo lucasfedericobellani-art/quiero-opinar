@@ -928,13 +928,14 @@ button {
 
 .topic-count {
   justify-self: end;
-  min-width: 74px;
+  min-width: 38px;
   padding: 6px 10px;
   border: 1px solid rgba(255, 176, 0, 0.24);
   border-radius: 999px;
   background: rgba(255, 122, 0, 0.08);
   color: var(--text-hot) !important;
   font-weight: 800;
+  font-size: 0.9rem !important;
   text-align: center;
   white-space: nowrap;
 }

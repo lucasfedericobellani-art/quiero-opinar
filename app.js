@@ -292,8 +292,18 @@ function getRecentTopicActivity() {
 
   getVisibleOpinions().forEach((opinion) => {
     const createdAt = new Date(opinion.createdAt).getTime();
-    if (Number.isNaN(createdAt) || createdAt < windowStart) return;
-    counts.set(opinion.topic, (counts.get(opinion.topic) || 0) + 1);
+    let recentActivityCount = Number.isNaN(createdAt) || createdAt < windowStart ? 0 : 1;
+
+    opinion.replies.forEach((reply) => {
+      const replyCreatedAt = new Date(reply.createdAt).getTime();
+      if (!Number.isNaN(replyCreatedAt) && replyCreatedAt >= windowStart) {
+        recentActivityCount += 1;
+      }
+    });
+
+    if (recentActivityCount > 0) {
+      counts.set(opinion.topic, (counts.get(opinion.topic) || 0) + recentActivityCount);
+    }
   });
 
   return getVisibleTopics()
@@ -553,12 +563,11 @@ function renderTopics() {
     button.className = `topic-button${activeTopic === topic.id ? " active" : ""}`;
     button.type = "button";
     button.setAttribute("aria-label", `Abrir tema ${topic.name}`);
-    const countLabel = topic.recentCount === 1 ? "1 opinion" : `${topic.recentCount} opiniones`;
     button.innerHTML = `
       <span class="topic-button-content">
         <strong>${getTopicIconMarkup(topic)}<span class="topic-button-name">${topic.name}</span></strong>
       </span>
-      <span class="topic-count">${countLabel}</span>
+      <span class="topic-count" aria-label="${topic.recentCount} opiniones recientes">${topic.recentCount}</span>
     `;
     button.addEventListener("click", () => openTopic(topic.id));
     topicList.append(button);
