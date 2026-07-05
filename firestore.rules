@@ -27,6 +27,8 @@ service cloud.firestore {
         "createdAt",
         "replies",
         "hidden",
+        "reports",
+        "shares",
         "ip"
       ]) &&
       isText(request.resource.data.id, 120) &&
@@ -43,6 +45,10 @@ service cloud.firestore {
       request.resource.data.replies is list &&
       request.resource.data.replies.size() <= 500 &&
       request.resource.data.hidden is bool &&
+      request.resource.data.reports is int &&
+      request.resource.data.reports >= 0 &&
+      request.resource.data.shares is int &&
+      request.resource.data.shares >= 0 &&
       (request.resource.data.ip == null || (
         request.resource.data.ip is string &&
         request.resource.data.ip.size() <= 100

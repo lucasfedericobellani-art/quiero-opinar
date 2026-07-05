@@ -107,7 +107,11 @@ function getOpinionNumberMap() {
 
 function getFilteredOpinions() {
   const query = adminSearchQuery.trim();
-  if (!query) return opinions;
+  if (!query) {
+    return activeAdminPanel === "moderation"
+      ? opinions.slice().sort((a, b) => b.reports - a.reports)
+      : opinions;
+  }
 
   const numberMap = getOpinionNumberMap();
   const normalizedQuery = normalizeText(query).replace(/^opinion\s*#?\s*/, "").trim();
@@ -147,7 +151,7 @@ function renderAdminList() {
   }
 
   adminOpinionList.innerHTML = visibleOpinions.map((opinion) => `
-    <article class="admin-opinion-card">
+    <article class="admin-opinion-card${opinion.reports > 0 ? " has-reports" : ""}">
       <div class="admin-opinion-head">
         <div>
           <p class="section-label">${escapeHtml(opinion.topic)} · ${formatDate(opinion.createdAt)}</p>
@@ -163,6 +167,8 @@ function renderAdminList() {
         <span>${opinion.views} vistas</span>
         <span>${opinion.likes} likes</span>
         <span>${opinion.replies.length} respuestas</span>
+        <span>${opinion.reports} reportes</span>
+        <span>${opinion.shares} compartidas</span>
         <span>${opinion.hidden ? "Oculta" : "Visible"}</span>
         <span>IP: ${escapeHtml(opinion.ip || "No registrada")}</span>
       </div>
@@ -172,10 +178,11 @@ function renderAdminList() {
 
 function renderSummary() {
   const hiddenCount = opinions.filter((opinion) => opinion.hidden).length;
+  const reportedCount = opinions.filter((opinion) => opinion.reports > 0).length;
   const filteredCount = getFilteredOpinions().length;
   adminSummary.textContent = adminSearchQuery.trim()
-    ? `${filteredCount} de ${opinions.length} opiniones encontradas · ${hiddenCount} ocultas`
-    : `${opinions.length} opiniones cargadas · ${hiddenCount} ocultas`;
+    ? `${filteredCount} de ${opinions.length} opiniones encontradas - ${reportedCount} reportadas - ${hiddenCount} ocultas`
+    : `${opinions.length} opiniones cargadas - ${reportedCount} reportadas - ${hiddenCount} ocultas`;
 }
 
 function setAdminPanel(panelName) {

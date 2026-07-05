@@ -88,6 +88,9 @@ const searchResultsList = document.querySelector("#searchResultsList");
 const backFromDetailButton = document.querySelector("#backFromDetailButton");
 const backFromTopicButton = document.querySelector("#backFromTopicButton");
 const homeButtons = document.querySelectorAll(".nav-home");
+const notificationStack = document.querySelector("#notificationStack");
+const reportNotice = document.querySelector("#reportNotice");
+const reportNoticeClose = document.querySelector("#reportNoticeClose");
 const mobileViewportQuery = window.matchMedia("(max-width: 980px)");
 
 let activeTopic = "todos";
@@ -100,6 +103,8 @@ let isMainComposerVisible = true;
 let isFloatingOpinionOpen = false;
 let isMobileMenuOpen = false;
 let isPublishingOpinion = false;
+let hasLoadedOpinions = false;
+let hasHandledInitialOpinion = false;
 let dataStore = createLocalDataStore();
 
 nextWelcomeButton.addEventListener("click", () => {
@@ -166,6 +171,8 @@ homeButtons.forEach((button) => {
     closeMobileMenu(false);
   });
 });
+
+reportNoticeClose?.addEventListener("click", hideReportNotice);
 
 backFromDetailButton.addEventListener("click", () => showView(lastViewBeforeDetail));
 backFromTopicButton.addEventListener("click", () => showView("topics"));
@@ -552,6 +559,7 @@ async function publishOpinion(rawText, rawTopic, form) {
   if (!canPublishOpinion(text, topic, form)) return;
 
   isPublishingOpinion = true;
+  setPublishingState(form, true);
   if (form === floatingOpinionForm) closeFloatingOpinionPanel(false);
 
   try {
@@ -567,6 +575,8 @@ async function publishOpinion(rawText, rawTopic, form) {
       replies: [],
       liked: false,
       hidden: false,
+      reports: 0,
+      shares: 0,
       ip: clientIp
     };
 
@@ -579,7 +589,21 @@ async function publishOpinion(rawText, rawTopic, form) {
     showView("home");
   } finally {
     isPublishingOpinion = false;
+    setPublishingState(form, false);
   }
+}
+
+function setPublishingState(form, isPublishing) {
+  const submitButton = form?.querySelector('button[type="submit"]');
+  if (!submitButton) return;
+  if (isPublishing) {
+    submitButton.dataset.originalText = submitButton.textContent;
+    submitButton.textContent = "Publicando...";
+  } else if (submitButton.dataset.originalText) {
+    submitButton.textContent = submitButton.dataset.originalText;
+  }
+  submitButton.disabled = isPublishing;
+  form?.classList.toggle("is-publishing", isPublishing);
 }
 
 function showView(viewName) {
@@ -688,10 +712,64 @@ function openOpinion(opinionId) {
 
   lastViewBeforeDetail = currentView === "detail" ? lastViewBeforeDetail : currentView;
   selectedOpinionId = opinionId;
+  window.history.replaceState(null, "", getOpinionPath(opinion));
   opinion.views += 1;
   dataStore.updateOpinion(opinion);
   render();
   showView("detail");
+}
+
+function getOpinionPath(opinion) {
+  return `${window.location.pathname}?opinion=${encodeURIComponent(opinion.id)}`;
+}
+
+function getOpinionUrl(opinion) {
+  return `${window.location.origin}${getOpinionPath(opinion)}`;
+}
+
+async function copyTextToClipboard(value) {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(value);
+    return;
+  }
+
+  const input = document.createElement("textarea");
+  input.value = value;
+  input.setAttribute("readonly", "");
+  input.className = "clipboard-helper";
+  document.body.append(input);
+  input.select();
+  document.execCommand("copy");
+  input.remove();
+}
+
+function showToast(message) {
+  if (!notificationStack) return;
+  const toast = document.createElement("div");
+  toast.className = "app-toast";
+  toast.textContent = message;
+  notificationStack.append(toast);
+
+  window.setTimeout(() => {
+    toast.classList.add("is-leaving");
+    toast.addEventListener("animationend", () => toast.remove(), { once: true });
+  }, 2400);
+}
+
+function showReportNotice() {
+  if (!reportNotice) return;
+  reportNotice.classList.remove("hidden", "is-leaving");
+  reportNotice.classList.add("is-visible");
+}
+
+function hideReportNotice() {
+  if (!reportNotice || reportNotice.classList.contains("hidden")) return;
+  reportNotice.classList.add("is-leaving");
+  reportNotice.classList.remove("is-visible");
+  window.setTimeout(() => {
+    reportNotice.classList.add("hidden");
+    reportNotice.classList.remove("is-leaving");
+  }, 180);
 }
 
 function renderTopics() {
@@ -814,6 +892,14 @@ function renderFeed() {
   activeTopicPill.textContent = getTopicName(activeTopic);
 
   const filteredOpinions = getTopicOpinions(activeTopic);
+
+  if (!hasLoadedOpinions) {
+    const loading = document.createElement("p");
+    loading.className = "opinion-card feed-loading";
+    loading.textContent = "Cargando opiniones...";
+    feedList.append(loading);
+    return;
+  }
 
   if (!filteredOpinions.length) {
     const empty = document.createElement("p");
@@ -949,6 +1035,38 @@ function createOpinionCard(opinion, isDetail) {
     render();
   });
 
+  const shareButton = card.querySelector(".share-button");
+  shareButton.addEventListener("click", async () => {
+    const link = getOpinionUrl(opinion);
+    try {
+      await copyTextToClipboard(link);
+      shareButton.classList.add("is-confirmed");
+      showToast("Link de la opinión copiado");
+    } catch {
+      showToast("No se pudo copiar el link");
+    }
+    opinion.shares += 1;
+    await dataStore.updateOpinion(opinion);
+    window.setTimeout(() => {
+      shareButton.classList.remove("is-confirmed");
+    }, 1800);
+  });
+
+  const reportButton = card.querySelector(".report-button");
+  reportButton.addEventListener("click", async () => {
+    const storageKey = `quiero-opinar:reported:${opinion.id}`;
+    if (window.localStorage.getItem(storageKey)) {
+      reportButton.classList.add("is-confirmed");
+      showReportNotice();
+      return;
+    }
+    opinion.reports += 1;
+    window.localStorage.setItem(storageKey, "1");
+    await dataStore.updateOpinion(opinion);
+    reportButton.classList.add("is-confirmed");
+    showReportNotice();
+  });
+
   const thread = card.querySelector(".thread");
   opinion.replies.forEach((reply, index) => {
     const normalizedReply = normalizeReply(reply);
@@ -1078,6 +1196,7 @@ function createLocalDataStore() {
     async subscribe(onChange) {
       topics = loadStoredTopics();
       opinions = loadStoredOpinions();
+      hasLoadedOpinions = true;
       onChange(opinions);
       saveOpinions(opinions);
       return () => {};
@@ -1155,6 +1274,7 @@ async function createFirebaseDataStore() {
       await loadTopicsFromFirestore();
       return onSnapshot(query(collection(db, "opinions"), orderBy("createdAt", "desc")), (snapshot) => {
         opinions = snapshot.docs.map((item) => normalizeOpinion({ id: item.id, ...item.data() }));
+        hasLoadedOpinions = true;
         onChange(opinions);
       });
     },
@@ -1211,6 +1331,8 @@ function normalizeOpinion(opinion) {
     replies: Array.isArray(opinion.replies) ? opinion.replies.map(normalizeReply) : [],
     liked: Boolean(opinion.liked),
     hidden: Boolean(opinion.hidden),
+    reports: Number(opinion.reports || 0),
+    shares: Number(opinion.shares || 0),
     ip: opinion.ip || ""
   };
 }
@@ -1239,6 +1361,8 @@ function sanitizeOpinionForRemote(opinion) {
       createdAt: reply.createdAt
     })),
     hidden: Boolean(opinion.hidden),
+    reports: Number(opinion.reports || 0),
+    shares: Number(opinion.shares || 0),
     ip: opinion.ip || ""
   };
 }
@@ -1276,6 +1400,21 @@ function render() {
   renderTopicDetail();
   renderDetail();
   renderSearchResults();
+  openInitialOpinionFromUrl();
+}
+
+function openInitialOpinionFromUrl() {
+  if (hasHandledInitialOpinion || !hasLoadedOpinions) return;
+  const opinionId = new URLSearchParams(window.location.search).get("opinion");
+  if (!opinionId) {
+    hasHandledInitialOpinion = true;
+    return;
+  }
+  const opinion = getOpinionById(opinionId);
+  if (opinion && !opinion.hidden) {
+    hasHandledInitialOpinion = true;
+    openOpinion(opinionId);
+  }
 }
 
 async function initializeAppData() {

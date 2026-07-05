@@ -13,6 +13,8 @@
       ".agents/**",
       ".codex/**",
       ".tools/**",
+      ".vercel/**",
+      "vercel.json",
       "firebase-debug.log",
       "firepit-log.txt",
       "panel.html"

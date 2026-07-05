@@ -300,6 +300,12 @@
       </p>
     </footer>
 
+    <div class="notification-stack" id="notificationStack" aria-live="polite" aria-atomic="true"></div>
+    <section class="report-notice hidden" id="reportNotice" role="status" aria-live="polite">
+      <button class="report-notice-close" id="reportNoticeClose" type="button" aria-label="Cerrar mensaje de reporte">×</button>
+      <p>La opinión ha sido reportada. Los moderadores la estarán revisando a la brevedad para verificar si infringe alguna norma y tomar las acciones correspondientes.</p>
+    </section>
+
     <template id="opinionTemplate">
       <article class="opinion-card">
         <button class="open-opinion" type="button" aria-label="Abrir opinion completa">
@@ -316,6 +322,18 @@
           <button class="like-button" type="button" aria-label="Me gusta">
             <span aria-hidden="true">♡</span>
             <span class="likes"></span>
+          </button>
+          <button class="share-button opinion-action-button" type="button" aria-label="Copiar link de la opinión" title="Copiar link de la opinión">
+            <svg aria-hidden="true" viewBox="0 0 24 24">
+              <path d="M10 13a5 5 0 0 0 7.1 0l2.1-2.1a5 5 0 0 0-7.1-7.1l-1.2 1.2"></path>
+              <path d="M14 11a5 5 0 0 0-7.1 0l-2.1 2.1a5 5 0 0 0 7.1 7.1l1.2-1.2"></path>
+            </svg>
+          </button>
+          <button class="report-button opinion-action-button" type="button" aria-label="Reportar opinión" title="Reportar opinión">
+            <svg aria-hidden="true" viewBox="0 0 24 24">
+              <path d="M5 21V4"></path>
+              <path d="M5 4h12l-1.5 4L17 12H5"></path>
+            </svg>
           </button>
         </div>
         <div class="thread"></div>
