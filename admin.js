@@ -145,7 +145,7 @@ function renderAdminList() {
 
   if (!visibleOpinions.length) {
     adminOpinionList.innerHTML = opinions.length
-      ? '<p class="admin-empty">No se encontraron opiniones con esa busqueda.</p>'
+      ? '<p class="admin-empty">No se encontraron opiniones con esa búsqueda.</p>'
       : '<p class="admin-empty">No hay opiniones para moderar.</p>';
     return;
   }
@@ -155,7 +155,7 @@ function renderAdminList() {
       <div class="admin-opinion-head">
         <div>
           <p class="section-label">${escapeHtml(opinion.topic)} · ${formatDate(opinion.createdAt)}</p>
-          <h3>Opinion #${numberMap.get(opinion.id) || 0}</h3>
+          <h3>Opinión #${numberMap.get(opinion.id) || 0}</h3>
         </div>
         <div class="admin-actions">
           <button class="ghost-button" type="button" data-action="toggle-hidden" data-id="${escapeHtml(opinion.id)}">${opinion.hidden ? "Mostrar" : "Ocultar"}</button>
@@ -465,25 +465,25 @@ function renderAnalytics() {
   analyticsKpis.innerHTML = [
     kpiCard("Total de opiniones", formatNumber(stats.opinionEvents.length)),
     kpiCard("Respuestas totales", formatNumber(stats.replyEvents.length)),
-    kpiCard("Usuarios unicos", formatNumber(stats.uniqueUsers), "por IP disponible"),
+    kpiCard("Usuarios únicos", formatNumber(stats.uniqueUsers), "por IP disponible"),
     kpiCard("Visitas totales", formatNumber(stats.totalViews)),
-    kpiCard("Visitantes unicos", formatNumber(stats.uniqueUsers), "estimado por IP"),
-    kpiCard("Opiniones por dia", formatNumber(opinionsPerDay)),
+    kpiCard("Visitantes únicos", formatNumber(stats.uniqueUsers), "estimado por IP"),
+    kpiCard("Opiniones por día", formatNumber(opinionsPerDay)),
     kpiCard("Promedio por hora", formatNumber(opinionsPerHour)),
     kpiCard("Likes totales", formatNumber(stats.totalLikes)),
     kpiCard("Likes promedio", formatNumber(average(stats.opinionEvents.map((event) => event.likes)))),
-    kpiCard("Tasa de interaccion", `${formatNumber(interactionRate)}%`),
-    kpiCard("Respuestas por opinion", formatNumber(stats.replyEvents.length / Math.max(1, stats.opinionEvents.length))),
+    kpiCard("Tasa de interacción", `${formatNumber(interactionRate)}%`),
+    kpiCard("Respuestas por opinión", formatNumber(stats.replyEvents.length / Math.max(1, stats.opinionEvents.length))),
     kpiCard("Primera respuesta", stats.firstReplyAverage ? `${formatNumber(stats.firstReplyAverage)} h` : "Sin datos"),
     kpiCard("Permanencia promedio", "Sin tracking"),
     kpiCard("Bounce Rate", "Sin tracking"),
     kpiCard("Opiniones eliminadas", formatNumber(stats.deletedCount)),
     kpiCard("Opiniones reportadas", formatNumber(stats.reportCount)),
     kpiCard("Temas creados", formatNumber(topicsCreated)),
-    kpiCard("Busquedas realizadas", "Sin tracking"),
+    kpiCard("Búsquedas realizadas", "Sin tracking"),
     kpiCard("Opiniones compartidas", formatNumber(stats.shareCount)),
-    kpiCard("Variacion vs periodo anterior", `${formatNumber(previous.variation)}%`, `${previous.previousCount} opiniones previas`),
-    kpiCard("Proyeccion mensual", formatNumber(opinionsPerDay * 30))
+    kpiCard("Variación vs período anterior", `${formatNumber(previous.variation)}%`, `${previous.previousCount} opiniones previas`),
+    kpiCard("Proyección mensual", formatNumber(opinionsPerDay * 30))
   ].join("");
 
   const byDay = groupBy(stats.events, (event) => event.createdAt.toLocaleDateString("es-AR")).slice(-14);
@@ -491,7 +491,7 @@ function renderAnalytics() {
   const topTopics = groupBy(stats.events, (event) => event.topic).sort((a, b) => b.value - a.value).slice(0, 20);
   const deviceRows = [{ label: "Mobile", value: 0 }, { label: "Desktop", value: 0 }, { label: "Tablet", value: 0 }];
   analyticsCharts.innerHTML = [
-    renderBarChart("Visitas / actividad por dia", byDay),
+    renderBarChart("Visitas / actividad por día", byDay),
     renderBarChart("Actividad por hora", byHour),
     renderBarChart("Top 20 temas", topTopics),
     renderDonut("Dispositivos", deviceRows)
@@ -499,7 +499,7 @@ function renderAnalytics() {
 
   const numberMap = getOpinionNumberMap();
   const tableColumns = [
-    { label: "#", value: (opinion) => `Opinion #${numberMap.get(opinion.id) || 0}` },
+    { label: "#", value: (opinion) => `Opinión #${numberMap.get(opinion.id) || 0}` },
     { label: "Tema", value: (opinion) => opinion.topic },
     { label: "Texto", value: (opinion) => opinion.text.slice(0, 90) },
     { label: "Vistas", value: (opinion) => String(opinion.views) },
@@ -511,17 +511,17 @@ function renderAnalytics() {
   const mostReplied = stats.filteredOpinions.slice().sort((a, b) => b.replies.length - a.replies.length).slice(0, 10);
   const reported = stats.filteredOpinions.filter((opinion) => opinion.reports > 0).sort((a, b) => b.reports - a.reports).slice(0, 10);
   analyticsTables.innerHTML = [
-    renderTable("Opiniones mas vistas", mostViewed, tableColumns),
-    renderTable("Opiniones mas likeadas", mostLiked, tableColumns),
-    renderTable("Opiniones mas respondidas", mostReplied, tableColumns),
+    renderTable("Opiniones más vistas", mostViewed, tableColumns),
+    renderTable("Opiniones más likeadas", mostLiked, tableColumns),
+    renderTable("Opiniones más respondidas", mostReplied, tableColumns),
     renderTable("Opiniones reportadas", reported, [...tableColumns, { label: "Reportes", value: (opinion) => String(opinion.reports) }])
   ].join("");
 
   const alerts = [];
-  mostViewed.filter((opinion) => opinion.views >= 100).slice(0, 3).forEach((opinion) => alerts.push(`Opinion #${numberMap.get(opinion.id)} puede estar volviendose viral.`));
-  topTopics.filter((topic) => topic.value >= 10).slice(0, 3).forEach((topic) => alerts.push(`El tema ${topic.label} esta creciendo rapido.`));
-  if (stats.reportCount >= 5) alerts.push("Hay muchos reportes acumulados en el periodo.");
-  if (!stats.events.length) alerts.push("Se detecta caida de actividad para el filtro seleccionado.");
+  mostViewed.filter((opinion) => opinion.views >= 100).slice(0, 3).forEach((opinion) => alerts.push(`Opinión #${numberMap.get(opinion.id)} puede estar volviéndose viral.`));
+  topTopics.filter((topic) => topic.value >= 10).slice(0, 3).forEach((topic) => alerts.push(`El tema ${topic.label} está creciendo rápido.`));
+  if (stats.reportCount >= 5) alerts.push("Hay muchos reportes acumulados en el período.");
+  if (!stats.events.length) alerts.push("Se detecta caída de actividad para el filtro seleccionado.");
   analyticsAlerts.innerHTML = renderBarChart("Alertas", alerts.map((label) => ({ label, value: 1 })));
 }
 
@@ -532,8 +532,8 @@ function getExportRows() {
     return {
       Fecha: createdAt.toLocaleDateString("es-AR"),
       Hora: createdAt.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" }),
-      "ID de opinion": opinion.id,
-      "Numero": `Opinion #${numberMap.get(opinion.id) || 0}`,
+      "ID de opinión": opinion.id,
+      "Número": `Opinión #${numberMap.get(opinion.id) || 0}`,
       Tema: opinion.topic,
       Hashtag: "",
       Texto: opinion.text,
@@ -543,7 +543,7 @@ function getExportRows() {
       Reportes: opinion.reports,
       Estado: opinion.hidden ? "Oculta" : "Visible",
       Ciudad: "",
-      Pais: "",
+      País: "",
       Dispositivo: "",
       Navegador: "",
       "Sistema operativo": "",
@@ -654,7 +654,7 @@ async function initializeAdmin() {
 
     if (!userIsAllowedAdmin(user)) {
       await authModule.signOut(auth);
-      showLogin("Ese email no esta habilitado como administrador.");
+      showLogin("Ese email no está habilitado como administrador.");
       return;
     }
 
@@ -668,7 +668,7 @@ async function initializeAdmin() {
     const password = document.querySelector("#adminPassword").value;
 
     if (!adminEmails.includes(email)) {
-      showLogin("Ese email no esta habilitado como administrador.");
+      showLogin("Ese email no está habilitado como administrador.");
       return;
     }
 
@@ -677,7 +677,7 @@ async function initializeAdmin() {
       loginForm.reset();
     } catch (error) {
       console.error("Error de login admin.", error);
-      showLogin("Credenciales invalidas o proveedor de email/password no habilitado.");
+      showLogin("Credenciales inválidas o proveedor de email/password no habilitado.");
     }
   });
 
@@ -736,12 +736,12 @@ async function initializeAdmin() {
         await updateDoc(doc(db, "opinions", opinionId), { hidden: !opinion.hidden });
       }
 
-      if (action === "delete" && window.confirm("Eliminar esta opinion de forma permanente?")) {
+      if (action === "delete" && window.confirm("Eliminar esta opinión de forma permanente?")) {
         await deleteDoc(doc(db, "opinions", opinionId));
       }
     } catch (error) {
-      console.error("No se pudo moderar la opinion.", error);
-      window.alert("No se pudo aplicar la accion. Revisar permisos de administrador.");
+      console.error("No se pudo moderar la opinión.", error);
+      window.alert("No se pudo aplicar la acción. Revisar permisos de administrador.");
     } finally {
       button.disabled = false;
     }

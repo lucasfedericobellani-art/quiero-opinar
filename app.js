@@ -1,27 +1,27 @@
 let topics = [
   { id: "todos", name: "Todos", description: "Feed general", icon: "assets/icons/todos.svg" },
-  { id: "sin-tema", name: "Sin tema especifico", description: "Opiniones libres", icon: "assets/icons/sin-tema.svg" },
+  { id: "sin-tema", name: "Sin tema específico", description: "Opiniones libres", icon: "assets/icons/sin-tema.svg" },
   { id: "historia", name: "Quiero contar una historia", description: "Relatos personales", icon: "assets/icons/historia.svg" },
-  { id: "economia", name: "Economia", description: "Precios, trabajo y empresas", icon: "assets/icons/economia.svg" },
-  { id: "agro", name: "Agro", description: "Campo, produccion rural y sector agropecuario", icon: "assets/icons/agro.svg" },
-  { id: "politica", name: "Politica", description: "Gobierno, partidos y debate publico", icon: "assets/icons/politica.svg" },
-  { id: "seguridad", name: "Seguridad", description: "Ciudad, justicia y prevencion", icon: "assets/icons/seguridad.svg" },
-  { id: "cine", name: "Cine", description: "Peliculas, series y cultura visual", icon: "assets/icons/cine.svg" },
-  { id: "tecnologia", name: "Tecnologia", description: "Internet, IA y productos digitales", icon: "assets/icons/tecnologia.svg" },
+  { id: "economia", name: "Economía", description: "Precios, trabajo y empresas", icon: "assets/icons/economia.svg" },
+  { id: "agro", name: "Agro", description: "Campo, producción rural y sector agropecuario", icon: "assets/icons/agro.svg" },
+  { id: "politica", name: "Política", description: "Gobierno, partidos y debate público", icon: "assets/icons/politica.svg" },
+  { id: "seguridad", name: "Seguridad", description: "Ciudad, justicia y prevención", icon: "assets/icons/seguridad.svg" },
+  { id: "cine", name: "Cine", description: "Películas, series y cultura visual", icon: "assets/icons/cine.svg" },
+  { id: "tecnologia", name: "Tecnología", description: "Internet, IA y productos digitales", icon: "assets/icons/tecnologia.svg" },
   { id: "deportes", name: "Deportes", description: "Clubes, torneos y pasiones", icon: "assets/icons/deportes.svg" },
-  { id: "autos", name: "Autos", description: "Modelos, rutas, mecanica y mercado", icon: "assets/icons/autos.svg" },
-  { id: "formula-1", name: "Formula 1", description: "Pilotos, carreras, equipos y estrategia", icon: "assets/icons/formula-1.svg" },
+  { id: "autos", name: "Autos", description: "Modelos, rutas, mecánica y mercado", icon: "assets/icons/autos.svg" },
+  { id: "formula-1", name: "Fórmula 1", description: "Pilotos, carreras, equipos y estrategia", icon: "assets/icons/formula-1.svg" },
   { id: "videojuegos", name: "Videojuegos", description: "Juegos, consolas, PC y cultura gamer", icon: "assets/icons/videojuegos.svg" }
 ];
 
 const topicRules = [
   { id: "formula-1", words: ["formula 1", "f1", "ferrari", "red bull", "mercedes", "mclaren", "verstappen", "hamilton", "leclerc", "colapinto", "piloto", "carrera", "gran premio", "pit stop"] },
   { id: "videojuegos", words: ["videojuego", "videojuegos", "juego", "gaming", "gamer", "playstation", "xbox", "nintendo", "steam", "pc gamer", "fortnite", "minecraft", "gta", "fifa", "valorant"] },
-  { id: "autos", words: ["auto", "autos", "coche", "camioneta", "motor", "mecanico", "mecanica", "nafta", "diesel", "concesionaria", "toyota", "ford", "fiat", "chevrolet", "volkswagen"] },
+  { id: "autos", words: ["auto", "autos", "coche", "camioneta", "motor", "mecanico", "mecánica", "nafta", "diesel", "concesionaria", "toyota", "ford", "fiat", "chevrolet", "volkswagen"] },
   { id: "agro", words: ["agro", "campo", "rural", "agricultura", "ganaderia", "grano", "granos", "soja", "maiz", "trigo", "cosecha", "siembra", "tambo", "estancia", "chacra", "productor agropecuario", "sector agropecuario"] },
   { id: "economia", words: ["economia", "precio", "precios", "inflacion", "dolar", "sueldo", "trabajo", "empresa", "impuesto", "alquiler", "tarifa", "mercado"] },
   { id: "politica", words: ["politica", "gobierno", "presidente", "diputado", "senado", "partido", "eleccion", "voto", "ministro", "congreso", "estado"] },
-  { id: "seguridad", words: ["seguridad", "robo", "delito", "policia", "justicia", "barrio", "calle", "violencia", "denuncia", "prevencion"] },
+  { id: "seguridad", words: ["seguridad", "robo", "delito", "policia", "justicia", "barrio", "calle", "violencia", "denuncia", "prevención"] },
   { id: "cine", words: ["cine", "pelicula", "peliculas", "serie", "series", "actor", "actriz", "director", "netflix", "streaming", "documental"] },
   { id: "tecnologia", words: ["tecnologia", "internet", "ia", "inteligencia artificial", "app", "software", "celular", "celulares", "celu", "celus", "telefono", "telefonos", "smartphone", "smartphones", "movil", "moviles", "samsung", "galaxy", "iphone", "apple", "android", "xiaomi", "motorola", "moto g", "huawei", "notebook", "notebooks", "computadora", "computadoras", "pc", "tablet", "redes", "wifi", "programacion", "datos"] },
   { id: "deportes", words: ["deporte", "deportes", "futbol", "basquet", "tenis", "club", "torneo", "partido", "seleccion", "gol", "cancha"] },
@@ -249,7 +249,7 @@ function setMobileMenuOpen(isOpen) {
   topNav.classList.toggle("is-open", isOpen);
   mobileMenuToggle.classList.toggle("is-open", isOpen);
   mobileMenuToggle.setAttribute("aria-expanded", String(isOpen));
-  mobileMenuToggle.setAttribute("aria-label", isOpen ? "Cerrar menu" : "Abrir menu");
+  mobileMenuToggle.setAttribute("aria-label", isOpen ? "Cerrar menú" : "Abrir menú");
 }
 
 function closeMobileMenu(restoreFocus = true) {
@@ -384,7 +384,7 @@ function getContributionNumberMap() {
 
 function getContributionLabel(key) {
   const number = getContributionNumberMap().get(key);
-  return `Opinion #${number || 0}`;
+  return `Opinión #${number || 0}`;
 }
 
 function getOpinionAuthorLabel(opinion) {
@@ -780,7 +780,7 @@ function renderTopics() {
   if (!trendingTopics.length) {
     const empty = document.createElement("p");
     empty.className = "topic-empty";
-    empty.textContent = "Todavia no hay opiniones activas en las ultimas 6 horas.";
+    empty.textContent = "Todavía no hay opiniones activas en las últimas 6 horas.";
     topicList.append(empty);
     return;
   }
@@ -823,7 +823,7 @@ function renderBoard() {
   if (!visibleTopics.length) {
     const empty = document.createElement("p");
     empty.className = "opinion-card";
-    empty.textContent = "No encontramos temas con esa busqueda.";
+    empty.textContent = "No encontramos temas con esa búsqueda.";
     boardGrid.append(empty);
     return;
   }
@@ -863,7 +863,7 @@ function renderBoard() {
     const list = column.querySelector(".board-card-list");
     if (!topicOpinions.length) {
       const empty = document.createElement("p");
-      empty.textContent = "Todavia no hay hilos.";
+      empty.textContent = "Todavía no hay hilos.";
       list.append(empty);
     }
 
@@ -904,7 +904,7 @@ function renderFeed() {
   if (!filteredOpinions.length) {
     const empty = document.createElement("p");
     empty.className = "opinion-card";
-    empty.textContent = "Todavia no hay opiniones en este tema. Podes abrir el primer hilo.";
+    empty.textContent = "Todavía no hay opiniones en este tema. Podés abrir el primer hilo.";
     feedList.append(empty);
     return;
   }
@@ -938,13 +938,13 @@ function renderSearchResults() {
   const query = searchQuery.trim();
   searchTitle.textContent = query ? `Resultados para "${query}"` : "Resultados";
   searchDescription.textContent = query
-    ? "Opiniones relacionadas con tu busqueda."
-    : "Escribi un numero de opinion o una palabra para buscar.";
+    ? "Opiniones relacionadas con tu búsqueda."
+    : "Escribí un número de opinión o una palabra para buscar.";
 
   if (!query) {
     const empty = document.createElement("p");
     empty.className = "opinion-card";
-    empty.textContent = "Escribi un numero de opinion o una palabra para buscar.";
+    empty.textContent = "Escribí un número de opinión o una palabra para buscar.";
     searchResultsList.append(empty);
     return;
   }
@@ -954,7 +954,7 @@ function renderSearchResults() {
   if (!results.length) {
     const empty = document.createElement("p");
     empty.className = "opinion-card";
-    empty.textContent = "No se encontraron opiniones relacionadas con esa busqueda.";
+    empty.textContent = "No se encontraron opiniones relacionadas con esa búsqueda.";
     searchResultsList.append(empty);
     return;
   }
@@ -971,7 +971,7 @@ function renderTopicDetail() {
   if (!topic) {
     topicDetailIcon.innerHTML = getTopicIconMarkup({ name: "Tema", icon: "assets/icons/generic.svg" }, true);
     topicDetailTitle.textContent = "Tema";
-    topicDetailDescription.textContent = "No se encontro este tema.";
+    topicDetailDescription.textContent = "No se encontró este tema.";
     return;
   }
 
@@ -983,7 +983,7 @@ function renderTopicDetail() {
   if (!topicOpinions.length) {
     const empty = document.createElement("p");
     empty.className = "opinion-card";
-    empty.textContent = "Todavia no hay opiniones en este tema.";
+    empty.textContent = "Todavía no hay opiniones en este tema.";
     topicDetailList.append(empty);
     return;
   }
@@ -1000,7 +1000,7 @@ function renderDetail() {
   if (!opinion || opinion.hidden) {
     const empty = document.createElement("p");
     empty.className = "opinion-card";
-    empty.textContent = "No se encontro esta opinion.";
+    empty.textContent = "No se encontró esta opinión.";
     detailShell.append(empty);
     return;
   }
