@@ -788,7 +788,7 @@ function renderTopics() {
       <div class="suggested-topic-list"></div>
     `;
     const list = suggestions.querySelector(".suggested-topic-list");
-    suggestedTopics.forEach((name) => {
+    suggestedTopics.slice(0, trendingTopicLimit).forEach((name) => {
       const button = document.createElement("button");
       button.type = "button";
       button.textContent = name;
