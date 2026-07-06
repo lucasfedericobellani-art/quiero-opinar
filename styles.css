@@ -2013,6 +2013,10 @@ button {
     text-align: left;
   }
 
+  #homeView .composer-panel {
+    display: none;
+  }
+
   .composer-panel,
   .hero-card,
   .content-grid,
