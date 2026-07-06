@@ -32,7 +32,7 @@ const seedOpinions = [];
 
 const trendingWindowHours = 6;
 const trendingRefreshHours = 12;
-const trendingTopicLimit = 6;
+const trendingTopicLimit = 5;
 const blockedLinkPattern = /(?:https?:\/\/|www\.|[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}|(?:[a-z0-9-]+\.)+[a-z]{2,}(?:\/|\b))/i;
 
 let opinions = [];
