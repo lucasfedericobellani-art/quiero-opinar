@@ -126,6 +126,33 @@ button {
   font-style: italic;
 }
 
+.welcome-list {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 24px;
+  padding: 0;
+  list-style: none;
+}
+
+.welcome-list li {
+  position: relative;
+  padding-left: 22px;
+  color: var(--text);
+  line-height: 1.45;
+}
+
+.welcome-list li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.62em;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent-hot);
+  box-shadow: 0 0 14px rgba(255, 122, 0, 0.5);
+}
+
 .legal-copy {
   margin-bottom: 26px;
 }
@@ -329,19 +356,27 @@ button {
 .composer-panel,
 .hero-card {
   display: grid;
-  grid-template-columns: 180px 1fr auto;
+  grid-template-columns: minmax(220px, 0.9fr) minmax(0, 1.6fr) auto;
   gap: 16px;
   align-items: center;
-  padding: 16px;
+  padding: 18px;
 }
 
 .composer-panel h1 {
-  max-width: 180px;
+  max-width: 260px;
   margin: 6px 0 0;
   color: var(--text-hot);
-  font-size: clamp(1.35rem, 3vw, 1.85rem);
+  font-size: clamp(1.45rem, 3vw, 2.1rem);
   line-height: 1.12;
   letter-spacing: 0;
+}
+
+.composer-subtitle {
+  max-width: 310px;
+  margin: 8px 0 0;
+  color: #d47c31;
+  font-size: 0.92rem;
+  line-height: 1.45;
 }
 
 .composer-intro,
@@ -355,7 +390,7 @@ button {
 
 .opinion-form {
   display: grid;
-  grid-template-columns: 220px 1fr;
+  grid-template-columns: minmax(160px, 0.72fr) minmax(260px, 1.28fr);
   gap: 16px;
   align-items: end;
   width: 100%;
@@ -466,7 +501,7 @@ button {
 
 .content-grid {
   display: grid;
-  grid-template-columns: 260px minmax(0, 1fr);
+  grid-template-columns: 240px minmax(0, 1fr);
   gap: 18px;
   align-items: start;
   margin-top: 18px;
@@ -1248,6 +1283,48 @@ button {
   line-height: 1.45;
 }
 
+.topic-suggestions {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 122, 0, 0.05);
+}
+
+.topic-suggestions p {
+  margin: 0;
+  color: var(--text-hot);
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.suggested-topic-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.suggested-topic-list button,
+.discovery-chip {
+  min-height: 34px;
+  padding: 0 11px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #080809;
+  color: var(--text-hot);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.suggested-topic-list button:hover,
+.discovery-chip:hover {
+  border-color: var(--accent-hot);
+  background: rgba(255, 122, 0, 0.12);
+  color: var(--accent-hot);
+}
+
 .view-heading {
   margin-bottom: 22px;
 }
@@ -1361,6 +1438,31 @@ button {
   margin-bottom: 14px;
 }
 
+.board-context {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 14px;
+}
+
+.board-context span,
+.board-context strong {
+  display: inline-flex;
+  min-height: 26px;
+  align-items: center;
+  padding: 0 9px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.board-context strong {
+  border-color: rgba(255, 122, 0, 0.45);
+  color: var(--accent-hot);
+}
+
 .board-count {
   justify-self: start;
   display: inline-flex;
@@ -1414,8 +1516,21 @@ button {
   gap: 14px;
 }
 
+.discovery-panel {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.discovery-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+}
+
 .opinion-card {
-  padding: 20px;
+  padding: 18px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #0a0a0b;
@@ -1448,6 +1563,10 @@ button {
   font-size: 0.88rem;
 }
 
+.opinion-meta {
+  gap: 8px;
+}
+
 .date-stamp {
   color: #a9662e;
   font-size: 0.78rem;
@@ -1455,20 +1574,37 @@ button {
 }
 
 .author {
-  color: var(--text-hot);
+  color: #8c6137;
+  font-size: 0.76rem;
   font-weight: 700;
 }
 
 .topic {
   color: var(--accent-hot);
-  font-weight: 700;
+  font-size: 0.82rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.life-label {
+  display: inline-flex;
+  min-height: 24px;
+  align-items: center;
+  padding: 0 9px;
+  border: 1px solid rgba(255, 122, 0, 0.34);
+  border-radius: 999px;
+  background: rgba(255, 122, 0, 0.08);
+  color: var(--accent-hot);
+  font-size: 0.72rem;
+  font-style: normal;
+  font-weight: 800;
 }
 
 .opinion-text {
-  margin: 12px 0 16px;
+  margin: 10px 0 14px;
   color: var(--text);
-  font-size: 1.06rem;
-  line-height: 1.65;
+  font-size: 1.08rem;
+  line-height: 1.6;
   white-space: pre-wrap;
 }
 
@@ -1877,10 +2013,6 @@ button {
     text-align: left;
   }
 
-  #homeView .composer-panel {
-    display: none;
-  }
-
   .composer-panel,
   .hero-card,
   .content-grid,
@@ -1916,12 +2048,12 @@ button {
   }
 
   .topics-panel {
-    order: 1;
+    order: 3;
     padding: 14px;
   }
 
   .feed-panel {
-    order: 3;
+    order: 1;
   }
 
   .mobile-search-panel {
@@ -2092,8 +2224,10 @@ button {
   .floating-opinion-trigger {
     right: 12px;
     bottom: calc(12px + var(--keyboard-offset, 0px));
-    min-height: 58px;
-    font-size: 1.02rem;
+    max-width: calc(100vw - 24px);
+    min-height: 52px;
+    padding: 0 16px;
+    font-size: 0.94rem;
   }
 
   body.mobile-composer-open .floating-opinion-trigger {

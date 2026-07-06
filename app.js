@@ -85,6 +85,7 @@ const detailShell = document.querySelector("#detailShell");
 const searchTitle = document.querySelector("#searchTitle");
 const searchDescription = document.querySelector("#searchDescription");
 const searchResultsList = document.querySelector("#searchResultsList");
+const discoveryGrid = document.querySelector("#discoveryGrid");
 const backFromDetailButton = document.querySelector("#backFromDetailButton");
 const backFromTopicButton = document.querySelector("#backFromTopicButton");
 const homeButtons = document.querySelectorAll(".nav-home");
@@ -92,6 +93,7 @@ const notificationStack = document.querySelector("#notificationStack");
 const reportNotice = document.querySelector("#reportNotice");
 const reportNoticeClose = document.querySelector("#reportNoticeClose");
 const mobileViewportQuery = window.matchMedia("(max-width: 980px)");
+const suggestedTopics = ["Fútbol", "Política", "Trabajo", "Relaciones", "Economía", "Tecnología", "Clima", "Deportes"];
 
 let activeTopic = "todos";
 let currentView = "home";
@@ -587,6 +589,7 @@ async function publishOpinion(rawText, rawTopic, form) {
     activeTopic = "todos";
     render();
     showView("home");
+    showToast("Opinión publicada");
   } finally {
     isPublishingOpinion = false;
     setPublishingState(form, false);
@@ -778,10 +781,25 @@ function renderTopics() {
   const trendingTopics = getRecentTopicActivity();
 
   if (!trendingTopics.length) {
-    const empty = document.createElement("p");
-    empty.className = "topic-empty";
-    empty.textContent = "Todavía no hay opiniones activas en las últimas 6 horas.";
-    topicList.append(empty);
+    const suggestions = document.createElement("div");
+    suggestions.className = "topic-suggestions";
+    suggestions.innerHTML = `
+      <p>Hoy se puede hablar de...</p>
+      <div class="suggested-topic-list"></div>
+    `;
+    const list = suggestions.querySelector(".suggested-topic-list");
+    suggestedTopics.forEach((name) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = name;
+      button.addEventListener("click", () => {
+        topicIdea.value = name;
+        topicIdea.focus();
+        composerPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+      list.append(button);
+    });
+    topicList.append(suggestions);
     return;
   }
 
@@ -836,6 +854,9 @@ function renderBoard() {
         const bScore = b.views + b.likes * 3 + b.replies.length * 8;
         return bScore - aScore;
       });
+    const replyCount = topicOpinions.reduce((total, opinion) => total + opinion.replies.length, 0);
+    const lastActivity = getLastTopicActivity(topicOpinions);
+    const hasRecentActivity = lastActivity && Date.now() - new Date(lastActivity).getTime() < 6 * 60 * 60 * 1000;
 
     const column = document.createElement("article");
     column.className = "board-column";
@@ -850,6 +871,11 @@ function renderBoard() {
         </div>
         <span class="board-count">${topicOpinions.length} hilos</span>
       </div>
+      <div class="board-context">
+        <span>${replyCount} respuestas</span>
+        <span>${lastActivity ? `Última actividad ${formatDate(lastActivity)}` : "Listo para abrir debate"}</span>
+        ${hasRecentActivity ? "<strong>Actividad reciente</strong>" : ""}
+      </div>
       <div class="board-card-list"></div>
     `;
     column.addEventListener("click", () => openTopic(topic.id));
@@ -863,7 +889,7 @@ function renderBoard() {
     const list = column.querySelector(".board-card-list");
     if (!topicOpinions.length) {
       const empty = document.createElement("p");
-      empty.textContent = "Todavía no hay hilos.";
+      empty.textContent = "Podés abrir el primer hilo de este tema.";
       list.append(empty);
     }
 
@@ -872,7 +898,7 @@ function renderBoard() {
       card.className = "board-card";
       card.type = "button";
       card.innerHTML = `
-        <strong>${getOpinionAuthorLabel(opinion)}</strong>
+        <strong>${getTopicName(opinion.topic)}</strong>
         ${escapeHtml(truncateText(opinion.text, 130))}
         <span>${formatDate(opinion.createdAt)} - ${opinion.views} vistas - ${opinion.replies.length} respuestas - ${opinion.likes} me gusta</span>
       `;
@@ -912,6 +938,7 @@ function renderFeed() {
   filteredOpinions.forEach((opinion) => {
     feedList.append(createOpinionCard(opinion, false));
   });
+  renderDiscovery();
 }
 
 function getSearchResults(sourceOpinions, queryValue = searchQuery) {
@@ -1006,17 +1033,31 @@ function renderDetail() {
   }
 
   detailShell.append(createOpinionCard(opinion, true));
+  const related = document.createElement("section");
+  related.className = "detail-discovery discovery-panel";
+  related.innerHTML = `
+    <p class="section-label">También te puede interesar</p>
+    <div class="discovery-grid"></div>
+  `;
+  detailShell.append(related);
+  renderDiscovery(related.querySelector(".discovery-grid"));
 }
 
 function createOpinionCard(opinion, isDetail) {
   const card = opinionTemplate.content.firstElementChild.cloneNode(true);
-  card.querySelector(".author").textContent = getOpinionAuthorLabel(opinion);
+  card.querySelector(".author").textContent = `Opinión #${getOpinionNumber(opinion)}`;
   card.querySelector(".topic").textContent = getTopicName(opinion.topic);
   card.querySelector(".date-stamp").textContent = formatDate(opinion.createdAt);
   card.querySelector(".opinion-text").textContent = opinion.text;
-  card.querySelector(".views").textContent = `${opinion.views} vistas`;
-  card.querySelector(".replies").textContent = `${opinion.replies.length} respuestas`;
+  card.querySelector(".views").textContent = `👁 ${opinion.views}`;
+  card.querySelector(".replies").textContent = `💬 ${opinion.replies.length}`;
   card.querySelector(".likes").textContent = opinion.likes;
+  const lifeLabel = getLifeLabel(opinion);
+  const lifeLabelElement = card.querySelector(".life-label");
+  if (lifeLabel) {
+    lifeLabelElement.textContent = lifeLabel;
+    lifeLabelElement.classList.remove("hidden");
+  }
 
   const openButton = card.querySelector(".open-opinion");
   if (isDetail) {
@@ -1028,11 +1069,15 @@ function createOpinionCard(opinion, isDetail) {
   const likeButton = card.querySelector(".like-button");
   likeButton.classList.toggle("liked", opinion.liked);
   likeButton.addEventListener("click", async () => {
-    if (opinion.liked) return;
+    if (opinion.liked) {
+      showToast("Ya marcaste me gusta");
+      return;
+    }
     opinion.liked = true;
     opinion.likes += 1;
     await dataStore.updateOpinion(opinion);
     render();
+    showToast("Me gusta guardado");
   });
 
   const shareButton = card.querySelector(".share-button");
@@ -1057,14 +1102,14 @@ function createOpinionCard(opinion, isDetail) {
     const storageKey = `quiero-opinar:reported:${opinion.id}`;
     if (window.localStorage.getItem(storageKey)) {
       reportButton.classList.add("is-confirmed");
-      showReportNotice();
+      showToast("Reporte enviado");
       return;
     }
     opinion.reports += 1;
     window.localStorage.setItem(storageKey, "1");
     await dataStore.updateOpinion(opinion);
     reportButton.classList.add("is-confirmed");
-    showReportNotice();
+    showToast("Reporte enviado");
   });
 
   const thread = card.querySelector(".thread");
@@ -1084,11 +1129,15 @@ function createOpinionCard(opinion, isDetail) {
     `;
 
     item.querySelector(".like-button").addEventListener("click", async () => {
-      if (normalizedReply.liked) return;
+      if (normalizedReply.liked) {
+        showToast("Ya marcaste me gusta");
+        return;
+      }
       normalizedReply.liked = true;
       normalizedReply.likes += 1;
       await dataStore.updateOpinion(opinion);
       render();
+      showToast("Me gusta guardado");
     });
 
     thread.append(item);
@@ -1111,9 +1160,78 @@ function createOpinionCard(opinion, isDetail) {
     selectedOpinionId = opinion.id;
     render();
     showView("detail");
+    showToast("Respuesta publicada");
   });
 
   return card;
+}
+
+function getLastTopicActivity(topicOpinions) {
+  const dates = topicOpinions.flatMap((opinion) => [
+    opinion.createdAt,
+    ...opinion.replies.map((reply) => normalizeReply(reply).createdAt)
+  ]);
+  return dates.sort((a, b) => new Date(b).getTime() - new Date(a).getTime())[0] || "";
+}
+
+function getLifeLabel(opinion) {
+  const ageMinutes = (Date.now() - new Date(opinion.createdAt).getTime()) / 60000;
+  if (ageMinutes <= 10) return "Recién publicada";
+  if (opinion.replies.length >= 8) return "Muy debatida";
+  if (opinion.replies.length >= 3) return "Está dando que hablar";
+  if (opinion.likes >= 5) return "Más apoyada";
+  if (opinion.replies.some((reply) => (Date.now() - new Date(normalizeReply(reply).createdAt).getTime()) / 60000 <= 30)) return "Nueva respuesta";
+  return "";
+}
+
+function renderDiscovery(target = discoveryGrid) {
+  if (!target) return;
+  target.innerHTML = "";
+  const visibleOpinions = getVisibleOpinions();
+  const items = [
+    { label: "Tendencias ahora", action: () => showView("topics") },
+    { label: "Más debatidas", action: () => showDiscoveryResults("Más debatidas", visibleOpinions.slice().sort((a, b) => b.replies.length - a.replies.length)) },
+    { label: "Más apoyadas", action: () => showDiscoveryResults("Más apoyadas", visibleOpinions.slice().sort((a, b) => b.likes - a.likes)) },
+    { label: "Recién publicadas", action: () => showDiscoveryResults("Recién publicadas", visibleOpinions) },
+    { label: "Opiniones sin respuestas", action: () => showDiscoveryResults("Opiniones sin respuestas", visibleOpinions.filter((opinion) => !opinion.replies.length)) },
+    { label: "Opinión al azar", action: () => openRandomOpinion(visibleOpinions) }
+  ];
+
+  items.forEach((item) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "discovery-chip";
+    button.textContent = item.label;
+    button.addEventListener("click", item.action);
+    target.append(button);
+  });
+}
+
+function showDiscoveryResults(title, results) {
+  searchQuery = title;
+  syncSearchInputs("");
+  searchResultsList.innerHTML = "";
+  searchTitle.textContent = title;
+  searchDescription.textContent = "Selección rápida con actividad actual.";
+  const limitedResults = results.slice(0, 12);
+  if (!limitedResults.length) {
+    const empty = document.createElement("p");
+    empty.className = "opinion-card";
+    empty.textContent = "Todavía no hay opiniones en esta selección.";
+    searchResultsList.append(empty);
+  } else {
+    limitedResults.forEach((opinion) => searchResultsList.append(createOpinionCard(opinion, false)));
+  }
+  showView("search");
+}
+
+function openRandomOpinion(sourceOpinions) {
+  if (!sourceOpinions.length) {
+    showToast("Todavía no hay opiniones para mostrar");
+    return;
+  }
+  const opinion = sourceOpinions[Math.floor(Math.random() * sourceOpinions.length)];
+  openOpinion(opinion.id);
 }
 
 function getTopicIconMarkup(topic, large = false) {
