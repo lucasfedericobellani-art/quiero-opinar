@@ -1,0 +1,16 @@
+{
+  "name": "quiero-opinar",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "vercel dev",
+    "start": "vercel dev"
+  },
+  "dependencies": {
+    "firebase": "^10.14.1",
+    "firebase-admin": "^12.7.0"
+  },
+  "devDependencies": {
+    "vercel": "^34.3.0"
+  }
+}

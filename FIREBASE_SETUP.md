@@ -45,7 +45,42 @@ window.QO_FIREBASE_APPCHECK_CONFIG = {
 
 Para endurecer la publicacion, registrar la app web en App Check con reCAPTCHA v3, poner `enabled: true` y cargar el `siteKey`.
 
-## 5. Siguiente mejora recomendada
+## 5. API anti-abuso en preview/staging
 
-- Para IP, un like por IP, rate limit y moderacion mas robusta, conviene sumar Cloud Functions o un backend serverless.
+Las acciones sensibles pasan por `/api/moderation`:
+
+- publicar opinion
+- publicar respuesta
+- like de opinion o respuesta
+- reporte de opinion o respuesta
+
+Para correr en Vercel Preview o local con `vercel dev`, configurar credenciales server-side de Firebase Admin. Opcion recomendada:
+
+```sh
+FIREBASE_SERVICE_ACCOUNT_KEY='{"type":"service_account",...}'
+IP_HASH_SALT='valor-largo-privado'
+```
+
+Alternativa:
+
+```sh
+FIREBASE_PROJECT_ID=quiero-opinar-app
+FIREBASE_CLIENT_EMAIL=...
+FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+IP_HASH_SALT='valor-largo-privado'
+```
+
+`IP_HASH_SALT` se usa para guardar hashes de IP en `securityActions` y `securityCooldowns`, no la IP cruda. La IP se toma solo en la API desde `x-forwarded-for`, `x-real-ip`, headers de proxy/Vercel o `request.ip`.
+
+Pruebas manuales en preview/staging:
+
+1. Publicar una opinion y enseguida otra: la segunda debe responder `Espera unos segundos antes de volver a publicar.` con los segundos restantes.
+2. Publicar una respuesta y enseguida otra: la segunda debe quedar bloqueada por el mismo cooldown de 45 segundos.
+3. Dar like dos veces a la misma opinion: el segundo intento debe mostrar `Ya marcaste me gusta`.
+4. Dar like dos veces a la misma respuesta: el segundo intento debe mostrar `Ya marcaste me gusta`.
+5. Reportar dos veces la misma opinion: el segundo intento debe mostrar `Ya reportaste este contenido.`
+6. Reportar dos veces la misma respuesta: el segundo intento debe mostrar `Ya reportaste este contenido.`
+
+## 6. Siguiente mejora recomendada
+
 - El panel admin actual no debe publicarse como seguridad real; para moderacion remota conviene usar Firebase Auth con usuarios administradores.

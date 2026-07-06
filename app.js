@@ -273,12 +273,13 @@ function createPastDate(minutesAgo) {
   return new Date(Date.now() - minutesAgo * 60 * 1000).toISOString();
 }
 
-function createReply(text, likes = 0, createdAt = new Date().toISOString()) {
+function createReply(text, likes = 0, createdAt = new Date().toISOString(), reports = 0) {
   return {
     id: createId(),
     author: "Opinion",
     text,
     likes,
+    reports,
     createdAt,
     liked: false
   };
@@ -577,31 +578,18 @@ async function publishOpinion(rawText, rawTopic, form) {
   if (form === floatingOpinionForm) closeFloatingOpinionPanel(false);
 
   try {
-    const clientIp = await resolveClientIp();
-    const opinion = {
-      id: createId(),
-      author: createAnonymousId(),
-      topic: resolveSelectedTopic(topic, text),
-      text,
-      views: 1,
-      likes: 0,
-      createdAt: new Date().toISOString(),
-      replies: [],
-      liked: false,
-      hidden: false,
-      reports: 0,
-      shares: 0,
-      ip: clientIp
-    };
-
+    const opinion = await createOpinionViaApi(text, topic);
     opinions.unshift(opinion);
     await dataStore.saveTopics(topics);
-    await dataStore.addOpinion(opinion);
     form.reset();
     activeTopic = "todos";
     render();
     showView("home");
     showToast("Opinión publicada");
+  } catch (error) {
+    const message = getApiErrorMessage(error, "No se pudo publicar la opinion.");
+    showFormError(form, message);
+    showToast(message);
   } finally {
     isPublishingOpinion = false;
     setPublishingState(form, false);
@@ -769,6 +757,75 @@ function showToast(message) {
     toast.classList.add("is-leaving");
     toast.addEventListener("animationend", () => toast.remove(), { once: true });
   }, 2400);
+}
+
+function getApiErrorMessage(error, fallback = "No se pudo completar la accion.") {
+  if (!error) return fallback;
+  if (error.remainingSeconds) {
+    return `${error.message || "Espera unos segundos antes de volver a publicar."} Faltan ${error.remainingSeconds} s.`;
+  }
+  return error.message || fallback;
+}
+
+async function callModerationApi(payload) {
+  const response = await fetch("/api/moderation", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(payload)
+  });
+
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok || data.ok === false) {
+    const error = new Error(data.message || "No se pudo completar la accion.");
+    error.status = response.status;
+    error.code = data.code;
+    error.remainingSeconds = data.remainingSeconds;
+    throw error;
+  }
+
+  return data;
+}
+
+async function createOpinionViaApi(text, topic) {
+  const data = await callModerationApi({
+    action: "createOpinion",
+    text,
+    topic: resolveSelectedTopic(topic, text),
+    topicText: topic
+  });
+
+  return normalizeOpinion(data.opinion);
+}
+
+async function createReplyViaApi(opinionId, text) {
+  const data = await callModerationApi({
+    action: "createReply",
+    opinionId,
+    text
+  });
+
+  return normalizeOpinion(data.opinion);
+}
+
+async function registerContentActionViaApi(action, contentType, contentId, opinionId) {
+  const data = await callModerationApi({
+    action,
+    contentType,
+    contentId,
+    opinionId
+  });
+
+  const opinion = normalizeOpinion(data.opinion);
+  if (action === "like" && contentType === "opinion") {
+    opinion.liked = Boolean(data.active);
+  }
+  if (action === "like" && contentType === "reply") {
+    const reply = opinion.replies.find((item) => item.id === contentId);
+    if (reply) reply.liked = Boolean(data.active);
+  }
+  return { opinion, active: data.active };
 }
 
 function showReportNotice() {
@@ -1065,15 +1122,14 @@ function createOpinionCard(opinion, isDetail) {
   const likeButton = card.querySelector(".like-button");
   likeButton.classList.toggle("liked", opinion.liked);
   likeButton.addEventListener("click", async () => {
-    if (opinion.liked) {
-      showToast("Ya marcaste me gusta");
-      return;
+    try {
+      const result = await registerContentActionViaApi("like", "opinion", opinion.id, opinion.id);
+      Object.assign(opinion, result.opinion);
+      render();
+      showToast(result.active ? "Me gusta guardado" : "Me gusta quitado");
+    } catch (error) {
+      showToast(getApiErrorMessage(error, "No se pudo guardar el me gusta."));
     }
-    opinion.liked = true;
-    opinion.likes += 1;
-    await dataStore.updateOpinion(opinion);
-    render();
-    showToast("Me gusta guardado");
   });
 
   const shareButton = card.querySelector(".share-button");
@@ -1095,17 +1151,16 @@ function createOpinionCard(opinion, isDetail) {
 
   const reportButton = card.querySelector(".report-button");
   reportButton.addEventListener("click", async () => {
-    const storageKey = `quiero-opinar:reported:${opinion.id}`;
-    if (window.localStorage.getItem(storageKey)) {
+    try {
+      const result = await registerContentActionViaApi("report", "opinion", opinion.id, opinion.id);
+      Object.assign(opinion, result.opinion);
       reportButton.classList.add("is-confirmed");
       showToast("Reporte enviado");
-      return;
+      render();
+    } catch (error) {
+      if (error.code === "already_reported") reportButton.classList.add("is-confirmed");
+      showToast(getApiErrorMessage(error, "No se pudo enviar el reporte."));
     }
-    opinion.reports += 1;
-    window.localStorage.setItem(storageKey, "1");
-    await dataStore.updateOpinion(opinion);
-    reportButton.classList.add("is-confirmed");
-    showToast("Reporte enviado");
   });
 
   const thread = card.querySelector(".thread");
@@ -1118,22 +1173,40 @@ function createOpinionCard(opinion, isDetail) {
     item.innerHTML = `
       <p class="reply"><strong>${getReplyAuthorLabel(opinion, normalizedReply, index)}:</strong> ${escapeHtml(normalizedReply.text)}</p>
       <span class="date-stamp reply-date">${formatDate(normalizedReply.createdAt)}</span>
-      <button class="like-button${normalizedReply.liked ? " liked" : ""}" type="button" aria-label="Me gusta respuesta">
-        <span aria-hidden="true">+</span>
-        <span>${normalizedReply.likes}</span>
-      </button>
+      <div class="reply-actions">
+        <button class="like-button${normalizedReply.liked ? " liked" : ""}" type="button" aria-label="Me gusta respuesta">
+          <span aria-hidden="true">♡</span>
+          <span>${normalizedReply.likes}</span>
+        </button>
+        <button class="report-button opinion-action-button" type="button" aria-label="Reportar respuesta" title="Reportar respuesta">
+          <svg aria-hidden="true" viewBox="0 0 24 24">
+            <path d="M5 21V4"></path>
+            <path d="M5 4h12l-1.5 4L17 12H5"></path>
+          </svg>
+        </button>
+      </div>
     `;
 
     item.querySelector(".like-button").addEventListener("click", async () => {
-      if (normalizedReply.liked) {
-        showToast("Ya marcaste me gusta");
-        return;
+      try {
+        const result = await registerContentActionViaApi("like", "reply", normalizedReply.id, opinion.id);
+        Object.assign(opinion, result.opinion);
+        render();
+        showToast(result.active ? "Me gusta guardado" : "Me gusta quitado");
+      } catch (error) {
+        showToast(getApiErrorMessage(error, "No se pudo guardar el me gusta."));
       }
-      normalizedReply.liked = true;
-      normalizedReply.likes += 1;
-      await dataStore.updateOpinion(opinion);
-      render();
-      showToast("Me gusta guardado");
+    });
+
+    item.querySelector(".report-button").addEventListener("click", async () => {
+      try {
+        const result = await registerContentActionViaApi("report", "reply", normalizedReply.id, opinion.id);
+        Object.assign(opinion, result.opinion);
+        render();
+        showToast("Reporte enviado");
+      } catch (error) {
+        showToast(getApiErrorMessage(error, "No se pudo enviar el reporte."));
+      }
     });
 
     thread.append(item);
@@ -1150,13 +1223,16 @@ function createOpinionCard(opinion, isDetail) {
       return;
     }
 
-    opinion.replies.push(createReply(reply));
-    opinion.views += 1;
-    await dataStore.updateOpinion(opinion);
-    selectedOpinionId = opinion.id;
-    render();
-    showView("detail");
-    showToast("Respuesta publicada");
+    try {
+      const updatedOpinion = await createReplyViaApi(opinion.id, reply);
+      Object.assign(opinion, updatedOpinion);
+      selectedOpinionId = opinion.id;
+      render();
+      showView("detail");
+      showToast("Respuesta publicada");
+    } catch (error) {
+      showToast(getApiErrorMessage(error, "No se pudo publicar la respuesta."));
+    }
   });
 
   return card;
@@ -1242,29 +1318,12 @@ function normalizeReply(reply) {
       author: reply.author || "Opinion",
       text: reply.text || "",
       likes: Number(reply.likes || 0),
+      reports: Number(reply.reports || 0),
       createdAt: normalizeDateValue(reply.createdAt),
       liked: Boolean(reply.liked)
     };
   }
   return createReply(reply);
-}
-
-async function resolveClientIp() {
-  const cachedIp = window.sessionStorage.getItem("quiero-opinar:client-ip");
-  if (cachedIp) return cachedIp;
-
-  try {
-    const response = await fetch("https://api.ipify.org?format=json");
-    if (!response.ok) return "";
-    const payload = await response.json();
-    const ip = payload?.ip || "";
-    if (ip) {
-      window.sessionStorage.setItem("quiero-opinar:client-ip", ip);
-    }
-    return ip;
-  } catch {
-    return "";
-  }
 }
 
 function resetPersistedContentIfNeeded() {
@@ -1472,6 +1531,7 @@ function sanitizeOpinionForRemote(opinion) {
       author: reply.author,
       text: reply.text,
       likes: reply.likes,
+      reports: Number(reply.reports || 0),
       createdAt: reply.createdAt
     })),
     hidden: Boolean(opinion.hidden),

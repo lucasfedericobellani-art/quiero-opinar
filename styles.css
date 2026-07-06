@@ -1833,6 +1833,13 @@ button {
   margin-top: -4px;
 }
 
+.reply-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  justify-self: start;
+}
+
 .reply-card .like-button {
   justify-self: start;
 }

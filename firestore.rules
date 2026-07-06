@@ -70,13 +70,24 @@ service cloud.firestore {
 
     match /opinions/{opinionId} {
       allow read: if true;
-      allow create: if request.auth != null && isOpinion() && request.resource.data.hidden == false;
+      allow create: if isAdmin();
       allow update: if isAdmin() || (
         request.auth != null &&
         isOpinion() &&
-        request.resource.data.hidden == resource.data.hidden
+        request.resource.data.hidden == resource.data.hidden &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(["views", "shares"]) &&
+        request.resource.data.views >= resource.data.views &&
+        request.resource.data.shares >= resource.data.shares
       );
       allow delete: if isAdmin();
+    }
+
+    match /securityActions/{actionId} {
+      allow read, write: if false;
+    }
+
+    match /securityCooldowns/{cooldownId} {
+      allow read, write: if false;
     }
 
     match /topics/{topicId} {
