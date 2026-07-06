@@ -850,9 +850,8 @@ function renderBoard() {
     const topicOpinions = getTopicOpinions(topic.id)
       .slice()
       .sort((a, b) => {
-        const aScore = a.views + a.likes * 3 + a.replies.length * 8;
-        const bScore = b.views + b.likes * 3 + b.replies.length * 8;
-        return bScore - aScore;
+        if (b.views !== a.views) return b.views - a.views;
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
       });
     const replyCount = topicOpinions.reduce((total, opinion) => total + opinion.replies.length, 0);
     const lastActivity = getLastTopicActivity(topicOpinions);
@@ -893,7 +892,7 @@ function renderBoard() {
       list.append(empty);
     }
 
-    topicOpinions.slice(0, 4).forEach((opinion) => {
+    topicOpinions.slice(0, 3).forEach((opinion) => {
       const card = document.createElement("button");
       card.className = "board-card";
       card.type = "button";
