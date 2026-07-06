@@ -93,7 +93,6 @@ const notificationStack = document.querySelector("#notificationStack");
 const reportNotice = document.querySelector("#reportNotice");
 const reportNoticeClose = document.querySelector("#reportNoticeClose");
 const mobileViewportQuery = window.matchMedia("(max-width: 980px)");
-const suggestedTopics = ["Fútbol", "Política", "Trabajo", "Relaciones", "Economía", "Tecnología", "Clima", "Deportes"];
 
 let activeTopic = "todos";
 let currentView = "home";
@@ -289,6 +288,10 @@ function getReplyLikes(reply) {
   return typeof reply === "string" ? 0 : reply.likes;
 }
 
+function getReplyViews(reply) {
+  return typeof reply === "string" ? 0 : Number(reply.views || 0);
+}
+
 function getTopic(topicId) {
   return topics.find((topic) => topic.id === topicId);
 }
@@ -322,6 +325,13 @@ function getTopicScore(topicId) {
   }, 0);
 }
 
+function getTopicViewTotal(topicId) {
+  return getTopicOpinions(topicId).reduce((total, opinion) => {
+    const replyViews = opinion.replies.reduce((replyTotal, reply) => replyTotal + getReplyViews(reply), 0);
+    return total + Number(opinion.views || 0) + replyViews;
+  }, 0);
+}
+
 function getRecentTopicActivity() {
   const now = Date.now();
   const windowStart = now - trendingWindowHours * 60 * 60 * 1000;
@@ -346,11 +356,13 @@ function getRecentTopicActivity() {
   return getVisibleTopics()
     .map((topic) => ({
       ...topic,
-      recentCount: counts.get(topic.id) || 0
+      recentCount: counts.get(topic.id) || 0,
+      totalViews: getTopicViewTotal(topic.id)
     }))
     .filter((topic) => topic.recentCount > 0)
     .sort((a, b) => {
       if (b.recentCount !== a.recentCount) return b.recentCount - a.recentCount;
+      if (b.totalViews !== a.totalViews) return b.totalViews - a.totalViews;
       return a.name.localeCompare(b.name);
     })
     .slice(0, trendingTopicLimit);
@@ -781,25 +793,10 @@ function renderTopics() {
   const trendingTopics = getRecentTopicActivity();
 
   if (!trendingTopics.length) {
-    const suggestions = document.createElement("div");
-    suggestions.className = "topic-suggestions";
-    suggestions.innerHTML = `
-      <p>Hoy se puede hablar de...</p>
-      <div class="suggested-topic-list"></div>
-    `;
-    const list = suggestions.querySelector(".suggested-topic-list");
-    suggestedTopics.slice(0, trendingTopicLimit).forEach((name) => {
-      const button = document.createElement("button");
-      button.type = "button";
-      button.textContent = name;
-      button.addEventListener("click", () => {
-        topicIdea.value = name;
-        topicIdea.focus();
-        composerPanel.scrollIntoView({ behavior: "smooth", block: "start" });
-      });
-      list.append(button);
-    });
-    topicList.append(suggestions);
+    const empty = document.createElement("p");
+    empty.className = "topic-empty";
+    empty.textContent = "No hay opiniones trending en las últimas 6 horas. Cuando se active una conversación, va a aparecer acá.";
+    topicList.append(empty);
     return;
   }
 
@@ -812,7 +809,7 @@ function renderTopics() {
       <span class="topic-button-content">
         <strong><span class="topic-button-name">${topic.name}</span></strong>
       </span>
-      <span class="topic-count" aria-label="${topic.recentCount} opiniones recientes">${topic.recentCount}</span>
+      <span class="topic-count" aria-label="${topic.totalViews} vistas totales">${topic.totalViews} vistas</span>
     `;
     button.addEventListener("click", () => openTopic(topic.id));
     topicList.append(button);
