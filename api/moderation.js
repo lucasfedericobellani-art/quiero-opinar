@@ -2,7 +2,11 @@ const crypto = require("crypto");
 
 const COOLDOWN_SECONDS = 45;
 const MAX_TEXT_LENGTH = 5000;
+const MAX_TOPIC_LENGTH = 80;
+const MAX_REQUEST_BYTES = 12000;
+const MAX_REPLIES_PER_OPINION = 500;
 const blockedLinkPattern = /(?:https?:\/\/|www\.|[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}|(?:[a-z0-9-]+\.)+[a-z]{2,}(?:\/|\b))/i;
+const allowedOriginPattern = /^https?:\/\/(localhost(:\d+)?|127\.0\.0\.1(:\d+)?|quieroopinar\.com\.ar|www\.quieroopinar\.com\.ar|quiero-opinar\.vercel\.app)$/i;
 
 const firebaseConfig = {
   apiKey: "AIzaSyC6oeHuseHtzGqzcprjex6G7ZnAb-8Qrdk",
@@ -45,11 +49,43 @@ function reject(response, status, code, message, extra = {}) {
   response.status(status).json({ ok: false, code, message, ...extra });
 }
 
+function setSecurityHeaders(response) {
+  response.setHeader("X-Content-Type-Options", "nosniff");
+  response.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  response.setHeader("Cache-Control", "no-store");
+}
+
+function isAllowedRequestOrigin(request) {
+  const origin = request.headers.origin;
+  const referer = request.headers.referer;
+  const source = origin || referer;
+  if (!source) return true;
+
+  try {
+    const url = new URL(source);
+    return allowedOriginPattern.test(url.origin);
+  } catch {
+    return false;
+  }
+}
+
+function hasValidRequestSize(request) {
+  const contentLength = Number(request.headers["content-length"] || 0);
+  return !contentLength || contentLength <= MAX_REQUEST_BYTES;
+}
+
 function validateText(text) {
   return typeof text === "string" &&
     text.trim().length > 0 &&
     text.trim().length <= MAX_TEXT_LENGTH &&
     !blockedLinkPattern.test(text);
+}
+
+function validateTopic(topic) {
+  return typeof topic === "string" &&
+    topic.trim().length > 0 &&
+    topic.trim().length <= MAX_TOPIC_LENGTH &&
+    !blockedLinkPattern.test(topic);
 }
 
 function normalizeContentType(value) {
@@ -205,9 +241,26 @@ async function createOpinion(ctx, body, ipHash, response) {
   const text = String(body.text || "").trim();
   const topic = String(body.topic || "sin-tema").trim() || "sin-tema";
   const topicText = String(body.topicText || "").trim();
+  const topicRecord = body.topicRecord && typeof body.topicRecord === "object" ? body.topicRecord : null;
 
-  if (!validateText(text) || (topicText && blockedLinkPattern.test(topicText))) {
+  if (!validateText(text) || !validateTopic(topic) || (topicText && !validateTopic(topicText))) {
     return reject(response, 400, "invalid_text", "No se pueden publicar links en opiniones ni respuestas.");
+  }
+
+  if (topicRecord) {
+    const topicName = String(topicRecord.name || "").trim();
+    const topicDescription = String(topicRecord.description || "Tema creado por la comunidad").trim();
+    const topicIcon = String(topicRecord.icon || "assets/icons/generic.svg").trim();
+    const validTopicRecord = topicRecord.id === topic &&
+      validateTopic(topicName) &&
+      topicDescription.length > 0 &&
+      topicDescription.length <= 180 &&
+      topicIcon.startsWith("assets/icons/") &&
+      topicIcon.endsWith(".svg");
+
+    if (!validTopicRecord) {
+      return reject(response, 400, "invalid_topic", "El tema enviado no es valido.");
+    }
   }
 
   const remainingSeconds = await assertPublishCooldown(ctx, ipHash);
@@ -231,6 +284,14 @@ async function createOpinion(ctx, body, ipHash, response) {
   };
 
   await ctx.set(ctx.doc("opinions", opinion.id), opinion);
+  if (topicRecord && topic !== "todos") {
+    await ctx.set(ctx.doc("topics", topic), {
+      id: topic,
+      name: String(topicRecord.name || "").trim(),
+      description: String(topicRecord.description || "Tema creado por la comunidad").trim(),
+      icon: String(topicRecord.icon || "assets/icons/generic.svg").trim()
+    }, { merge: true });
+  }
   response.status(201).json({ ok: true, opinion: sanitizeOpinion(opinion), mode: ctx.mode });
 }
 
@@ -252,6 +313,10 @@ async function createReply(ctx, body, ipHash, response) {
   }
 
   const opinion = opinionRecord.data;
+  if (opinion.replies.length >= MAX_REPLIES_PER_OPINION) {
+    return reject(response, 429, "reply_limit", "Esta opinion ya alcanzo el limite de respuestas.");
+  }
+
   opinion.replies.push({
     id: createId("reply"),
     author: "Opinion",
@@ -352,9 +417,19 @@ async function registerContentAction(ctx, body, ipHash, response) {
 }
 
 module.exports = async function handler(request, response) {
+  setSecurityHeaders(response);
+
   if (request.method !== "POST") {
     response.setHeader("Allow", "POST");
     return reject(response, 405, "method_not_allowed", "Metodo no permitido.");
+  }
+
+  if (!isAllowedRequestOrigin(request)) {
+    return reject(response, 403, "invalid_origin", "Origen no permitido.");
+  }
+
+  if (!hasValidRequestSize(request)) {
+    return reject(response, 413, "payload_too_large", "El contenido enviado es demasiado grande.");
   }
 
   try {

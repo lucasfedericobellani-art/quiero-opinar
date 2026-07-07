@@ -33,6 +33,8 @@ const seedOpinions = [];
 const trendingWindowHours = 6;
 const trendingRefreshHours = 12;
 const trendingTopicLimit = 5;
+const maxOpinionLength = 5000;
+const maxTopicLength = 80;
 const blockedLinkPattern = /(?:https?:\/\/|www\.|[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}|(?:[a-z0-9-]+\.)+[a-z]{2,}(?:\/|\b))/i;
 
 let opinions = [];
@@ -559,6 +561,14 @@ function canPublishOpinion(rawText, rawTopic, form) {
   const topic = rawTopic.trim();
   clearFormError(form);
   if (!text) return false;
+  if (text.length > maxOpinionLength) {
+    showFormError(form, "La opinion es demasiado larga.");
+    return false;
+  }
+  if (topic.length > maxTopicLength) {
+    showFormError(form, "El tema es demasiado largo.");
+    return false;
+  }
   if (containsBlockedLink(text) || containsBlockedLink(topic)) {
     showFormError(form, "No se pueden publicar links en opiniones ni respuestas.");
     return false;
@@ -789,11 +799,19 @@ async function callModerationApi(payload) {
 }
 
 async function createOpinionViaApi(text, topic) {
+  const selectedTopic = resolveSelectedTopic(topic, text);
+  const topicRecord = getTopic(selectedTopic);
   const data = await callModerationApi({
     action: "createOpinion",
     text,
-    topic: resolveSelectedTopic(topic, text),
-    topicText: topic
+    topic: selectedTopic,
+    topicText: topic,
+    topicRecord: topicRecord && selectedTopic !== "todos" ? {
+      id: topicRecord.id,
+      name: topicRecord.name,
+      description: topicRecord.description,
+      icon: topicRecord.icon
+    } : null
   });
 
   return normalizeOpinion(data.opinion);
@@ -862,12 +880,19 @@ function renderTopics() {
     button.className = `topic-button${activeTopic === topic.id ? " active" : ""}`;
     button.type = "button";
     button.setAttribute("aria-label", `Abrir tema ${topic.name}`);
-    button.innerHTML = `
-      <span class="topic-button-content">
-        <strong><span class="topic-button-name">${topic.name}</span></strong>
-      </span>
-      <span class="topic-count" aria-label="${topic.totalViews} vistas totales">${topic.totalViews} vistas</span>
-    `;
+    const content = document.createElement("span");
+    content.className = "topic-button-content";
+    const strong = document.createElement("strong");
+    const name = document.createElement("span");
+    name.className = "topic-button-name";
+    name.textContent = topic.name;
+    strong.append(name);
+    content.append(strong);
+    const count = document.createElement("span");
+    count.className = "topic-count";
+    count.setAttribute("aria-label", `${topic.totalViews} vistas totales`);
+    count.textContent = `${topic.totalViews} vistas`;
+    button.append(content, count);
     button.addEventListener("click", () => openTopic(topic.id));
     topicList.append(button);
   });
@@ -919,8 +944,8 @@ function renderBoard() {
     column.innerHTML = `
       <div class="board-column-header">
         <div>
-          <h2>${getTopicIconMarkup(topic)}${topic.name}</h2>
-          <p>${topic.description}</p>
+          <h2>${getTopicIconMarkup(topic)}${escapeHtml(topic.name)}</h2>
+          <p>${escapeHtml(topic.description)}</p>
         </div>
         <span class="board-count">${topicOpinions.length} hilos</span>
       </div>
@@ -1452,17 +1477,13 @@ async function createFirebaseDataStore() {
       });
     },
     async saveTopics(nextTopics) {
-      await Promise.all(
-        nextTopics
-          .filter((topic) => topic.id !== "todos")
-          .map((topic) => setDoc(doc(db, "topics", topic.id), topic, { merge: true }))
-      );
+      return Promise.resolve(nextTopics);
     },
     async addOpinion(opinion) {
       await setDoc(doc(db, "opinions", opinion.id), sanitizeOpinionForRemote(opinion));
     },
     async updateOpinion(opinion) {
-      await setDoc(doc(db, "opinions", opinion.id), sanitizeOpinionForRemote(opinion), { merge: true });
+      return Promise.resolve(opinion);
     }
   };
 }

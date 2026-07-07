@@ -45,7 +45,7 @@ window.QO_FIREBASE_APPCHECK_CONFIG = {
 
 Para endurecer la publicacion, registrar la app web en App Check con reCAPTCHA v3, poner `enabled: true` y cargar el `siteKey`.
 
-## 5. API anti-abuso en preview/staging
+## 5. API anti-abuso en Vercel
 
 Las acciones sensibles pasan por `/api/moderation`:
 
@@ -54,7 +54,7 @@ Las acciones sensibles pasan por `/api/moderation`:
 - like de opinion o respuesta
 - reporte de opinion o respuesta
 
-Para correr en Vercel Preview o local con `vercel dev`, configurar credenciales server-side de Firebase Admin. Opcion recomendada:
+Para correr en produccion, Vercel Preview o local con `vercel dev`, configurar credenciales server-side de Firebase Admin. Las reglas actuales de Firestore bloquean escrituras publicas directas desde el navegador, asi que estas variables son necesarias para publicar, responder, reportar y dar like. Opcion recomendada:
 
 ```sh
 FIREBASE_SERVICE_ACCOUNT_KEY='{"type":"service_account",...}'
