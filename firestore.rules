@@ -2,70 +2,9 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    function isText(value, max) {
-      return value is string && value.size() > 0 && value.size() <= max;
-    }
-
-    function hasNoLinks(value) {
-      return value is string &&
-        !value.matches(".*([hH][tT][tT][pP][sS]?://|[wW][wW][wW]\\.|[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}|[a-zA-Z0-9-]+\\.[a-zA-Z]{2,}(/|[[:space:]]|$)).*");
-    }
-
     function isAdmin() {
       return request.auth != null &&
         request.auth.token.email in ["lucasfedericobellani@gmail.com"];
-    }
-
-    function isOpinion() {
-      return request.resource.data.keys().hasOnly([
-        "id",
-        "author",
-        "topic",
-        "text",
-        "views",
-        "likes",
-        "createdAt",
-        "replies",
-        "hidden",
-        "reports",
-        "shares",
-        "ip"
-      ]) &&
-      isText(request.resource.data.id, 120) &&
-      isText(request.resource.data.author, 80) &&
-      isText(request.resource.data.topic, 80) &&
-      hasNoLinks(request.resource.data.topic) &&
-      isText(request.resource.data.text, 5000) &&
-      hasNoLinks(request.resource.data.text) &&
-      request.resource.data.views is int &&
-      request.resource.data.views >= 0 &&
-      request.resource.data.likes is int &&
-      request.resource.data.likes >= 0 &&
-      request.resource.data.createdAt is string &&
-      request.resource.data.replies is list &&
-      request.resource.data.replies.size() <= 500 &&
-      request.resource.data.hidden is bool &&
-      request.resource.data.reports is int &&
-      request.resource.data.reports >= 0 &&
-      request.resource.data.shares is int &&
-      request.resource.data.shares >= 0 &&
-      (request.resource.data.ip == null || (
-        request.resource.data.ip is string &&
-        request.resource.data.ip.size() <= 100
-      ));
-    }
-
-    function isTopic() {
-      return request.resource.data.keys().hasOnly([
-        "id",
-        "name",
-        "description",
-        "icon"
-      ]) &&
-      isText(request.resource.data.id, 80) &&
-      isText(request.resource.data.name, 80) &&
-      isText(request.resource.data.description, 180) &&
-      isText(request.resource.data.icon, 180);
     }
 
     match /opinions/{opinionId} {
