@@ -2,6 +2,8 @@ const loginView = document.querySelector("#loginView");
 const adminView = document.querySelector("#adminView");
 const loginForm = document.querySelector("#adminLoginForm");
 const loginError = document.querySelector("#loginError");
+const adminPasswordInput = document.querySelector("#adminPassword");
+const adminPasswordToggle = document.querySelector(".password-toggle");
 const adminSummary = document.querySelector("#adminSummary");
 const adminOpinionList = document.querySelector("#adminOpinionList");
 const adminSearchForm = document.querySelector("#adminSearchForm");
@@ -41,6 +43,20 @@ function showAdmin() {
   loginView.classList.add("hidden");
   adminView.classList.remove("hidden");
   loginError.textContent = "";
+}
+
+function notifyFailedAdminLogin(email, reason) {
+  fetch("/api/admin-alert", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      email,
+      reason,
+      path: window.location.pathname,
+    }),
+  }).catch((error) => {
+    console.warn("No se pudo avisar el intento fallido de admin.", error);
+  });
 }
 
 function escapeHtml(value) {
@@ -669,6 +685,7 @@ async function initializeAdmin() {
 
     if (!adminEmails.includes(email)) {
       showLogin("Ese email no está habilitado como administrador.");
+      notifyFailedAdminLogin(email, "email no habilitado");
       return;
     }
 
@@ -678,7 +695,15 @@ async function initializeAdmin() {
     } catch (error) {
       console.error("Error de login admin.", error);
       showLogin("Credenciales inválidas o proveedor de email/password no habilitado.");
+      notifyFailedAdminLogin(email, error?.code || "credenciales invalidas");
     }
+  });
+
+  adminPasswordToggle.addEventListener("click", () => {
+    const shouldShow = adminPasswordInput.type === "password";
+    adminPasswordInput.type = shouldShow ? "text" : "password";
+    adminPasswordToggle.textContent = shouldShow ? "Ocultar" : "Ver";
+    adminPasswordToggle.setAttribute("aria-label", shouldShow ? "Ocultar contraseña" : "Mostrar contraseña");
   });
 
   logoutButton.addEventListener("click", async () => {

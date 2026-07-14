@@ -72,6 +72,18 @@ IP_HASH_SALT='valor-largo-privado'
 
 `IP_HASH_SALT` se usa para guardar hashes de IP en `securityActions` y `securityCooldowns`, no la IP cruda. La IP se toma solo en la API desde `x-forwarded-for`, `x-real-ip`, headers de proxy/Vercel o `request.ip`.
 
+## Alertas por intentos de ingreso al admin
+
+El panel `/admin` llama a `/api/admin-alert` cuando falla un login. Para que esa alerta llegue por email en produccion, configurar estas variables en Vercel:
+
+```sh
+RESEND_API_KEY='re_...'
+ADMIN_ALERT_EMAIL='lucasfedericobellani@gmail.com'
+ADMIN_ALERT_FROM='Quiero Opinar <alertas@quieroopinar.com.ar>'
+```
+
+`ADMIN_ALERT_EMAIL` usa `lucasfedericobellani@gmail.com` si no se configura. `ADMIN_ALERT_FROM` debe ser un remitente verificado en Resend; si falta `RESEND_API_KEY`, el endpoint no bloquea el panel y simplemente no envia el email.
+
 Pruebas manuales en preview/staging:
 
 1. Publicar una opinion y enseguida otra: la segunda debe responder `Espera unos segundos antes de volver a publicar.` con los segundos restantes.

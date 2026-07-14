@@ -4,19 +4,24 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Panel privado · Quiero Opinar</title>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-XY98SMBP52"></script>
+    <script defer src="analytics.js"></script>
     <link rel="stylesheet" href="styles.css">
   </head>
   <body class="admin-page">
     <main class="admin-shell">
       <section class="admin-card">
         <p class="section-label">acceso restringido</p>
-        <h1>Panel de moderacion</h1>
-        <p class="admin-copy">Esta zona solo es para el administrador. No aparece en la navegacion publica.</p>
+        <h1>Panel de moderación</h1>
+        <p class="admin-copy">Esta zona solo es para el administrador. No aparece en la navegación pública.</p>
         <form class="admin-login-form" id="panelLoginForm">
           <label class="field-label" for="panelUsername">Usuario</label>
           <input id="panelUsername" name="panelUsername" type="text" autocomplete="username" required>
           <label class="field-label" for="panelPassword">Contraseña</label>
-          <input id="panelPassword" name="panelPassword" type="password" autocomplete="current-password" required>
+          <div class="password-field">
+            <input id="panelPassword" name="panelPassword" type="password" autocomplete="current-password" required>
+            <button class="password-toggle" type="button" aria-controls="panelPassword" aria-label="Mostrar contraseña">Ver</button>
+          </div>
           <button class="primary-button" type="submit">Entrar</button>
           <p class="admin-error" id="panelError"></p>
         </form>
@@ -27,6 +32,16 @@
       const password = 'quiero-opinar2026';
       const form = document.querySelector('#panelLoginForm');
       const error = document.querySelector('#panelError');
+      const passwordInput = document.querySelector('#panelPassword');
+      const passwordToggle = document.querySelector('.password-toggle');
+
+      passwordToggle.addEventListener('click', () => {
+        const shouldShow = passwordInput.type === 'password';
+        passwordInput.type = shouldShow ? 'text' : 'password';
+        passwordToggle.textContent = shouldShow ? 'Ocultar' : 'Ver';
+        passwordToggle.setAttribute('aria-label', shouldShow ? 'Ocultar contraseña' : 'Mostrar contraseña');
+      });
+
       form.addEventListener('submit', (event) => {
         event.preventDefault();
         const enteredUser = document.querySelector('#panelUsername').value.trim();
@@ -34,7 +49,7 @@
         if (enteredUser === username && enteredPass === password) {
           window.location.href = 'admin.html';
         } else {
-          error.textContent = 'Credenciales invalidas.';
+          error.textContent = 'Credenciales inválidas.';
         }
       });
     </script>

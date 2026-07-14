@@ -7,6 +7,8 @@
     <link rel="icon" type="image/svg+xml" href="assets/logo.svg">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-XY98SMBP52"></script>
+    <script defer src="analytics.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
   </head>
@@ -19,8 +21,11 @@
         <form class="admin-login-form" id="adminLoginForm">
           <label class="field-label" for="adminEmail">Email</label>
           <input id="adminEmail" name="adminEmail" type="email" autocomplete="username" required>
-          <label class="field-label" for="adminPassword">Password</label>
-          <input id="adminPassword" name="adminPassword" type="password" autocomplete="current-password" required>
+          <label class="field-label" for="adminPassword">Contraseña</label>
+          <div class="password-field">
+            <input id="adminPassword" name="adminPassword" type="password" autocomplete="current-password" required>
+            <button class="password-toggle" type="button" aria-controls="adminPassword" aria-label="Mostrar contraseña">Ver</button>
+          </div>
           <button class="primary-button" type="submit">Entrar</button>
           <p class="admin-error" id="loginError" role="alert"></p>
         </form>
@@ -110,6 +115,6 @@
     </main>
 
     <script src="firebase-config.js"></script>
-    <script src="admin.js" type="module"></script>
+    <script src="admin.js?v=20260714-admin-alerts" type="module"></script>
   </body>
 </html>
