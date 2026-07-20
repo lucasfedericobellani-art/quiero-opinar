@@ -189,8 +189,18 @@ function isModeratedOpinion(opinion) {
   return Boolean(opinion.moderatedAt) || opinion.moderationStatus === "deleted";
 }
 
+function needsModeration(opinion) {
+  const hasReportedReply = opinion.replies.some((reply) => Number(reply?.reports || 0) > 0);
+  return !isModeratedOpinion(opinion) && (
+    opinion.reports > 0 ||
+    hasReportedReply ||
+    ["pending", "reported"].includes(opinion.moderationStatus) ||
+    opinion.moderationReason
+  );
+}
+
 function getModerationQueueOpinions() {
-  return opinions.filter((opinion) => !isModeratedOpinion(opinion))
+  return opinions.filter(needsModeration)
     .sort((a, b) => {
       if (b.reports !== a.reports) return b.reports - a.reports;
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
