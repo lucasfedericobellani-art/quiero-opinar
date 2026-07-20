@@ -120,6 +120,7 @@ nextWelcomeButton.addEventListener("click", () => {
 
 enterButton.addEventListener("click", () => {
   welcomeOverlay.classList.add("hidden");
+  syncUrlForView(currentView);
   if (isMobileViewport()) {
     floatingOpinionTrigger.focus();
   } else {
@@ -1621,7 +1622,11 @@ function openInitialOpinionFromUrl() {
   if (opinion && !opinion.hidden) {
     hasHandledInitialOpinion = true;
     openOpinion(opinionId);
+    return;
   }
+
+  hasHandledInitialOpinion = true;
+  syncUrlForView(currentView);
 }
 
 async function initializeAppData() {
