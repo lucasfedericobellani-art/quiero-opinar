@@ -139,6 +139,10 @@ let selectedReportReason = "";
 let pendingReportResolver = null;
 let hasLoadedOpinions = false;
 let hasHandledInitialOpinion = false;
+let isRestoringHistory = false;
+let pendingScrollRestore = null;
+let activeReplyControl = null;
+let replyViewportTimer = 0;
 let dataStore = createLocalDataStore();
 
 nextWelcomeButton.addEventListener("click", () => {
@@ -227,7 +231,15 @@ reportReasonList?.addEventListener("click", (event) => {
   reportReasonSubmit.focus();
 });
 
-backFromDetailButton.addEventListener("click", () => showView(lastViewBeforeDetail));
+backFromDetailButton.addEventListener("click", () => {
+  const state = window.history.state;
+  if (currentView === "detail" && state?.view === "detail" && !state.directEntry) {
+    window.history.back();
+    return;
+  }
+
+  goHome();
+});
 backFromTopicButton.addEventListener("click", () => showView("topics"));
 topicSearchInput.addEventListener("input", renderBoard);
 searchInputs.forEach((input) => {
@@ -249,10 +261,38 @@ document.addEventListener("click", (event) => {
 });
 
 if (mobileViewportQuery.addEventListener) {
-  mobileViewportQuery.addEventListener("change", updateFloatingOpinionVisibility);
+  mobileViewportQuery.addEventListener("change", () => {
+    updateFloatingOpinionVisibility();
+    ensureActiveReplyControlVisible();
+  });
 } else {
-  mobileViewportQuery.addListener(updateFloatingOpinionVisibility);
+  mobileViewportQuery.addListener(() => {
+    updateFloatingOpinionVisibility();
+    ensureActiveReplyControlVisible();
+  });
 }
+
+window.addEventListener("popstate", (event) => {
+  restoreViewFromHistory(event.state);
+});
+
+document.addEventListener("focusin", (event) => {
+  const control = event.target.closest?.(".reply-form input, .reply-form textarea");
+  if (!control) return;
+  activeReplyControl = control;
+  document.body.classList.add("reply-field-focused");
+  updateViewportMetrics();
+  scheduleActiveReplyControlVisibility();
+});
+
+document.addEventListener("focusout", (event) => {
+  if (event.target !== activeReplyControl) return;
+  window.setTimeout(() => {
+    if (document.activeElement?.closest?.(".reply-form")) return;
+    activeReplyControl = null;
+    clearReplyKeyboardAssist();
+  }, 80);
+});
 
 floatingOpinionTrigger.addEventListener("click", () => {
   if (isFloatingOpinionOpen) {
@@ -688,7 +728,8 @@ function setPublishingState(form, isPublishing) {
   form?.classList.toggle("is-publishing", isPublishing);
 }
 
-function showView(viewName) {
+function showView(viewName, options = {}) {
+  const { scrollToTop = true } = options;
   currentView = viewName;
   homeView.classList.toggle("hidden", viewName !== "home");
   aboutView.classList.toggle("hidden", viewName !== "about");
@@ -701,7 +742,8 @@ function showView(viewName) {
   closeFloatingOpinionPanel(false);
   syncUrlForView(viewName);
   updateFloatingOpinionVisibility();
-  window.scrollTo({ top: 0, behavior: "smooth" });
+  if (scrollToTop) window.scrollTo({ top: 0, behavior: "smooth" });
+  if (pendingScrollRestore !== null) restorePendingScrollPosition();
 }
 
 function syncUrlForView(viewName) {
@@ -709,7 +751,82 @@ function syncUrlForView(viewName) {
   const url = new URL(window.location.href);
   if (!url.searchParams.has("opinion")) return;
   url.searchParams.delete("opinion");
-  window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
+  const nextState = {
+    ...(window.history.state || getCurrentNavigationState()),
+    view: "home",
+    opinionId: null,
+    directEntry: false
+  };
+  window.history.replaceState(nextState, "", `${url.pathname}${url.search}${url.hash}`);
+}
+
+function getPathWithoutOpinion() {
+  const url = new URL(window.location.href);
+  url.searchParams.delete("opinion");
+  return `${url.pathname}${url.search}${url.hash}`;
+}
+
+function isCurrentOpinionUrl(opinionId) {
+  return new URLSearchParams(window.location.search).get("opinion") === opinionId;
+}
+
+function getCurrentNavigationState() {
+  return {
+    view: currentView,
+    activeTopic,
+    selectedTopicId,
+    searchQuery,
+    scrollY: window.scrollY,
+    lastViewBeforeDetail
+  };
+}
+
+function initializeNavigationState() {
+  const opinionId = new URLSearchParams(window.location.search).get("opinion");
+  const state = {
+    ...getCurrentNavigationState(),
+    view: opinionId ? "detail" : currentView,
+    opinionId: opinionId || null,
+    directEntry: Boolean(opinionId),
+    scrollY: window.scrollY
+  };
+  window.history.replaceState(state, "", window.location.href);
+}
+
+function restoreViewFromHistory(state) {
+  if (!state) {
+    goHome();
+    return;
+  }
+
+  isRestoringHistory = true;
+  activeTopic = state.activeTopic || "todos";
+  selectedTopicId = state.selectedTopicId || null;
+  searchQuery = state.searchQuery || "";
+  lastViewBeforeDetail = state.lastViewBeforeDetail || state.returnState?.view || "home";
+  syncSearchInputs(searchQuery);
+
+  if (state.view === "detail" && state.opinionId) {
+    selectedOpinionId = state.opinionId;
+    render();
+    showView("detail", { scrollToTop: false });
+  } else {
+    selectedOpinionId = null;
+    pendingScrollRestore = Number.isFinite(state.scrollY) ? state.scrollY : 0;
+    render();
+    showView(state.view || "home", { scrollToTop: false });
+  }
+
+  isRestoringHistory = false;
+}
+
+function restorePendingScrollPosition() {
+  const scrollY = pendingScrollRestore;
+  pendingScrollRestore = null;
+  window.requestAnimationFrame(() => {
+    window.scrollTo({ top: scrollY, behavior: "auto" });
+    window.requestAnimationFrame(() => window.scrollTo({ top: scrollY, behavior: "auto" }));
+  });
 }
 
 function openFloatingOpinionPanel() {
@@ -757,6 +874,11 @@ function updateViewportMetrics() {
 
   document.documentElement.style.setProperty("--visual-viewport-height", `${viewportHeight}px`);
   document.documentElement.style.setProperty("--keyboard-offset", `${keyboardOffset}px`);
+  if (activeReplyControl) {
+    const replyOffset = isMobileViewport() ? keyboardOffset : 0;
+    document.documentElement.style.setProperty("--reply-keyboard-offset", `${replyOffset}px`);
+    scheduleActiveReplyControlVisibility();
+  }
 }
 
 function isMobileViewport() {
@@ -797,17 +919,37 @@ function openTopic(topicId) {
   showView("topicDetail");
 }
 
-function openOpinion(opinionId) {
+function openOpinion(opinionId, options = {}) {
   const opinion = getOpinionById(opinionId);
   if (!opinion || opinion.hidden) return;
 
   lastViewBeforeDetail = currentView === "detail" ? lastViewBeforeDetail : currentView;
+  const sourceState = getCurrentNavigationState();
   selectedOpinionId = opinionId;
-  window.history.replaceState(null, "", getOpinionPath(opinion));
+
+  if (!isRestoringHistory) {
+    const detailState = {
+      ...sourceState,
+      view: "detail",
+      opinionId,
+      returnState: sourceState,
+      directEntry: Boolean(options.directEntry)
+    };
+    const detailPath = getOpinionPath(opinion);
+    if (options.replaceHistory) {
+      window.history.replaceState(detailState, "", detailPath);
+    } else if (!isCurrentOpinionUrl(opinionId)) {
+      window.history.replaceState(sourceState, "", getPathWithoutOpinion());
+      window.history.pushState(detailState, "", detailPath);
+    } else {
+      window.history.replaceState(detailState, "", detailPath);
+    }
+  }
+
   opinion.views += 1;
   dataStore.updateOpinion(opinion);
   render();
-  showView("detail");
+  showView("detail", { scrollToTop: !options.preserveScroll });
 }
 
 function getOpinionPath(opinion) {
@@ -1012,6 +1154,51 @@ function setupViewportMetrics() {
     window.visualViewport.addEventListener("resize", updateViewportMetrics);
     window.visualViewport.addEventListener("scroll", updateViewportMetrics);
   }
+}
+
+function getVisualViewportBounds() {
+  const viewport = window.visualViewport;
+  const height = viewport?.height || window.innerHeight;
+  const offsetTop = viewport?.offsetTop || 0;
+  return {
+    top: offsetTop,
+    bottom: offsetTop + height,
+    height
+  };
+}
+
+function scheduleActiveReplyControlVisibility() {
+  if (!activeReplyControl || !isMobileViewport()) return;
+  window.clearTimeout(replyViewportTimer);
+  window.requestAnimationFrame(ensureActiveReplyControlVisible);
+  replyViewportTimer = window.setTimeout(ensureActiveReplyControlVisible, 180);
+}
+
+function ensureActiveReplyControlVisible() {
+  if (!activeReplyControl || !isMobileViewport()) return;
+  const form = activeReplyControl.closest(".reply-form");
+  if (!form) return;
+
+  const viewport = getVisualViewportBounds();
+  const rect = form.getBoundingClientRect();
+  const topLimit = viewport.top + 76;
+  const bottomLimit = viewport.bottom - 18;
+  let delta = 0;
+
+  if (rect.bottom > bottomLimit) {
+    delta = rect.bottom - bottomLimit;
+  } else if (rect.top < topLimit) {
+    delta = rect.top - topLimit;
+  }
+
+  if (Math.abs(delta) < 2) return;
+  window.scrollBy({ top: delta, behavior: "smooth" });
+}
+
+function clearReplyKeyboardAssist() {
+  window.clearTimeout(replyViewportTimer);
+  document.body.classList.remove("reply-field-focused");
+  document.documentElement.style.setProperty("--reply-keyboard-offset", "0px");
 }
 
 function renderBoard() {
@@ -1732,7 +1919,7 @@ function openInitialOpinionFromUrl() {
   const opinion = getOpinionById(opinionId);
   if (opinion && !opinion.hidden) {
     hasHandledInitialOpinion = true;
-    openOpinion(opinionId);
+    openOpinion(opinionId, { replaceHistory: true, directEntry: true });
     return;
   }
 
@@ -1742,6 +1929,7 @@ function openInitialOpinionFromUrl() {
 
 async function initializeAppData() {
   resetPersistedContentIfNeeded();
+  initializeNavigationState();
   setupViewportMetrics();
 
   try {

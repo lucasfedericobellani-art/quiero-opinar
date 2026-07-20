@@ -2333,6 +2333,14 @@ button {
     padding: 26px;
   }
 
+  body.reply-field-focused {
+    padding-bottom: calc(var(--reply-keyboard-offset, 0px) + env(safe-area-inset-bottom));
+  }
+
+  body.reply-field-focused .detail-shell {
+    scroll-margin-bottom: calc(var(--reply-keyboard-offset, 0px) + 24px);
+  }
+
   .reply-form {
     grid-template-columns: 1fr;
   }
