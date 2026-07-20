@@ -75,6 +75,16 @@ function normalizeDateValue(value) {
 }
 
 function normalizeOpinion(opinion) {
+  const replies = Array.isArray(opinion.replies) ? opinion.replies.map((reply) => {
+    if (typeof reply === "string") return { text: reply, reports: 0, reportReasons: [] };
+    return {
+      ...reply,
+      reports: Number(reply?.reports || 0),
+      reportReasons: Array.isArray(reply?.reportReasons) ? reply.reportReasons : [],
+      moderationStatus: reply?.moderationStatus || "approved"
+    };
+  }) : [];
+
   return {
     id: opinion.id || "",
     author: opinion.author || "Opinion",
@@ -83,8 +93,11 @@ function normalizeOpinion(opinion) {
     views: Number(opinion.views || 0),
     likes: Number(opinion.likes || 0),
     createdAt: normalizeDateValue(opinion.createdAt),
-    replies: Array.isArray(opinion.replies) ? opinion.replies : [],
+    replies,
     hidden: Boolean(opinion.hidden),
+    moderationStatus: opinion.moderationStatus || (opinion.hidden ? "hidden" : "approved"),
+    moderationReason: opinion.moderationReason || "",
+    reportReasons: Array.isArray(opinion.reportReasons) ? opinion.reportReasons : [],
     ip: opinion.ip || "",
     deleted: Boolean(opinion.deleted),
     reports: Number(opinion.reports || 0),
@@ -150,6 +163,26 @@ function getOpinionNumberMap() {
   ]));
 }
 
+function formatReportReasons(reasons) {
+  if (!Array.isArray(reasons) || !reasons.length) return "Sin motivos";
+  const counts = reasons.reduce((map, item) => {
+    const reason = typeof item === "string" ? item : item?.reason || "otro";
+    map.set(reason, (map.get(reason) || 0) + 1);
+    return map;
+  }, new Map());
+  return Array.from(counts.entries()).map(([reason, count]) => `${reason}: ${count}`).join(" · ");
+}
+
+function getReplyReportSummary(opinion) {
+  const reportedReplies = opinion.replies
+    .map((reply, index) => ({ reply, index }))
+    .filter(({ reply }) => Number(reply?.reports || 0) > 0);
+  if (!reportedReplies.length) return "Sin respuestas reportadas";
+  return reportedReplies.map(({ reply, index }) => {
+    return `Respuesta ${index + 1}: ${Number(reply.reports || 0)} (${formatReportReasons(reply.reportReasons)})`;
+  }).join(" · ");
+}
+
 function getFilteredOpinions() {
   const query = adminSearchQuery.trim();
   if (!query) {
@@ -203,6 +236,7 @@ function renderAdminList() {
           <h3>Opinión #${numberMap.get(opinion.id) || 0}</h3>
         </div>
         <div class="admin-actions">
+          <button class="ghost-button" type="button" data-action="approve" data-id="${escapeHtml(opinion.id)}">Aprobar</button>
           <button class="ghost-button" type="button" data-action="toggle-hidden" data-id="${escapeHtml(opinion.id)}">${opinion.hidden ? "Mostrar" : "Ocultar"}</button>
           <button class="ghost-button danger-button" type="button" data-action="delete" data-id="${escapeHtml(opinion.id)}">Eliminar</button>
         </div>
@@ -213,8 +247,12 @@ function renderAdminList() {
         <span>${opinion.likes} likes</span>
         <span>${opinion.replies.length} respuestas</span>
         <span>${opinion.reports} reportes</span>
+        <span>Motivos: ${escapeHtml(formatReportReasons(opinion.reportReasons))}</span>
+        <span>Respuestas reportadas: ${escapeHtml(getReplyReportSummary(opinion))}</span>
         <span>${opinion.shares} compartidas</span>
+        <span>Estado: ${escapeHtml(opinion.moderationStatus)}</span>
         <span>${opinion.hidden ? "Oculta" : "Visible"}</span>
+        <span>Moderación: ${escapeHtml(opinion.moderationReason || "Sin observaciones")}</span>
         <span>IP: ${escapeHtml(opinion.ip || "No registrada")}</span>
       </div>
     </article>
@@ -787,7 +825,19 @@ async function initializeAdmin() {
 
     try {
       if (action === "toggle-hidden") {
-        await updateDoc(doc(db, "opinions", opinionId), { hidden: !opinion.hidden });
+        await updateDoc(doc(db, "opinions", opinionId), {
+          hidden: !opinion.hidden,
+          moderationStatus: opinion.hidden ? "approved" : "hidden",
+          moderationReason: opinion.hidden ? "" : "oculta_por_admin"
+        });
+      }
+
+      if (action === "approve") {
+        await updateDoc(doc(db, "opinions", opinionId), {
+          hidden: false,
+          moderationStatus: "approved",
+          moderationReason: ""
+        });
       }
 
       if (action === "delete" && window.confirm("Eliminar esta opinión de forma permanente?")) {

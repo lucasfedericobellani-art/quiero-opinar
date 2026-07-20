@@ -5,8 +5,30 @@ const MAX_TEXT_LENGTH = 5000;
 const MAX_TOPIC_LENGTH = 80;
 const MAX_REQUEST_BYTES = 12000;
 const MAX_REPLIES_PER_OPINION = 500;
+const AUTO_HIDE_REPORT_THRESHOLD = 3;
 const blockedLinkPattern = /(?:https?:\/\/|www\.|[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}|(?:[a-z0-9-]+\.)+[a-z]{2,}(?:\/|\b))/i;
 const allowedOriginPattern = /^https?:\/\/(localhost(:\d+)?|127\.0\.0\.1(:\d+)?|quieroopinar\.com\.ar|www\.quieroopinar\.com\.ar|quiero-opinar\.vercel\.app)$/i;
+const reportReasons = new Set(["odio", "amenaza", "datos_personales", "spam", "sexual", "ilegal", "acoso", "otro"]);
+const hardBlockTerms = [
+  "matarte",
+  "te voy a matar",
+  "direccion de",
+  "dni",
+  "telefono",
+  "tarjeta de credito",
+  "pornografia infantil"
+];
+const reviewTerms = [
+  "matar",
+  "amenaza",
+  "violacion",
+  "menor",
+  "dox",
+  "doxxing",
+  "nazi",
+  "terrorismo",
+  "suicidio"
+];
 
 const firebaseConfig = {
   apiKey: "AIzaSyC6oeHuseHtzGqzcprjex6G7ZnAb-8Qrdk",
@@ -88,6 +110,34 @@ function validateTopic(topic) {
     !blockedLinkPattern.test(topic);
 }
 
+function normalizeModerationStatus(value, hidden = false) {
+  if (["pending", "approved", "reported", "hidden", "deleted"].includes(value)) return value;
+  return hidden ? "hidden" : "approved";
+}
+
+function normalizeReportReason(value) {
+  const reason = String(value || "otro").trim();
+  return reportReasons.has(reason) ? reason : "otro";
+}
+
+function normalizeForModeration(value) {
+  return String(value || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
+function assessContentSafety(...values) {
+  const text = normalizeForModeration(values.join(" "));
+  if (hardBlockTerms.some((term) => text.includes(normalizeForModeration(term)))) {
+    return { action: "block", reason: "bloqueado_por_seguridad" };
+  }
+  if (reviewTerms.some((term) => text.includes(normalizeForModeration(term)))) {
+    return { action: "review", reason: "revision_preventiva" };
+  }
+  return { action: "allow", reason: "" };
+}
+
 function normalizeContentType(value) {
   return value === "reply" ? "reply" : "opinion";
 }
@@ -105,6 +155,8 @@ function sanitizeReply(reply) {
     text: reply?.text || "",
     likes: Number(reply?.likes || 0),
     reports: Number(reply?.reports || 0),
+    reportReasons: Array.isArray(reply?.reportReasons) ? reply.reportReasons : [],
+    moderationStatus: normalizeModerationStatus(reply?.moderationStatus),
     createdAt: normalizeDateValue(reply?.createdAt)
   };
 }
@@ -120,6 +172,9 @@ function sanitizeOpinion(doc) {
     createdAt: normalizeDateValue(doc.createdAt),
     replies: Array.isArray(doc.replies) ? doc.replies.map(sanitizeReply) : [],
     hidden: Boolean(doc.hidden),
+    moderationStatus: normalizeModerationStatus(doc.moderationStatus, Boolean(doc.hidden)),
+    moderationReason: doc.moderationReason || "",
+    reportReasons: Array.isArray(doc.reportReasons) ? doc.reportReasons : [],
     reports: Number(doc.reports || 0),
     shares: Number(doc.shares || 0),
     ip: ""
@@ -200,7 +255,10 @@ async function getOpinion(ctx, opinionId) {
   const ref = ctx.doc("opinions", opinionId);
   const snapshot = await ctx.get(ref);
   if (!snapshotExists(snapshot)) return null;
-  return { ref, data: sanitizeOpinion({ id: snapshot.id, ...snapshotData(snapshot) }) };
+  const raw = snapshotData(snapshot);
+  const data = sanitizeOpinion({ id: snapshot.id, ...raw });
+  data.privateIp = raw.ip || "";
+  return { ref, data };
 }
 
 async function assertPublishCooldown(ctx, ipHash) {
@@ -247,6 +305,11 @@ async function createOpinion(ctx, body, ipHash, response) {
     return reject(response, 400, "invalid_text", "No se pueden publicar links en opiniones ni respuestas.");
   }
 
+  const safety = assessContentSafety(text, topicText, topic);
+  if (safety.action === "block") {
+    return reject(response, 400, "unsafe_text", "No se puede publicar contenido con datos sensibles, amenazas o material prohibido.");
+  }
+
   if (topicRecord) {
     const topicName = String(topicRecord.name || "").trim();
     const topicDescription = String(topicRecord.description || "Tema creado por la comunidad").trim();
@@ -277,7 +340,10 @@ async function createOpinion(ctx, body, ipHash, response) {
     likes: 0,
     createdAt: new Date().toISOString(),
     replies: [],
-    hidden: false,
+    hidden: safety.action === "review",
+    moderationStatus: safety.action === "review" ? "pending" : "approved",
+    moderationReason: safety.reason,
+    reportReasons: [],
     reports: 0,
     shares: 0,
     ip: ipHash
@@ -302,6 +368,11 @@ async function createReply(ctx, body, ipHash, response) {
     return reject(response, 400, "invalid_text", "No se pueden publicar links en opiniones ni respuestas.");
   }
 
+  const safety = assessContentSafety(text);
+  if (safety.action === "block") {
+    return reject(response, 400, "unsafe_text", "No se puede publicar contenido con datos sensibles, amenazas o material prohibido.");
+  }
+
   const opinionRecord = await getOpinion(ctx, opinionId);
   if (!opinionRecord || opinionRecord.data.hidden) {
     return reject(response, 404, "not_found", "No se encontro la opinion.");
@@ -323,12 +394,21 @@ async function createReply(ctx, body, ipHash, response) {
     text,
     likes: 0,
     reports: 0,
+    reportReasons: [],
+    moderationStatus: safety.action === "review" ? "pending" : "approved",
     createdAt: new Date().toISOString()
   });
+  if (safety.action === "review") {
+    opinion.hidden = true;
+    opinion.moderationStatus = "pending";
+    opinion.moderationReason = safety.reason;
+  }
   opinion.views += 1;
 
-  await ctx.set(opinionRecord.ref, opinion, { merge: true });
-  response.status(201).json({ ok: true, opinion, mode: ctx.mode });
+  const persistedOpinion = { ...opinion, ip: opinion.privateIp || "" };
+  delete persistedOpinion.privateIp;
+  await ctx.set(opinionRecord.ref, persistedOpinion, { merge: true });
+  response.status(201).json({ ok: true, opinion: sanitizeOpinion(persistedOpinion), mode: ctx.mode });
 }
 
 async function registerContentAction(ctx, body, ipHash, response) {
@@ -336,6 +416,7 @@ async function registerContentAction(ctx, body, ipHash, response) {
   const contentType = normalizeContentType(body.contentType);
   const opinionId = String(body.opinionId || body.contentId || "").trim();
   const contentId = String(body.contentId || opinionId).trim();
+  const reportReason = normalizeReportReason(body.reason);
 
   if (!opinionId || !contentId) {
     return reject(response, 400, "invalid_content", "Contenido invalido.");
@@ -366,20 +447,39 @@ async function registerContentAction(ctx, body, ipHash, response) {
     const opinionSnapshot = await transaction.get(opinionRef);
     if (!snapshotExists(opinionSnapshot)) throw new Error("not_found");
 
-    const opinion = sanitizeOpinion({ id: opinionSnapshot.id, ...snapshotData(opinionSnapshot) });
+    const rawOpinion = snapshotData(opinionSnapshot);
+    const opinion = sanitizeOpinion({ id: opinionSnapshot.id, ...rawOpinion });
+    const persistedIp = rawOpinion.ip || "";
     if (opinion.hidden) throw new Error("not_found");
 
     if (contentType === "opinion") {
       if (action === "like") opinion.likes = duplicate ? Math.max(0, opinion.likes - 1) : opinion.likes + 1;
-      if (action === "report") opinion.reports += 1;
+      if (action === "report") {
+        opinion.reports += 1;
+        opinion.reportReasons = [...(opinion.reportReasons || []), { reason: reportReason, createdAt: new Date().toISOString() }];
+        if (opinion.reports >= AUTO_HIDE_REPORT_THRESHOLD) {
+          opinion.hidden = true;
+          opinion.moderationStatus = "reported";
+          opinion.moderationReason = "auto_oculta_por_reportes";
+        }
+      }
     } else {
       const reply = opinion.replies.find((item) => item.id === contentId);
       if (!reply) throw new Error("not_found");
       if (action === "like") reply.likes = duplicate ? Math.max(0, reply.likes - 1) : reply.likes + 1;
-      if (action === "report") reply.reports += 1;
+      if (action === "report") {
+        reply.reports += 1;
+        reply.reportReasons = [...(reply.reportReasons || []), { reason: reportReason, createdAt: new Date().toISOString() }];
+        if (reply.reports >= AUTO_HIDE_REPORT_THRESHOLD) {
+          opinion.hidden = true;
+          opinion.moderationStatus = "reported";
+          opinion.moderationReason = "respuesta_auto_oculta_por_reportes";
+          reply.moderationStatus = "reported";
+        }
+      }
     }
 
-    updatedOpinion = opinion;
+    updatedOpinion = { ...opinion, ip: "" };
     active = !duplicate;
     if (ctx.mode === "client") {
       if (duplicate && action === "like") {
@@ -396,10 +496,11 @@ async function registerContentAction(ctx, body, ipHash, response) {
         contentId,
         opinionId,
         action,
+        reason: action === "report" ? reportReason : "",
         createdAt: ctx.timestamp()
       });
     }
-    transaction.set(opinionRef, opinion, { merge: true });
+    transaction.set(opinionRef, { ...opinion, ip: persistedIp }, { merge: true });
   }).catch((error) => {
     if (error.message === "already_liked") {
       return reject(response, 409, "already_liked", "Ya marcaste me gusta");

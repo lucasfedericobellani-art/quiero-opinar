@@ -38,6 +38,25 @@ const trendingTopicLimit = 5;
 const maxOpinionLength = 5000;
 const maxTopicLength = 80;
 const blockedLinkPattern = /(?:https?:\/\/|www\.|[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}|(?:[a-z0-9-]+\.)+[a-z]{2,}(?:\/|\b))/i;
+const reportReasonOptions = [
+  { id: "odio", label: "Odio o discriminacion" },
+  { id: "amenaza", label: "Amenaza o violencia" },
+  { id: "datos_personales", label: "Datos personales" },
+  { id: "spam", label: "Spam o link peligroso" },
+  { id: "sexual", label: "Contenido sexual" },
+  { id: "ilegal", label: "Contenido ilegal" },
+  { id: "acoso", label: "Acoso u hostigamiento" },
+  { id: "otro", label: "Otro motivo" }
+];
+const unsafeContentTerms = [
+  "te voy a matar",
+  "matarte",
+  "direccion de",
+  "dni",
+  "telefono",
+  "tarjeta de credito",
+  "pornografia infantil"
+];
 
 let opinions = [];
 const resetStorageKey = "quiero-opinar:reset-2026-07-03";
@@ -98,6 +117,10 @@ const homeButtons = document.querySelectorAll(".nav-home");
 const notificationStack = document.querySelector("#notificationStack");
 const reportNotice = document.querySelector("#reportNotice");
 const reportNoticeClose = document.querySelector("#reportNoticeClose");
+const reportReasonOverlay = document.querySelector("#reportReasonOverlay");
+const reportReasonList = document.querySelector("#reportReasonList");
+const reportReasonCancel = document.querySelector("#reportReasonCancel");
+const reportReasonSubmit = document.querySelector("#reportReasonSubmit");
 const mobileViewportQuery = window.matchMedia("(max-width: 980px)");
 
 let activeTopic = "todos";
@@ -110,6 +133,8 @@ let isMainComposerVisible = true;
 let isFloatingOpinionOpen = false;
 let isMobileMenuOpen = false;
 let isPublishingOpinion = false;
+let selectedReportReason = "";
+let pendingReportResolver = null;
 let hasLoadedOpinions = false;
 let hasHandledInitialOpinion = false;
 let dataStore = createLocalDataStore();
@@ -155,6 +180,11 @@ document.addEventListener("keydown", (event) => {
     return;
   }
 
+  if (reportReasonOverlay && !reportReasonOverlay.classList.contains("hidden")) {
+    closeReportReasonModal("");
+    return;
+  }
+
   if (isFloatingOpinionOpen) closeFloatingOpinionPanel();
   if (isMobileMenuOpen) closeMobileMenu();
 });
@@ -179,6 +209,21 @@ homeButtons.forEach((button) => {
 });
 
 reportNoticeClose?.addEventListener("click", hideReportNotice);
+reportReasonCancel?.addEventListener("click", () => closeReportReasonModal(""));
+reportReasonSubmit?.addEventListener("click", () => closeReportReasonModal(selectedReportReason || "otro"));
+reportReasonOverlay?.addEventListener("click", (event) => {
+  if (event.target === reportReasonOverlay) closeReportReasonModal("");
+});
+reportReasonList?.addEventListener("click", (event) => {
+  const option = event.target.closest(".report-reason-option");
+  if (!option) return;
+  selectedReportReason = option.dataset.reason || "otro";
+  reportReasonList.querySelectorAll(".report-reason-option").forEach((item) => {
+    item.classList.toggle("is-selected", item === option);
+  });
+  reportReasonSubmit.disabled = false;
+  reportReasonSubmit.focus();
+});
 
 backFromDetailButton.addEventListener("click", () => showView(lastViewBeforeDetail));
 backFromTopicButton.addEventListener("click", () => showView("topics"));
@@ -549,6 +594,11 @@ function containsBlockedLink(value) {
   return blockedLinkPattern.test(value);
 }
 
+function containsUnsafeContent(value) {
+  const normalizedValue = normalizeText(value);
+  return unsafeContentTerms.some((term) => normalizedValue.includes(normalizeText(term)));
+}
+
 function getFormErrorElement(form) {
   if (form === floatingOpinionForm) return floatingOpinionError;
   if (form === opinionForm) return opinionFormError;
@@ -584,6 +634,10 @@ function canPublishOpinion(rawText, rawTopic, form) {
   }
   if (containsBlockedLink(text) || containsBlockedLink(topic)) {
     showFormError(form, "No se pueden publicar links en opiniones ni respuestas.");
+    return false;
+  }
+  if (containsUnsafeContent(`${text} ${topic}`)) {
+    showFormError(form, "No se puede publicar contenido con datos sensibles, amenazas o material prohibido.");
     return false;
   }
   return true;
@@ -849,12 +903,13 @@ async function createReplyViaApi(opinionId, text) {
   return normalizeOpinion(data.opinion);
 }
 
-async function registerContentActionViaApi(action, contentType, contentId, opinionId) {
+async function registerContentActionViaApi(action, contentType, contentId, opinionId, reason = "") {
   const data = await callModerationApi({
     action,
     contentType,
     contentId,
-    opinionId
+    opinionId,
+    reason
   });
 
   const opinion = normalizeOpinion(data.opinion);
@@ -866,6 +921,33 @@ async function registerContentActionViaApi(action, contentType, contentId, opini
     if (reply) reply.liked = Boolean(data.active);
   }
   return { opinion, active: data.active };
+}
+
+function askReportReason() {
+  if (!reportReasonOverlay || !reportReasonList || !reportReasonSubmit) return Promise.resolve("otro");
+  selectedReportReason = "";
+  reportReasonSubmit.disabled = true;
+  reportReasonList.innerHTML = reportReasonOptions.map((option) => `
+    <button class="report-reason-option" type="button" data-reason="${escapeHtml(option.id)}">
+      ${escapeHtml(option.label)}
+    </button>
+  `).join("");
+
+  reportReasonOverlay.classList.remove("hidden");
+  reportReasonList.querySelector(".report-reason-option")?.focus();
+
+  return new Promise((resolve) => {
+    pendingReportResolver = resolve;
+  });
+}
+
+function closeReportReasonModal(reason) {
+  if (!reportReasonOverlay || reportReasonOverlay.classList.contains("hidden")) return;
+  reportReasonOverlay.classList.add("hidden");
+  const resolver = pendingReportResolver;
+  pendingReportResolver = null;
+  selectedReportReason = "";
+  if (resolver) resolver(reason);
 }
 
 function showReportNotice() {
@@ -1198,8 +1280,10 @@ function createOpinionCard(opinion, isDetail) {
 
   const reportButton = card.querySelector(".report-button");
   reportButton.addEventListener("click", async () => {
+    const reason = await askReportReason();
+    if (!reason) return;
     try {
-      const result = await registerContentActionViaApi("report", "opinion", opinion.id, opinion.id);
+      const result = await registerContentActionViaApi("report", "opinion", opinion.id, opinion.id, reason);
       Object.assign(opinion, result.opinion);
       reportButton.classList.add("is-confirmed");
       showToast("Reporte enviado");
@@ -1246,8 +1330,10 @@ function createOpinionCard(opinion, isDetail) {
     });
 
     item.querySelector(".report-button").addEventListener("click", async () => {
+      const reason = await askReportReason();
+      if (!reason) return;
       try {
-        const result = await registerContentActionViaApi("report", "reply", normalizedReply.id, opinion.id);
+        const result = await registerContentActionViaApi("report", "reply", normalizedReply.id, opinion.id, reason);
         Object.assign(opinion, result.opinion);
         render();
         showToast("Reporte enviado");
@@ -1267,6 +1353,10 @@ function createOpinionCard(opinion, isDetail) {
     if (!reply) return;
     if (containsBlockedLink(reply)) {
       rejectLinkedContent();
+      return;
+    }
+    if (containsUnsafeContent(reply)) {
+      showToast("No se puede publicar contenido con datos sensibles, amenazas o material prohibido.");
       return;
     }
 
@@ -1366,6 +1456,8 @@ function normalizeReply(reply) {
       text: reply.text || "",
       likes: Number(reply.likes || 0),
       reports: Number(reply.reports || 0),
+      reportReasons: Array.isArray(reply.reportReasons) ? reply.reportReasons : [],
+      moderationStatus: reply.moderationStatus || "approved",
       createdAt: normalizeDateValue(reply.createdAt),
       liked: Boolean(reply.liked)
     };
@@ -1547,6 +1639,9 @@ function normalizeOpinion(opinion) {
     replies: Array.isArray(opinion.replies) ? opinion.replies.map(normalizeReply) : [],
     liked: Boolean(opinion.liked),
     hidden: Boolean(opinion.hidden),
+    moderationStatus: opinion.moderationStatus || (opinion.hidden ? "hidden" : "approved"),
+    moderationReason: opinion.moderationReason || "",
+    reportReasons: Array.isArray(opinion.reportReasons) ? opinion.reportReasons : [],
     reports: Number(opinion.reports || 0),
     shares: Number(opinion.shares || 0),
     ip: opinion.ip || ""
@@ -1575,9 +1670,14 @@ function sanitizeOpinionForRemote(opinion) {
       text: reply.text,
       likes: reply.likes,
       reports: Number(reply.reports || 0),
+      reportReasons: Array.isArray(reply.reportReasons) ? reply.reportReasons : [],
+      moderationStatus: reply.moderationStatus || "approved",
       createdAt: reply.createdAt
     })),
     hidden: Boolean(opinion.hidden),
+    moderationStatus: opinion.moderationStatus || (opinion.hidden ? "hidden" : "approved"),
+    moderationReason: opinion.moderationReason || "",
+    reportReasons: Array.isArray(opinion.reportReasons) ? opinion.reportReasons : [],
     reports: Number(opinion.reports || 0),
     shares: Number(opinion.shares || 0),
     ip: opinion.ip || ""

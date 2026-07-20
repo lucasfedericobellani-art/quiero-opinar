@@ -1777,6 +1777,81 @@ button {
   background: rgba(255, 122, 0, 0.12);
 }
 
+.report-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 62;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(14px);
+}
+
+.report-modal {
+  width: min(520px, 100%);
+  padding: 26px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background: rgba(10, 10, 11, 0.98);
+  box-shadow: var(--shadow), inset 0 1px 0 rgba(255, 177, 74, 0.12);
+}
+
+.report-modal h2 {
+  margin: 8px 0 8px;
+  color: var(--text-hot);
+  font-size: 1.55rem;
+  letter-spacing: 0;
+}
+
+.report-modal p {
+  margin: 0 0 18px;
+  color: var(--text);
+}
+
+.report-reason-list {
+  display: grid;
+  gap: 10px;
+}
+
+.report-reason-option {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #080809;
+  color: var(--text);
+  font: inherit;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.report-reason-option:hover,
+.report-reason-option:focus-visible,
+.report-reason-option.is-selected {
+  border-color: var(--accent-hot);
+  background: rgba(255, 122, 0, 0.12);
+  color: var(--accent-hot);
+}
+
+.report-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.report-modal-actions .ghost-button {
+  margin-bottom: 0;
+}
+
+.report-modal-actions .primary-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .clipboard-helper {
   position: fixed;
   left: -9999px;

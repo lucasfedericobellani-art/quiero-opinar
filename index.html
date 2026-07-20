@@ -10,7 +10,7 @@
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-XY98SMBP52"></script>
     <script defer src="analytics.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=20260720-report-modal">
   </head>
   <body>
     <div class="welcome-overlay" id="welcomeOverlay" aria-live="polite">
@@ -63,11 +63,36 @@
             solicitudes de autoridad competente o incumplimientos de estas condiciones.
           </p>
           <p>
+            Reglas de comunidad: no publiques datos personales propios o de terceros,
+            amenazas, acoso, spam, enlaces peligrosos, contenido sexual explicito,
+            material ilegal, suplantacion de identidad ni mensajes pensados para
+            daÃ±ar a una persona o grupo. Las opiniones reportadas pueden quedar ocultas
+            automaticamente hasta que sean revisadas.
+          </p>
+          <p>
             Al opinar, la persona acepta que se registre su dirección IP, fecha, hora,
             identificadores técnicos y datos estrictamente necesarios para seguridad,
             prevención de abuso, auditoría y eventual cumplimiento de requerimientos
             legales. Esa información no será vendida ni compartida con fines
             comerciales.
+          </p>
+          <p>
+            Privacidad: el sitio puede guardar el texto publicado, tema, respuestas,
+            fecha, hora, vistas, likes, reportes, motivo de reporte, datos tecnicos
+            del navegador e IP o hash de IP. Estos datos se usan para operar la
+            plataforma, prevenir abuso, moderar contenido, medir uso del producto,
+            cumplir obligaciones legales y mejorar la experiencia.
+          </p>
+          <p>
+            Servicios externos: Quiero Opinar puede usar proveedores como Vercel,
+            Firebase/Google, Google Analytics y futuras herramientas de medicion,
+            seguridad o publicidad. Estos servicios pueden usar cookies, web beacons,
+            direcciones IP u otros identificadores conforme a sus propias politicas.
+          </p>
+          <p>
+            Si necesitas pedir revision, baja de contenido o hacer una consulta de
+            privacidad, escribi a contacto@quieroopinar.com.ar indicando el link o
+            numero de opinion y el motivo del pedido.
           </p>
           <p>
             Si una autoridad judicial, administrativa o competente solicita información
@@ -314,6 +339,19 @@
       <p>La opinión ha sido reportada. Los moderadores la estarán revisando a la brevedad para verificar si infringe alguna norma y tomar las acciones correspondientes.</p>
     </section>
 
+    <div class="report-modal-overlay hidden" id="reportReasonOverlay" aria-live="polite">
+      <section class="report-modal" role="dialog" aria-modal="true" aria-labelledby="reportReasonTitle">
+        <p class="section-label">moderación</p>
+        <h2 id="reportReasonTitle">Reportar contenido</h2>
+        <p>Elegí el motivo para que podamos revisarlo mejor.</p>
+        <div class="report-reason-list" id="reportReasonList"></div>
+        <div class="report-modal-actions">
+          <button class="ghost-button" id="reportReasonCancel" type="button">Cancelar</button>
+          <button class="primary-button" id="reportReasonSubmit" type="button" disabled>Enviar reporte</button>
+        </div>
+      </section>
+    </div>
+
     <template id="opinionTemplate">
       <article class="opinion-card">
         <button class="open-opinion" type="button" aria-label="Abrir opinión completa">
@@ -355,6 +393,6 @@
     </template>
 
     <script src="firebase-config.js"></script>
-    <script src="app.js?v=20260720-legal-modal-top"></script>
+    <script src="app.js?v=20260720-report-modal"></script>
   </body>
 </html>
