@@ -9,6 +9,7 @@ const adminOpinionList = document.querySelector("#adminOpinionList");
 const adminSearchForm = document.querySelector("#adminSearchForm");
 const adminSearchInput = document.querySelector("#adminSearchInput");
 const moderationTabButton = document.querySelector("#moderationTabButton");
+const moderatedTabButton = document.querySelector("#moderatedTabButton");
 const analyticsTabButton = document.querySelector("#analyticsTabButton");
 const moderationPanel = document.querySelector("#moderationPanel");
 const analyticsPanel = document.querySelector("#analyticsPanel");
@@ -97,6 +98,7 @@ function normalizeOpinion(opinion) {
     hidden: Boolean(opinion.hidden),
     moderationStatus: opinion.moderationStatus || (opinion.hidden ? "hidden" : "approved"),
     moderationReason: opinion.moderationReason || "",
+    moderatedAt: opinion.moderatedAt ? normalizeDateValue(opinion.moderatedAt) : "",
     reportReasons: Array.isArray(opinion.reportReasons) ? opinion.reportReasons : [],
     ip: opinion.ip || "",
     deleted: Boolean(opinion.deleted),
@@ -183,12 +185,32 @@ function getReplyReportSummary(opinion) {
   }).join(" · ");
 }
 
+function isModeratedOpinion(opinion) {
+  return Boolean(opinion.moderatedAt) || opinion.moderationStatus === "deleted";
+}
+
+function getModerationQueueOpinions() {
+  return opinions.filter((opinion) => !isModeratedOpinion(opinion))
+    .sort((a, b) => {
+      if (b.reports !== a.reports) return b.reports - a.reports;
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+}
+
+function getModeratedOpinions() {
+  return opinions.filter(isModeratedOpinion)
+    .sort((a, b) => new Date(b.moderatedAt || b.createdAt).getTime() - new Date(a.moderatedAt || a.createdAt).getTime());
+}
+
 function getFilteredOpinions() {
+  const sourceOpinions = activeAdminPanel === "moderated"
+    ? getModeratedOpinions()
+    : activeAdminPanel === "moderation"
+      ? getModerationQueueOpinions()
+      : opinions;
   const query = adminSearchQuery.trim();
   if (!query) {
-    return activeAdminPanel === "moderation"
-      ? opinions.slice().sort((a, b) => b.reports - a.reports)
-      : opinions;
+    return sourceOpinions;
   }
 
   const numberMap = getOpinionNumberMap();
@@ -196,7 +218,7 @@ function getFilteredOpinions() {
   const exactNumber = normalizedQuery.match(/^#?(\d+)$/)?.[1] || "";
   const terms = normalizedQuery.split(/[^a-z0-9.:-]+/).filter(Boolean);
 
-  return opinions.filter((opinion) => {
+  return sourceOpinions.filter((opinion) => {
     const opinionNumber = String(numberMap.get(opinion.id) || "");
     if (exactNumber && opinionNumber === exactNumber) return true;
 
@@ -222,9 +244,12 @@ function renderAdminList() {
   const numberMap = getOpinionNumberMap();
 
   if (!visibleOpinions.length) {
-    adminOpinionList.innerHTML = opinions.length
-      ? '<p class="admin-empty">No se encontraron opiniones con esa búsqueda.</p>'
-      : '<p class="admin-empty">No hay opiniones para moderar.</p>';
+    const emptyMessage = adminSearchQuery.trim()
+      ? "No se encontraron opiniones con esa búsqueda."
+      : activeAdminPanel === "moderated"
+        ? "Todavía no hay opiniones moderadas."
+        : "No hay opiniones pendientes por moderar.";
+    adminOpinionList.innerHTML = `<p class="admin-empty">${emptyMessage}</p>`;
     return;
   }
 
@@ -262,10 +287,12 @@ function renderAdminList() {
 function renderSummary() {
   const hiddenCount = opinions.filter((opinion) => opinion.hidden).length;
   const reportedCount = opinions.filter((opinion) => opinion.reports > 0).length;
+  const pendingCount = getModerationQueueOpinions().length;
+  const moderatedCount = getModeratedOpinions().length;
   const filteredCount = getFilteredOpinions().length;
   adminSummary.textContent = adminSearchQuery.trim()
-    ? `${filteredCount} de ${opinions.length} opiniones encontradas - ${reportedCount} reportadas - ${hiddenCount} ocultas`
-    : `${opinions.length} opiniones cargadas - ${reportedCount} reportadas - ${hiddenCount} ocultas`;
+    ? `${filteredCount} encontradas - ${pendingCount} por moderar - ${moderatedCount} moderadas`
+    : `${pendingCount} por moderar - ${moderatedCount} moderadas - ${reportedCount} reportadas - ${hiddenCount} ocultas`;
 }
 
 function setAdminPanel(panelName) {
@@ -273,7 +300,13 @@ function setAdminPanel(panelName) {
   moderationPanel.classList.toggle("hidden", panelName !== "moderation");
   analyticsPanel.classList.toggle("hidden", panelName !== "analytics");
   moderationTabButton.classList.toggle("active", panelName === "moderation");
+  moderatedTabButton.classList.toggle("active", panelName === "moderated");
   analyticsTabButton.classList.toggle("active", panelName === "analytics");
+  if (panelName === "moderation" || panelName === "moderated") {
+    moderationPanel.classList.remove("hidden");
+    renderSummary();
+    renderAdminList();
+  }
   if (panelName === "analytics") renderAnalytics();
 }
 
@@ -784,6 +817,7 @@ async function initializeAdmin() {
   });
 
   moderationTabButton.addEventListener("click", () => setAdminPanel("moderation"));
+  moderatedTabButton.addEventListener("click", () => setAdminPanel("moderated"));
   analyticsTabButton.addEventListener("click", () => setAdminPanel("analytics"));
 
   [analyticsDateRange, analyticsDateFrom, analyticsDateTo, analyticsTopicFilter, analyticsTypeFilter].forEach((input) => {
@@ -828,7 +862,8 @@ async function initializeAdmin() {
         await updateDoc(doc(db, "opinions", opinionId), {
           hidden: !opinion.hidden,
           moderationStatus: opinion.hidden ? "approved" : "hidden",
-          moderationReason: opinion.hidden ? "" : "oculta_por_admin"
+          moderationReason: opinion.hidden ? "" : "oculta_por_admin",
+          moderatedAt: new Date().toISOString()
         });
       }
 
@@ -836,7 +871,8 @@ async function initializeAdmin() {
         await updateDoc(doc(db, "opinions", opinionId), {
           hidden: false,
           moderationStatus: "approved",
-          moderationReason: ""
+          moderationReason: "",
+          moderatedAt: new Date().toISOString()
         });
       }
 
