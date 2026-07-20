@@ -142,7 +142,6 @@ let hasHandledInitialOpinion = false;
 let isRestoringHistory = false;
 let pendingScrollRestore = null;
 let activeReplyControl = null;
-let activeReplyForm = null;
 let replyViewportTimer = 0;
 let dataStore = createLocalDataStore();
 
@@ -274,6 +273,7 @@ if (mobileViewportQuery.addEventListener) {
 }
 
 window.addEventListener("popstate", (event) => {
+  clearReplyKeyboardAssist();
   restoreViewFromHistory(event.state);
 });
 
@@ -281,8 +281,6 @@ document.addEventListener("focusin", (event) => {
   const control = event.target.closest?.(".reply-form input, .reply-form textarea");
   if (!control) return;
   activeReplyControl = control;
-  activeReplyForm = control.closest(".reply-form");
-  activeReplyForm?.classList.add("is-keyboard-docked");
   document.body.classList.add("reply-field-focused");
   updateViewportMetrics();
   scheduleActiveReplyControlVisibility();
@@ -293,9 +291,13 @@ document.addEventListener("focusout", (event) => {
   window.setTimeout(() => {
     if (document.activeElement?.closest?.(".reply-form")) return;
     activeReplyControl = null;
-    activeReplyForm = null;
     clearReplyKeyboardAssist();
   }, 80);
+});
+
+document.addEventListener("input", (event) => {
+  if (event.target !== activeReplyControl) return;
+  scheduleActiveReplyControlVisibility();
 });
 
 floatingOpinionTrigger.addEventListener("click", () => {
@@ -734,6 +736,7 @@ function setPublishingState(form, isPublishing) {
 
 function showView(viewName, options = {}) {
   const { scrollToTop = true } = options;
+  clearReplyKeyboardAssist();
   currentView = viewName;
   homeView.classList.toggle("hidden", viewName !== "home");
   aboutView.classList.toggle("hidden", viewName !== "about");
@@ -864,7 +867,6 @@ function showOpinionDetailAfterReply(opinionId, wasDetailView) {
   activeReplyControl?.blur?.();
   activeReplyControl = null;
   clearReplyKeyboardAssist();
-  activeReplyForm = null;
   selectedOpinionId = opinionId;
 
   if (wasDetailView) {
@@ -1228,21 +1230,26 @@ function scheduleActiveReplyControlVisibility() {
   if (!activeReplyControl || !isMobileViewport()) return;
   window.clearTimeout(replyViewportTimer);
   window.requestAnimationFrame(ensureActiveReplyControlVisible);
-  replyViewportTimer = window.setTimeout(ensureActiveReplyControlVisible, 180);
+  window.setTimeout(ensureActiveReplyControlVisible, 90);
+  replyViewportTimer = window.setTimeout(ensureActiveReplyControlVisible, 260);
+  window.setTimeout(ensureActiveReplyControlVisible, 520);
 }
 
 function ensureActiveReplyControlVisible() {
   if (!activeReplyControl || !isMobileViewport()) return;
   const form = activeReplyControl.closest(".reply-form");
   if (!form) return;
-  if (form.classList.contains("is-keyboard-docked")) return;
 
   const viewport = getVisualViewportBounds();
   const rect = form.getBoundingClientRect();
-  const keyboardOffset = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--reply-keyboard-offset")) || 0;
-  const keyboardChromeBuffer = keyboardOffset > 0 ? Math.min(150, Math.max(96, viewport.height * 0.16)) : 32;
-  const topLimit = viewport.top + 72;
-  const bottomLimit = viewport.bottom - keyboardChromeBuffer;
+  const card = form.closest(".opinion-card");
+  const contextRect = card?.getBoundingClientRect() || rect;
+  const replyOffset = getEffectiveReplyKeyboardOffset(
+    parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--keyboard-offset")) || 0
+  );
+  const visibleBottom = Math.min(viewport.bottom, window.innerHeight - replyOffset);
+  const topLimit = viewport.top + 82;
+  const bottomLimit = Math.max(topLimit + 160, visibleBottom - 28);
   let delta = 0;
 
   if (rect.bottom > bottomLimit) {
@@ -1251,16 +1258,18 @@ function ensureActiveReplyControlVisible() {
     delta = rect.top - topLimit;
   }
 
+  const contextTopAfterScroll = contextRect.top - delta;
+  if (contextTopAfterScroll > topLimit + 24 && rect.bottom <= bottomLimit) {
+    delta = contextRect.top - (topLimit + 24);
+  }
+
   if (Math.abs(delta) < 2) return;
   window.scrollBy({ top: delta, behavior: "smooth" });
 }
 
 function clearReplyKeyboardAssist() {
   window.clearTimeout(replyViewportTimer);
-  activeReplyForm?.classList.remove("is-keyboard-docked");
-  document.querySelectorAll(".reply-form.is-keyboard-docked").forEach((form) => {
-    form.classList.remove("is-keyboard-docked");
-  });
+  activeReplyControl = null;
   document.body.classList.remove("reply-field-focused");
   document.documentElement.style.setProperty("--reply-keyboard-offset", "0px");
 }
