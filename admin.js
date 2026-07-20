@@ -112,13 +112,42 @@ function normalizeText(value) {
 }
 
 function getOpinionNumberMap() {
-  const ordered = opinions.slice().sort((a, b) => {
-    const dateDiff = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-    if (dateDiff !== 0) return dateDiff;
-    return a.id.localeCompare(b.id);
-  });
+  const getContributionNumbers = (sourceOpinions) => {
+    const entries = [];
 
-  return new Map(ordered.map((opinion, index) => [opinion.id, index + 1]));
+    sourceOpinions.forEach((opinion) => {
+      entries.push({
+        key: `opinion:${opinion.id}`,
+        createdAt: opinion.createdAt,
+        fallback: opinion.id
+      });
+
+      opinion.replies.forEach((reply, index) => {
+        entries.push({
+          key: `reply:${opinion.id}:${reply.id || index}`,
+          createdAt: reply.createdAt || opinion.createdAt,
+          fallback: `${opinion.id}:${reply.id || index}`
+        });
+      });
+    });
+
+    entries.sort((a, b) => {
+      const dateDiff = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      if (dateDiff !== 0) return dateDiff;
+      return a.fallback.localeCompare(b.fallback);
+    });
+
+    return new Map(entries.map((entry, index) => [entry.key, index + 1]));
+  };
+
+  const visibleContributionNumbers = getContributionNumbers(opinions.filter((opinion) => !opinion.hidden));
+  const fallbackContributionNumbers = getContributionNumbers(opinions);
+  return new Map(opinions.map((opinion) => [
+    opinion.id,
+    visibleContributionNumbers.get(`opinion:${opinion.id}`)
+      || fallbackContributionNumbers.get(`opinion:${opinion.id}`)
+      || 0
+  ]));
 }
 
 function getFilteredOpinions() {

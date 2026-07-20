@@ -633,8 +633,17 @@ function showView(viewName) {
   if (viewName === "home") isMainComposerVisible = true;
   closeMobileMenu(false);
   closeFloatingOpinionPanel(false);
+  syncUrlForView(viewName);
   updateFloatingOpinionVisibility();
   window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function syncUrlForView(viewName) {
+  if (viewName !== "home") return;
+  const url = new URL(window.location.href);
+  if (!url.searchParams.has("opinion")) return;
+  url.searchParams.delete("opinion");
+  window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
 }
 
 function openFloatingOpinionPanel() {
