@@ -65,7 +65,9 @@ const opinionTemplate = document.querySelector("#opinionTemplate");
 const activeTopicPill = document.querySelector("#activeTopicPill");
 const searchInputs = document.querySelectorAll(".search-input");
 const legalOverlay = document.querySelector("#legalOverlay");
+const legalModal = document.querySelector(".legal-modal");
 const legalOpenButton = document.querySelector("#legalOpenButton");
+const legalTitle = document.querySelector("#legalTitle");
 const legalCloseButton = document.querySelector("#legalCloseButton");
 const legalTriggers = document.querySelectorAll(".legal-trigger");
 const homeView = document.querySelector("#homeView");
@@ -130,14 +132,12 @@ enterButton.addEventListener("click", () => {
 
 legalOpenButton.addEventListener("click", () => {
   closeMobileMenu(false);
-  legalOverlay.classList.remove("hidden");
-  legalCloseButton.focus();
+  openLegalModal();
 });
 
 legalTriggers.forEach((trigger) => {
   trigger.addEventListener("click", () => {
-    legalOverlay.classList.remove("hidden");
-    legalCloseButton.focus();
+    openLegalModal();
   });
 });
 
@@ -248,6 +248,15 @@ floatingOpinionForm.querySelector('button[type="submit"]')?.addEventListener("po
 function closeLegalModal() {
   legalOverlay.classList.add("hidden");
   legalOpenButton.focus();
+}
+
+function openLegalModal() {
+  legalOverlay.classList.remove("hidden");
+  legalModal.scrollTop = 0;
+  legalTitle.focus({ preventScroll: true });
+  window.requestAnimationFrame(() => {
+    legalModal.scrollTop = 0;
+  });
 }
 
 function setMobileMenuOpen(isOpen) {
