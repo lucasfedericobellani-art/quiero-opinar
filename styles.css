@@ -2341,6 +2341,28 @@ button {
     scroll-margin-bottom: calc(var(--reply-keyboard-offset, 0px) + 140px);
   }
 
+  .reply-form.is-keyboard-docked {
+    position: fixed;
+    left: max(12px, env(safe-area-inset-left));
+    right: max(12px, env(safe-area-inset-right));
+    bottom: calc(var(--reply-keyboard-offset, 44vh) + 12px + env(safe-area-inset-bottom));
+    z-index: 80;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+    margin: 0;
+    padding: 12px;
+    border: 1px solid rgba(255, 122, 0, 0.36);
+    border-radius: 12px;
+    background: rgba(3, 3, 4, 0.98);
+    box-shadow: 0 0 0 1px rgba(255, 177, 74, 0.08), 0 18px 46px rgba(0, 0, 0, 0.55);
+  }
+
+  .reply-form.is-keyboard-docked input {
+    min-height: 46px;
+    font-size: 16px;
+  }
+
   .reply-form {
     grid-template-columns: 1fr;
   }

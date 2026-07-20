@@ -142,6 +142,7 @@ let hasHandledInitialOpinion = false;
 let isRestoringHistory = false;
 let pendingScrollRestore = null;
 let activeReplyControl = null;
+let activeReplyForm = null;
 let replyViewportTimer = 0;
 let dataStore = createLocalDataStore();
 
@@ -280,6 +281,8 @@ document.addEventListener("focusin", (event) => {
   const control = event.target.closest?.(".reply-form input, .reply-form textarea");
   if (!control) return;
   activeReplyControl = control;
+  activeReplyForm = control.closest(".reply-form");
+  activeReplyForm?.classList.add("is-keyboard-docked");
   document.body.classList.add("reply-field-focused");
   updateViewportMetrics();
   scheduleActiveReplyControlVisibility();
@@ -290,6 +293,7 @@ document.addEventListener("focusout", (event) => {
   window.setTimeout(() => {
     if (document.activeElement?.closest?.(".reply-form")) return;
     activeReplyControl = null;
+    activeReplyForm = null;
     clearReplyKeyboardAssist();
   }, 80);
 });
@@ -849,6 +853,31 @@ function refreshCurrentDetailHistoryState() {
   window.history.replaceState(detailState, "", getOpinionPath({ id: selectedOpinionId }));
 }
 
+function scrollPageToTopAfterLayout() {
+  window.requestAnimationFrame(() => {
+    window.scrollTo({ top: 0, behavior: "auto" });
+    window.setTimeout(() => window.scrollTo({ top: 0, behavior: "auto" }), 220);
+  });
+}
+
+function showOpinionDetailAfterReply(opinionId, wasDetailView) {
+  activeReplyControl?.blur?.();
+  activeReplyControl = null;
+  clearReplyKeyboardAssist();
+  activeReplyForm = null;
+  selectedOpinionId = opinionId;
+
+  if (wasDetailView) {
+    render();
+    showView("detail", { scrollToTop: false });
+    refreshCurrentDetailHistoryState();
+  } else {
+    openOpinion(opinionId, { skipViewUpdate: true });
+  }
+
+  scrollPageToTopAfterLayout();
+}
+
 function openFloatingOpinionPanel() {
   isFloatingOpinionOpen = true;
   updateViewportMetrics();
@@ -891,14 +920,20 @@ function updateViewportMetrics() {
   const keyboardOffset = viewport
     ? Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop)
     : 0;
+  const replyOffset = getEffectiveReplyKeyboardOffset(keyboardOffset);
 
   document.documentElement.style.setProperty("--visual-viewport-height", `${viewportHeight}px`);
   document.documentElement.style.setProperty("--keyboard-offset", `${keyboardOffset}px`);
   if (activeReplyControl) {
-    const replyOffset = isMobileViewport() ? keyboardOffset : 0;
     document.documentElement.style.setProperty("--reply-keyboard-offset", `${replyOffset}px`);
     scheduleActiveReplyControlVisibility();
   }
+}
+
+function getEffectiveReplyKeyboardOffset(rawOffset = 0) {
+  if (!activeReplyControl || !isMobileViewport()) return 0;
+  const fallbackOffset = Math.round(window.innerHeight * 0.44);
+  return Math.max(rawOffset, fallbackOffset);
 }
 
 function isMobileViewport() {
@@ -966,8 +1001,10 @@ function openOpinion(opinionId, options = {}) {
     }
   }
 
-  opinion.views += 1;
-  dataStore.updateOpinion(opinion);
+  if (!options.skipViewUpdate) {
+    opinion.views += 1;
+    dataStore.updateOpinion(opinion);
+  }
   render();
   showView("detail", { scrollToTop: !options.preserveScroll });
 }
@@ -1198,6 +1235,7 @@ function ensureActiveReplyControlVisible() {
   if (!activeReplyControl || !isMobileViewport()) return;
   const form = activeReplyControl.closest(".reply-form");
   if (!form) return;
+  if (form.classList.contains("is-keyboard-docked")) return;
 
   const viewport = getVisualViewportBounds();
   const rect = form.getBoundingClientRect();
@@ -1219,6 +1257,10 @@ function ensureActiveReplyControlVisible() {
 
 function clearReplyKeyboardAssist() {
   window.clearTimeout(replyViewportTimer);
+  activeReplyForm?.classList.remove("is-keyboard-docked");
+  document.querySelectorAll(".reply-form.is-keyboard-docked").forEach((form) => {
+    form.classList.remove("is-keyboard-docked");
+  });
   document.body.classList.remove("reply-field-focused");
   document.documentElement.style.setProperty("--reply-keyboard-offset", "0px");
 }
@@ -1560,6 +1602,7 @@ function createOpinionCard(opinion, isDetail) {
   const replyInput = replyForm.querySelector("input");
   replyForm.addEventListener("submit", async (event) => {
     event.preventDefault();
+    const wasDetailView = currentView === "detail";
     const reply = replyInput.value.trim();
     if (!reply) return;
     if (containsBlockedLink(reply)) {
@@ -1574,10 +1617,8 @@ function createOpinionCard(opinion, isDetail) {
     try {
       const updatedOpinion = await createReplyViaApi(opinion.id, reply);
       Object.assign(opinion, updatedOpinion);
-      selectedOpinionId = opinion.id;
-      render();
-      showView("detail", { scrollToTop: false });
-      refreshCurrentDetailHistoryState();
+      replyInput.value = "";
+      showOpinionDetailAfterReply(opinion.id, wasDetailView);
       showToast("Respuesta publicada");
     } catch (error) {
       showToast(getApiErrorMessage(error, "No se pudo publicar la respuesta."));
