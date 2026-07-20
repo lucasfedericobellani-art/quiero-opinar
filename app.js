@@ -282,6 +282,7 @@ document.addEventListener("focusin", (event) => {
   if (!control) return;
   activeReplyControl = control;
   document.body.classList.add("reply-field-focused");
+  resizeReplyControl(control);
   updateViewportMetrics();
   scheduleActiveReplyControlVisibility();
 });
@@ -297,6 +298,7 @@ document.addEventListener("focusout", (event) => {
 
 document.addEventListener("input", (event) => {
   if (event.target !== activeReplyControl) return;
+  resizeReplyControl(event.target);
   scheduleActiveReplyControlVisibility();
 });
 
@@ -1226,6 +1228,15 @@ function getVisualViewportBounds() {
   };
 }
 
+function resizeReplyControl(control) {
+  if (!control || control.tagName !== "TEXTAREA") return;
+  const maxHeight = isMobileViewport() ? 150 : 118;
+  control.style.height = "auto";
+  const nextHeight = Math.min(Math.max(control.scrollHeight, 40), maxHeight);
+  control.style.height = `${nextHeight}px`;
+  control.style.overflowY = control.scrollHeight > maxHeight ? "auto" : "hidden";
+}
+
 function scheduleActiveReplyControlVisibility() {
   if (!activeReplyControl || !isMobileViewport()) return;
   window.clearTimeout(replyViewportTimer);
@@ -1608,7 +1619,8 @@ function createOpinionCard(opinion, isDetail) {
   });
 
   const replyForm = card.querySelector(".reply-form");
-  const replyInput = replyForm.querySelector("input");
+  const replyInput = replyForm.querySelector("textarea, input");
+  resizeReplyControl(replyInput);
   replyForm.addEventListener("submit", async (event) => {
     event.preventDefault();
     const wasDetailView = currentView === "detail";
@@ -1627,6 +1639,7 @@ function createOpinionCard(opinion, isDetail) {
       const updatedOpinion = await createReplyViaApi(opinion.id, reply);
       Object.assign(opinion, updatedOpinion);
       replyInput.value = "";
+      resizeReplyControl(replyInput);
       showOpinionDetailAfterReply(opinion.id, wasDetailView);
       showToast("Respuesta publicada");
     } catch (error) {

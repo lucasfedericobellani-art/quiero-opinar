@@ -10,7 +10,7 @@
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-XY98SMBP52"></script>
     <script defer src="analytics.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=20260720-mobile-reply-scroll">
+    <link rel="stylesheet" href="styles.css?v=20260720-mobile-reply-wrap">
   </head>
   <body>
     <div class="welcome-overlay" id="welcomeOverlay" aria-live="polite">
@@ -386,13 +386,13 @@
         <div class="thread"></div>
         <form class="reply-form">
           <label class="sr-only">Responder opinión</label>
-          <input type="text" placeholder="Responder..." required>
+          <textarea rows="1" placeholder="Responder..." required></textarea>
           <button type="submit">Responder</button>
         </form>
       </article>
     </template>
 
     <script src="firebase-config.js"></script>
-    <script src="app.js?v=20260720-mobile-reply-scroll"></script>
+    <script src="app.js?v=20260720-mobile-reply-wrap"></script>
   </body>
 </html>

@@ -447,12 +447,14 @@ button {
 }
 
 .opinion-form textarea::placeholder,
-.reply-form input::placeholder {
+.reply-form input::placeholder,
+.reply-form textarea::placeholder {
   color: rgba(255, 138, 31, 0.48);
 }
 
 .opinion-form textarea:focus,
 .reply-form input:focus,
+.reply-form textarea:focus,
 .topic-input:focus {
   border-color: var(--accent-hot);
   box-shadow: 0 0 0 4px rgba(255, 122, 0, 0.14), 0 0 28px rgba(255, 122, 0, 0.14);
@@ -1956,19 +1958,32 @@ button {
 .reply-form {
   display: grid;
   grid-template-columns: 1fr auto;
+  align-items: start;
   gap: 10px;
   margin-top: 14px;
 }
 
-.reply-form input {
+.reply-form input,
+.reply-form textarea {
   min-width: 0;
   min-height: 40px;
-  padding: 0 12px;
+  padding: 10px 12px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #060606;
   color: var(--text-hot);
   outline: none;
+}
+
+.reply-form textarea {
+  height: 40px;
+  max-height: 150px;
+  resize: none;
+  overflow: hidden;
+  line-height: 1.35;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .reply-form button {
