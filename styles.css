@@ -2334,11 +2334,11 @@ button {
   }
 
   body.reply-field-focused {
-    padding-bottom: calc(var(--reply-keyboard-offset, 0px) + env(safe-area-inset-bottom));
+    padding-bottom: calc(var(--reply-keyboard-offset, 0px) + 120px + env(safe-area-inset-bottom));
   }
 
   body.reply-field-focused .detail-shell {
-    scroll-margin-bottom: calc(var(--reply-keyboard-offset, 0px) + 24px);
+    scroll-margin-bottom: calc(var(--reply-keyboard-offset, 0px) + 140px);
   }
 
   .reply-form {

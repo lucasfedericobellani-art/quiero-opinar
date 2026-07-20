@@ -829,6 +829,26 @@ function restorePendingScrollPosition() {
   });
 }
 
+function refreshCurrentDetailHistoryState() {
+  if (currentView !== "detail" || !selectedOpinionId) return;
+  const state = window.history.state || {};
+  const detailState = {
+    ...state,
+    view: "detail",
+    opinionId: selectedOpinionId,
+    returnState: state.returnState || {
+      view: lastViewBeforeDetail || "home",
+      activeTopic,
+      selectedTopicId,
+      searchQuery,
+      scrollY: 0,
+      lastViewBeforeDetail
+    },
+    directEntry: Boolean(state.directEntry)
+  };
+  window.history.replaceState(detailState, "", getOpinionPath({ id: selectedOpinionId }));
+}
+
 function openFloatingOpinionPanel() {
   isFloatingOpinionOpen = true;
   updateViewportMetrics();
@@ -1181,8 +1201,10 @@ function ensureActiveReplyControlVisible() {
 
   const viewport = getVisualViewportBounds();
   const rect = form.getBoundingClientRect();
-  const topLimit = viewport.top + 76;
-  const bottomLimit = viewport.bottom - 18;
+  const keyboardOffset = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--reply-keyboard-offset")) || 0;
+  const keyboardChromeBuffer = keyboardOffset > 0 ? Math.min(150, Math.max(96, viewport.height * 0.16)) : 32;
+  const topLimit = viewport.top + 72;
+  const bottomLimit = viewport.bottom - keyboardChromeBuffer;
   let delta = 0;
 
   if (rect.bottom > bottomLimit) {
@@ -1554,7 +1576,8 @@ function createOpinionCard(opinion, isDetail) {
       Object.assign(opinion, updatedOpinion);
       selectedOpinionId = opinion.id;
       render();
-      showView("detail");
+      showView("detail", { scrollToTop: false });
+      refreshCurrentDetailHistoryState();
       showToast("Respuesta publicada");
     } catch (error) {
       showToast(getApiErrorMessage(error, "No se pudo publicar la respuesta."));
