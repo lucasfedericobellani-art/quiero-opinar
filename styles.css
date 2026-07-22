@@ -1911,6 +1911,66 @@ button {
   color: var(--muted);
 }
 
+.opinion-skeleton,
+.topic-button-skeleton {
+  pointer-events: none;
+}
+
+.skeleton-line,
+.skeleton-actions {
+  display: block;
+  overflow: hidden;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(255, 122, 0, 0.08), rgba(255, 177, 74, 0.2), rgba(255, 122, 0, 0.08));
+  background-size: 220% 100%;
+  animation: skeletonShimmer 1.15s ease-in-out infinite;
+}
+
+.opinion-skeleton .skeleton-line {
+  height: 12px;
+  margin-bottom: 12px;
+}
+
+.opinion-skeleton .meta {
+  width: 42%;
+  height: 10px;
+}
+
+.opinion-skeleton .title {
+  width: 72%;
+  height: 18px;
+}
+
+.opinion-skeleton .body {
+  width: 100%;
+}
+
+.opinion-skeleton .short {
+  width: 58%;
+}
+
+.skeleton-actions {
+  width: 168px;
+  height: 30px;
+  margin-top: 14px;
+}
+
+.topic-button-skeleton .skeleton-line {
+  justify-self: end;
+  width: 74px;
+  height: 28px;
+}
+
+@keyframes skeletonShimmer {
+  from {
+    background-position: 100% 0;
+  }
+
+  to {
+    background-position: -100% 0;
+  }
+}
+
 .opinion-form.is-publishing,
 .floating-opinion-form.is-publishing {
   opacity: 0.72;

@@ -33,6 +33,8 @@ const topicRules = [
 ];
 
 const seedOpinions = [];
+const cachedOpinionsKey = "quiero-opinar:cached-opinions";
+const cachedTopicsKey = "quiero-opinar:cached-topics";
 
 const trendingWindowHours = 6;
 const trendingRefreshHours = 12;
@@ -144,6 +146,8 @@ let pendingScrollRestore = null;
 let activeReplyControl = null;
 let replyViewportTimer = 0;
 let dataStore = createLocalDataStore();
+
+hydrateInitialContentFromCache();
 
 nextWelcomeButton.addEventListener("click", () => {
   welcomeStepOne.classList.add("hidden");
@@ -1174,6 +1178,11 @@ function hideReportNotice() {
 function renderTopics() {
   topicList.innerHTML = "";
 
+  if (!hasLoadedOpinions && !getVisibleOpinions().length) {
+    renderTopicSkeletons();
+    return;
+  }
+
   const trendingTopics = getRecentTopicActivity();
 
   if (!trendingTopics.length) {
@@ -1203,6 +1212,32 @@ function renderTopics() {
     count.textContent = `${topic.totalViews} vistas`;
     button.append(content, count);
     button.addEventListener("click", () => openTopic(topic.id));
+    topicList.append(button);
+  });
+}
+
+function createSkeletonElement(className) {
+  const item = document.createElement("span");
+  item.className = className;
+  item.setAttribute("aria-hidden", "true");
+  return item;
+}
+
+function renderTopicSkeletons() {
+  getVisibleTopics().slice(0, 3).forEach((topic) => {
+    const button = document.createElement("button");
+    button.className = "topic-button topic-button-skeleton";
+    button.type = "button";
+    button.disabled = true;
+    const content = document.createElement("span");
+    content.className = "topic-button-content";
+    const strong = document.createElement("strong");
+    const name = document.createElement("span");
+    name.className = "topic-button-name";
+    name.textContent = topic.name;
+    strong.append(name);
+    content.append(strong);
+    button.append(content, createSkeletonElement("topic-count skeleton-line short"));
     topicList.append(button);
   });
 }
@@ -1374,11 +1409,9 @@ function renderFeed() {
 
   const filteredOpinions = getTopicOpinions(activeTopic);
 
-  if (!hasLoadedOpinions) {
-    const loading = document.createElement("p");
-    loading.className = "opinion-card feed-loading";
-    loading.textContent = "Cargando opiniones...";
-    feedList.append(loading);
+  if (!hasLoadedOpinions && !filteredOpinions.length) {
+    renderFeedSkeletons();
+    renderDiscovery();
     return;
   }
 
@@ -1387,6 +1420,7 @@ function renderFeed() {
     empty.className = "opinion-card";
     empty.textContent = "Todavía no hay opiniones en este tema. Podés abrir el primer hilo.";
     feedList.append(empty);
+    renderDiscovery();
     return;
   }
 
@@ -1394,6 +1428,22 @@ function renderFeed() {
     feedList.append(createOpinionCard(opinion, false));
   });
   renderDiscovery();
+}
+
+function renderFeedSkeletons() {
+  for (let index = 0; index < 2; index += 1) {
+    const card = document.createElement("article");
+    card.className = "opinion-card opinion-skeleton";
+    card.setAttribute("aria-label", "Cargando opiniones");
+    card.append(
+      createSkeletonElement("skeleton-line meta"),
+      createSkeletonElement("skeleton-line title"),
+      createSkeletonElement("skeleton-line body"),
+      createSkeletonElement("skeleton-line body short"),
+      createSkeletonElement("skeleton-actions")
+    );
+    feedList.append(card);
+  }
 }
 
 function getSearchResults(sourceOpinions, queryValue = searchQuery) {
@@ -1748,6 +1798,33 @@ function resetPersistedContentIfNeeded() {
   window.localStorage.setItem(resetStorageKey, "1");
 }
 
+function loadCachedArray(key) {
+  try {
+    const cached = window.localStorage.getItem(key);
+    if (!cached) return [];
+    const parsed = JSON.parse(cached);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function hydrateInitialContentFromCache() {
+  const cachedTopics = loadCachedArray(cachedTopicsKey);
+  const cachedOpinions = loadCachedArray(cachedOpinionsKey);
+  if (cachedTopics.length) topics = mergeTopics(cachedTopics);
+  if (cachedOpinions.length) opinions = cachedOpinions.map(normalizeOpinion);
+}
+
+function cacheRemoteContent(nextOpinions) {
+  try {
+    window.localStorage.setItem(cachedOpinionsKey, JSON.stringify(nextOpinions.slice(0, 60)));
+    window.localStorage.setItem(cachedTopicsKey, JSON.stringify(topics));
+  } catch {
+    // Cache is only a paint-speed helper. Ignore quota/private-mode failures.
+  }
+}
+
 function createLocalDataStore() {
   const opinionsKey = "quiero-opinar:opinions";
   const topicsKey = "quiero-opinar:topics";
@@ -1862,6 +1939,7 @@ async function createFirebaseDataStore() {
       return onSnapshot(query(collection(db, "opinions"), orderBy("createdAt", "desc")), (snapshot) => {
         opinions = snapshot.docs.map((item) => normalizeOpinion({ id: item.id, ...item.data() }));
         hasLoadedOpinions = true;
+        cacheRemoteContent(opinions);
         onChange(opinions);
       });
     },
@@ -2017,6 +2095,9 @@ async function initializeAppData() {
   resetPersistedContentIfNeeded();
   initializeNavigationState();
   setupViewportMetrics();
+  render();
+  setupComposerVisibilityObserver();
+  updateFloatingOpinionVisibility();
 
   try {
     dataStore = await createFirebaseDataStore();
@@ -2027,7 +2108,6 @@ async function initializeAppData() {
     await dataStore.subscribe(() => render());
   }
 
-  setupComposerVisibilityObserver();
   updateFloatingOpinionVisibility();
   render();
   window.setInterval(renderTopics, trendingRefreshHours * 60 * 60 * 1000);

@@ -7,10 +7,13 @@
     <link rel="icon" type="image/svg+xml" href="assets/logo.svg">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
+    <link rel="dns-prefetch" href="https://identitytoolkit.googleapis.com">
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-XY98SMBP52"></script>
     <script defer src="analytics.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=20260720-mobile-reply-wrap">
+    <link rel="stylesheet" href="styles.css?v=20260722-fast-first-paint">
   </head>
   <body>
     <div class="welcome-overlay" id="welcomeOverlay" aria-live="polite">
@@ -180,7 +183,15 @@
                 <span class="pill" id="activeTopicPill">Todos</span>
               </div>
             </div>
-            <div class="feed-list" id="feedList"></div>
+            <div class="feed-list" id="feedList">
+              <article class="opinion-card opinion-skeleton" aria-label="Cargando opiniones">
+                <span class="skeleton-line meta" aria-hidden="true"></span>
+                <span class="skeleton-line title" aria-hidden="true"></span>
+                <span class="skeleton-line body" aria-hidden="true"></span>
+                <span class="skeleton-line body short" aria-hidden="true"></span>
+                <span class="skeleton-actions" aria-hidden="true"></span>
+              </article>
+            </div>
             <section class="discovery-panel" aria-labelledby="discoveryTitle">
               <p class="section-label" id="discoveryTitle">También te puede interesar</p>
               <div class="discovery-grid" id="discoveryGrid"></div>
@@ -393,6 +404,6 @@
     </template>
 
     <script src="firebase-config.js"></script>
-    <script src="app.js?v=20260720-mobile-reply-wrap"></script>
+    <script src="app.js?v=20260722-fast-first-paint"></script>
   </body>
 </html>
