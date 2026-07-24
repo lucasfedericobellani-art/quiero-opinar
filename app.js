@@ -50,6 +50,7 @@ const routePaths = {
   home: "/",
   topics: "/temas",
   about: "/que-es",
+  contact: "/contacto",
   terms: "/terminos",
   search: "/buscar"
 };
@@ -171,12 +172,14 @@ const legalTitle = document.querySelector("#legalTitle");
 const legalCloseButton = document.querySelector("#legalCloseButton");
 const legalTriggers = document.querySelectorAll(".legal-trigger");
 const aboutFooterButton = document.querySelector("#aboutFooterButton");
+const contactFooterButton = document.querySelector("#contactFooterButton");
 const homeView = document.querySelector("#homeView");
 const aboutView = document.querySelector("#aboutView");
 const topicsView = document.querySelector("#topicsView");
 const topicDetailView = document.querySelector("#topicDetailView");
 const detailView = document.querySelector("#detailView");
 const searchView = document.querySelector("#searchView");
+const contactView = document.querySelector("#contactView");
 const notFoundView = document.querySelector("#notFoundView");
 const aboutNavButton = document.querySelector("#aboutNavButton");
 const topicsNavButton = document.querySelector("#topicsNavButton");
@@ -204,6 +207,10 @@ const reportReasonOverlay = document.querySelector("#reportReasonOverlay");
 const reportReasonList = document.querySelector("#reportReasonList");
 const reportReasonCancel = document.querySelector("#reportReasonCancel");
 const reportReasonSubmit = document.querySelector("#reportReasonSubmit");
+const contactForm = document.querySelector("#contactForm");
+const contactName = document.querySelector("#contactName");
+const contactEmail = document.querySelector("#contactEmail");
+const contactMessage = document.querySelector("#contactMessage");
 const mobileViewportQuery = window.matchMedia("(max-width: 980px)");
 
 let activeTopic = "todos";
@@ -281,6 +288,10 @@ aboutNavButton?.addEventListener("click", () => {
 });
 
 aboutFooterButton?.addEventListener("click", () => navigateToView("about"));
+contactFooterButton?.addEventListener("click", (event) => {
+  event.preventDefault();
+  navigateToView("contact");
+});
 
 aboutTopicsButton?.addEventListener("click", () => navigateToView("topics"));
 notFoundTopicsButton?.addEventListener("click", () => navigateToView("topics"));
@@ -406,6 +417,11 @@ floatingOpinionForm.querySelector('button[type="submit"]')?.addEventListener("po
   if (!canPublishOpinion(floatingOpinionText.value, floatingTopicIdea.value, floatingOpinionForm)) return;
   closeFloatingOpinionPanel(false);
   floatingOpinionForm.requestSubmit();
+});
+
+contactForm?.addEventListener("submit", (event) => {
+  event.preventDefault();
+  submitContactForm();
 });
 
 function setupFirstVisitWelcomeModal() {
@@ -932,6 +948,32 @@ function setPublishingState(form, isPublishing) {
   form?.classList.toggle("is-publishing", isPublishing);
 }
 
+function submitContactForm() {
+  const message = contactMessage?.value.trim() || "";
+  if (!message) {
+    contactMessage?.focus();
+    return;
+  }
+
+  const name = contactName?.value.trim() || "Sin nombre";
+  const email = contactEmail?.value.trim() || "Sin email informado";
+  const subject = "Consulta desde Quiero Opinar";
+  const body = [
+    "Hola, Quiero Opinar.",
+    "",
+    "Nombre:",
+    name,
+    "",
+    "Email para responder:",
+    email,
+    "",
+    "Consulta:",
+    message
+  ].join("\n");
+
+  window.location.href = `mailto:quieroopinararg@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}
+
 function showView(viewName, options = {}) {
   const { scrollToTop = true } = options;
   clearReplyKeyboardAssist();
@@ -942,6 +984,7 @@ function showView(viewName, options = {}) {
   topicDetailView.classList.toggle("hidden", viewName !== "topicDetail");
   detailView.classList.toggle("hidden", viewName !== "detail");
   searchView.classList.toggle("hidden", viewName !== "search");
+  contactView?.classList.toggle("hidden", viewName !== "contact");
   notFoundView?.classList.toggle("hidden", viewName !== "notFound");
   if (viewName === "home") isMainComposerVisible = true;
   updateHeaderNavigation(viewName);
@@ -975,6 +1018,9 @@ function updateRouteMetadata(viewName) {
   } else if (viewName === "about") {
     title = "¿Qué es Quiero Opinar?";
     description = "Conocé cómo funciona Quiero Opinar.";
+  } else if (viewName === "contact") {
+    title = "Contacto | Quiero Opinar";
+    description = "Envia consultas, sugerencias o pedidos de revision a Quiero Opinar.";
   } else if (viewName === "notFound") {
     title = "Contenido no encontrado | Quiero Opinar";
     description = "No encontramos esa ruta en Quiero Opinar.";
@@ -1050,6 +1096,7 @@ function getPathForNavigation(viewName) {
     return topic ? `${routePaths.topics}/${encodeURIComponent(getTopicSlug(topic))}` : routePaths.topics;
   }
   if (viewName === "about") return routePaths.about;
+  if (viewName === "contact") return routePaths.contact;
   if (viewName === "search") {
     const query = searchQuery.trim();
     return query ? `${routePaths.search}?q=${encodeURIComponent(query)}` : routePaths.search;
@@ -1128,6 +1175,7 @@ function getRouteStateFromLocation() {
     return { view: "search", searchQuery: params.get("q") || "", opinionId: null };
   }
   if (path === routePaths.about) return { view: "about", opinionId: null };
+  if (path === routePaths.contact) return { view: "contact", opinionId: null };
   if (path === routePaths.terms) return { view: "terms", modal: "legal", opinionId: null };
   return { view: "notFound", opinionId: null };
 }

@@ -47,6 +47,10 @@
       "destination": "/index"
     },
     {
+      "source": "/contacto",
+      "destination": "/index"
+    },
+    {
       "source": "/terminos",
       "destination": "/index"
     },

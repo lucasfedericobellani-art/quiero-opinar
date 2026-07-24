@@ -14,7 +14,7 @@
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-XY98SMBP52"></script>
     <script defer src="analytics.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=20260724-footer-instagram">
+    <link rel="stylesheet" href="styles.css?v=20260724-contact-page">
   </head>
   <body>
     <div class="welcome-overlay hidden" id="welcomeOverlay" aria-live="polite">
@@ -276,6 +276,35 @@
         <div class="feed-list search-results-list" id="searchResultsList"></div>
       </section>
 
+      <section class="app-view hidden" id="contactView" aria-labelledby="contactTitle">
+        <div class="contact-shell">
+          <div class="view-heading contact-heading">
+            <p class="section-label">contacto</p>
+            <h1 id="contactTitle">Mandanos tu consulta</h1>
+            <p>Si tenés una duda, sugerencia o necesitás pedir una revisión, escribinos desde este formulario.</p>
+          </div>
+          <form class="contact-form" id="contactForm">
+            <label class="field">
+              <span class="field-label">Nombre</span>
+              <input class="contact-input" id="contactName" type="text" autocomplete="name" placeholder="Tu nombre">
+            </label>
+            <label class="field">
+              <span class="field-label">Email para responderte</span>
+              <input class="contact-input" id="contactEmail" type="email" autocomplete="email" placeholder="tu@email.com">
+            </label>
+            <label class="field contact-message-field">
+              <span class="field-label">Consulta</span>
+              <textarea class="contact-input" id="contactMessage" required placeholder="Escribí tu consulta..."></textarea>
+            </label>
+            <p class="terms-note">El mensaje se enviará a quieroopinararg@gmail.com desde tu aplicación de correo.</p>
+            <div class="contact-actions">
+              <button class="primary-button" type="submit">Enviar consulta</button>
+              <button class="ghost-button nav-home" type="button">Volver al inicio</button>
+            </div>
+          </form>
+        </div>
+      </section>
+
       <section class="app-view hidden" id="notFoundView" aria-labelledby="notFoundTitle">
         <div class="view-heading">
           <p class="section-label">404</p>
@@ -326,7 +355,7 @@
         <button type="button" class="footer-link legal-trigger">Términos y Condiciones</button>
         <button type="button" class="footer-link legal-trigger">Política de Privacidad</button>
         <button type="button" class="footer-link legal-trigger">Reglas de Comunidad</button>
-        <a class="footer-link" href="mailto:quieroopinararg@gmail.com">Contacto</a>
+        <a class="footer-link" id="contactFooterButton" href="/contacto">Contacto</a>
         <a class="footer-link footer-social-link" href="https://www.instagram.com/quieroopinararg/" target="_blank" rel="noopener noreferrer" aria-label="Instagram de Quiero Opinar">
           <svg aria-hidden="true" viewBox="0 0 24 24">
             <rect x="3" y="3" width="18" height="18" rx="5"></rect>
@@ -401,6 +430,6 @@
     </template>
 
     <script src="firebase-config.js"></script>
-    <script src="app.js?v=20260724-opinions-load-fix"></script>
+    <script src="app.js?v=20260724-contact-page"></script>
   </body>
 </html>
