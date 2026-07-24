@@ -35,6 +35,13 @@ const topicRules = [
 const seedOpinions = [];
 const cachedOpinionsKey = "quiero-opinar:cached-opinions";
 const cachedTopicsKey = "quiero-opinar:cached-topics";
+const routePaths = {
+  home: "/",
+  topics: "/temas",
+  about: "/que-es",
+  terms: "/terminos",
+  search: "/buscar"
+};
 
 const trendingWindowHours = 6;
 const trendingRefreshHours = 12;
@@ -99,12 +106,14 @@ const topicsView = document.querySelector("#topicsView");
 const topicDetailView = document.querySelector("#topicDetailView");
 const detailView = document.querySelector("#detailView");
 const searchView = document.querySelector("#searchView");
+const notFoundView = document.querySelector("#notFoundView");
 const aboutNavButton = document.querySelector("#aboutNavButton");
 const topicsNavButton = document.querySelector("#topicsNavButton");
 const mainNavButtons = document.querySelectorAll(".top-nav .nav-button");
 const mobileMenuToggle = document.querySelector("#mobileMenuToggle");
 const topNav = document.querySelector("#topNav");
 const aboutTopicsButton = document.querySelector("#aboutTopicsButton");
+const notFoundTopicsButton = document.querySelector("#notFoundTopicsButton");
 const boardGrid = document.querySelector("#boardGrid");
 const topicSearchInput = document.querySelector("#topicSearchInput");
 const topicTotalCount = document.querySelector("#topicTotalCount");
@@ -206,6 +215,7 @@ aboutNavButton?.addEventListener("click", () => {
 aboutFooterButton?.addEventListener("click", () => navigateToView("about"));
 
 aboutTopicsButton.addEventListener("click", () => navigateToView("topics"));
+notFoundTopicsButton?.addEventListener("click", () => navigateToView("topics"));
 
 homeButtons.forEach((button) => {
   button.addEventListener("click", () => {
@@ -425,15 +435,34 @@ function openLegalModal(options = {}) {
       modal: null
     };
     window.history.replaceState(currentState, "", window.location.href);
-    window.history.pushState({ ...currentState, modal: "legal" }, "", window.location.href);
+    window.history.pushState({ ...currentState, view: "terms", modal: "legal" }, "", routePaths.terms);
   }
 
+  updateTermsMetadata();
   legalOverlay.classList.remove("hidden");
   legalModal.scrollTop = 0;
   legalTitle.focus({ preventScroll: true });
   window.requestAnimationFrame(() => {
     legalModal.scrollTop = 0;
   });
+}
+
+function updateTermsMetadata() {
+  document.title = "Términos y condiciones | Quiero Opinar";
+  let metaDescription = document.querySelector('meta[name="description"]');
+  if (!metaDescription) {
+    metaDescription = document.createElement("meta");
+    metaDescription.name = "description";
+    document.head.append(metaDescription);
+  }
+  metaDescription.setAttribute("content", "Términos, privacidad y reglas de comunidad de Quiero Opinar.");
+  let canonical = document.querySelector('link[rel="canonical"]');
+  if (!canonical) {
+    canonical = document.createElement("link");
+    canonical.rel = "canonical";
+    document.head.append(canonical);
+  }
+  canonical.href = `${window.location.origin}${routePaths.terms}`;
 }
 
 function setMobileMenuOpen(isOpen) {
@@ -690,6 +719,27 @@ function createTopicId(name) {
   return id;
 }
 
+function createTopicSlug(value) {
+  return normalizeText(value)
+    .replace(/[^a-z0-9\s-]/g, "")
+    .trim()
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
+function getTopicSlug(topic) {
+  if (!topic) return "";
+  return createTopicSlug(topic.id || topic.name);
+}
+
+function getTopicBySlug(slug) {
+  const normalizedSlug = createTopicSlug(slug || "");
+  return getVisibleTopics().find((topic) => {
+    return getTopicSlug(topic) === normalizedSlug || createTopicSlug(topic.name) === normalizedSlug;
+  });
+}
+
 function formatTopicName(value) {
   return value
     .trim()
@@ -830,14 +880,59 @@ function showView(viewName, options = {}) {
   topicDetailView.classList.toggle("hidden", viewName !== "topicDetail");
   detailView.classList.toggle("hidden", viewName !== "detail");
   searchView.classList.toggle("hidden", viewName !== "search");
+  notFoundView?.classList.toggle("hidden", viewName !== "notFound");
   if (viewName === "home") isMainComposerVisible = true;
   updateHeaderNavigation(viewName);
+  updateRouteMetadata(viewName);
   closeMobileMenu(false);
   closeFloatingOpinionPanel(false);
   syncUrlForView(viewName);
   updateFloatingOpinionVisibility();
   if (scrollToTop) window.scrollTo({ top: 0, behavior: "smooth" });
   if (pendingScrollRestore !== null) restorePendingScrollPosition();
+}
+
+function updateRouteMetadata(viewName) {
+  let title = "Quiero Opinar | Opiniones anónimas";
+  let description = "Opiniones anónimas, temas de conversación y debates abiertos.";
+
+  if (viewName === "topics") {
+    title = "Temas de conversación | Quiero Opinar";
+    description = "Explorá las conversaciones por tema.";
+  } else if (viewName === "topicDetail") {
+    const topic = getTopic(selectedTopicId);
+    title = `${topic?.name || "Tema"} | Quiero Opinar`;
+    description = topic?.description || "Opiniones de este tema en Quiero Opinar.";
+  } else if (viewName === "detail") {
+    const opinion = getOpinionById(selectedOpinionId);
+    title = opinion ? `Opinión #${getOpinionNumber(opinion)} | Quiero Opinar` : "Opinión no encontrada | Quiero Opinar";
+    description = opinion ? truncateText(opinion.text, 140) : "No encontramos esta opinión.";
+  } else if (viewName === "search") {
+    title = searchQuery.trim() ? `Resultados para "${searchQuery.trim()}" | Quiero Opinar` : "Buscar | Quiero Opinar";
+    description = "Resultados de búsqueda en Quiero Opinar.";
+  } else if (viewName === "about") {
+    title = "¿Qué es Quiero Opinar?";
+    description = "Conocé cómo funciona Quiero Opinar.";
+  } else if (viewName === "notFound") {
+    title = "Contenido no encontrado | Quiero Opinar";
+    description = "No encontramos esa ruta en Quiero Opinar.";
+  }
+
+  document.title = title;
+  let metaDescription = document.querySelector('meta[name="description"]');
+  if (!metaDescription) {
+    metaDescription = document.createElement("meta");
+    metaDescription.name = "description";
+    document.head.append(metaDescription);
+  }
+  metaDescription.setAttribute("content", description);
+  let canonical = document.querySelector('link[rel="canonical"]');
+  if (!canonical) {
+    canonical = document.createElement("link");
+    canonical.rel = "canonical";
+    document.head.append(canonical);
+  }
+  canonical.href = `${window.location.origin}${window.location.pathname}${window.location.search}`;
 }
 
 function updateHeaderNavigation(viewName) {
@@ -871,7 +966,7 @@ function navigateToView(viewName, options = {}) {
       modal: null,
       scrollY: 0
     };
-    const nextPath = getPathWithoutOpinion();
+    const nextPath = getPathForNavigation(viewName);
     const currentStateKey = `${currentState.view || "home"}:${currentState.searchQuery || ""}:${currentState.selectedTopicId || ""}`;
     const nextStateKey = `${nextState.view || "home"}:${nextState.searchQuery || ""}:${nextState.selectedTopicId || ""}`;
 
@@ -883,6 +978,21 @@ function navigateToView(viewName, options = {}) {
   }
 
   showView(viewName, options);
+}
+
+function getPathForNavigation(viewName) {
+  if (viewName === "home") return routePaths.home;
+  if (viewName === "topics") return routePaths.topics;
+  if (viewName === "topicDetail") {
+    const topic = getTopic(selectedTopicId);
+    return topic ? `${routePaths.topics}/${encodeURIComponent(getTopicSlug(topic))}` : routePaths.topics;
+  }
+  if (viewName === "about") return routePaths.about;
+  if (viewName === "search") {
+    const query = searchQuery.trim();
+    return query ? `${routePaths.search}?q=${encodeURIComponent(query)}` : routePaths.search;
+  }
+  return routePaths.home;
 }
 
 function syncUrlForView(viewName) {
@@ -900,13 +1010,18 @@ function syncUrlForView(viewName) {
 }
 
 function getPathWithoutOpinion() {
-  const url = new URL(window.location.href);
-  url.searchParams.delete("opinion");
-  return `${url.pathname}${url.search}${url.hash}`;
+  return getPathForNavigation(currentView);
 }
 
 function isCurrentOpinionUrl(opinionId) {
-  return new URLSearchParams(window.location.search).get("opinion") === opinionId;
+  return getOpinionIdFromLocation() === opinionId;
+}
+
+function getOpinionIdFromLocation() {
+  const legacyOpinionId = new URLSearchParams(window.location.search).get("opinion");
+  if (legacyOpinionId) return legacyOpinionId;
+  const match = window.location.pathname.match(/^\/opinion\/([^/?#]+)/i);
+  return match ? decodeURIComponent(match[1]) : "";
 }
 
 function getCurrentNavigationState() {
@@ -921,28 +1036,69 @@ function getCurrentNavigationState() {
 }
 
 function initializeNavigationState() {
-  const opinionId = new URLSearchParams(window.location.search).get("opinion");
+  const routeState = getRouteStateFromLocation();
   const state = {
     ...getCurrentNavigationState(),
-    view: opinionId ? "detail" : currentView,
-    opinionId: opinionId || null,
-    directEntry: Boolean(opinionId),
+    ...routeState,
+    directEntry: routeState.view === "detail",
     scrollY: window.scrollY
   };
+  applyRouteState(routeState);
   window.history.replaceState(state, "", window.location.href);
 }
 
-function restoreViewFromHistory(state) {
-  if (!state) {
-    goHome();
-    return;
+function getRouteStateFromLocation() {
+  const path = window.location.pathname.replace(/\/+$/, "") || "/";
+  const params = new URLSearchParams(window.location.search);
+  const legacyOpinionId = params.get("opinion");
+  if (legacyOpinionId) return { view: "detail", opinionId: legacyOpinionId };
+
+  if (path === routePaths.home) return { view: "home", opinionId: null };
+  if (path === routePaths.topics) return { view: "topics", opinionId: null };
+  if (path.startsWith(`${routePaths.topics}/`)) {
+    const slug = decodeURIComponent(path.slice(`${routePaths.topics}/`.length));
+    return { view: "topicDetail", topicSlug: slug, opinionId: null };
   }
+  if (path.startsWith("/opinion/")) {
+    return { view: "detail", opinionId: decodeURIComponent(path.slice("/opinion/".length)) };
+  }
+  if (path === routePaths.search) {
+    return { view: "search", searchQuery: params.get("q") || "", opinionId: null };
+  }
+  if (path === routePaths.about) return { view: "about", opinionId: null };
+  if (path === routePaths.terms) return { view: "terms", modal: "legal", opinionId: null };
+  return { view: "notFound", opinionId: null };
+}
+
+function applyRouteState(routeState) {
+  searchQuery = routeState.searchQuery || "";
+  syncSearchInputs(searchQuery);
+  selectedOpinionId = routeState.opinionId || null;
+  if (routeState.topicSlug) {
+    const topic = getTopicBySlug(routeState.topicSlug);
+    selectedTopicId = topic?.id || routeState.topicSlug;
+    activeTopic = topic?.id || "todos";
+  } else if (routeState.view !== "topicDetail") {
+    selectedTopicId = null;
+  }
+  currentView = routeState.view === "terms" ? "home" : routeState.view || "home";
+}
+
+function restoreViewFromHistory(state) {
+  if (!state) state = getRouteStateFromLocation();
 
   isRestoringHistory = true;
   closeLegalModal({ fromHistory: true, restoreFocus: false });
+  applyRouteState(state);
   activeTopic = state.activeTopic || "todos";
   selectedTopicId = state.selectedTopicId || null;
   searchQuery = state.searchQuery || "";
+  if (state.topicSlug) {
+    const topic = getTopicBySlug(state.topicSlug);
+    selectedTopicId = topic?.id || state.topicSlug;
+    activeTopic = topic?.id || "todos";
+  }
+  if (state.opinionId) selectedOpinionId = state.opinionId;
   lastViewBeforeDetail = state.lastViewBeforeDetail || state.returnState?.view || "home";
   syncSearchInputs(searchQuery);
 
@@ -954,10 +1110,10 @@ function restoreViewFromHistory(state) {
     selectedOpinionId = null;
     pendingScrollRestore = Number.isFinite(state.scrollY) ? state.scrollY : 0;
     render();
-    showView(state.view || "home", { scrollToTop: false });
+    showView(state.view === "terms" ? "home" : state.view || "home", { scrollToTop: false });
   }
 
-  if (state.modal === "legal") {
+  if (state.modal === "legal" || state.view === "terms") {
     openLegalModal();
   }
 
@@ -1149,7 +1305,7 @@ function openOpinion(opinionId, options = {}) {
 }
 
 function getOpinionPath(opinion) {
-  return `${window.location.pathname}?opinion=${encodeURIComponent(opinion.id)}`;
+  return `/opinion/${encodeURIComponent(opinion.id)}`;
 }
 
 function getOpinionUrl(opinion) {
@@ -2213,7 +2369,7 @@ function render() {
 
 function openInitialOpinionFromUrl() {
   if (hasHandledInitialOpinion || !hasLoadedOpinions) return;
-  const opinionId = new URLSearchParams(window.location.search).get("opinion");
+  const opinionId = selectedOpinionId || getOpinionIdFromLocation();
   if (!opinionId) {
     hasHandledInitialOpinion = true;
     return;
@@ -2233,6 +2389,8 @@ async function initializeAppData() {
   resetPersistedContentIfNeeded();
   initializeNavigationState();
   setupViewportMetrics();
+  showView(currentView === "terms" ? "home" : currentView, { scrollToTop: false });
+  if (window.history.state?.modal === "legal") openLegalModal();
   render();
   setupComposerVisibilityObserver();
   updateFloatingOpinionVisibility();

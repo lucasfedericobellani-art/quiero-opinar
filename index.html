@@ -2,6 +2,7 @@
 <html lang="es">
   <head>
     <meta charset="utf-8">
+    <base href="/">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Quiero Opinar</title>
     <link rel="icon" type="image/svg+xml" href="assets/logo.svg">
@@ -13,7 +14,7 @@
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-XY98SMBP52"></script>
     <script defer src="analytics.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=20260724-product-header">
+    <link rel="stylesheet" href="styles.css?v=20260724-real-routes">
   </head>
   <body>
     <div class="welcome-overlay hidden" id="welcomeOverlay" aria-live="polite">
@@ -280,6 +281,18 @@
         </div>
         <div class="feed-list search-results-list" id="searchResultsList"></div>
       </section>
+
+      <section class="app-view hidden" id="notFoundView" aria-labelledby="notFoundTitle">
+        <div class="view-heading">
+          <p class="section-label">404</p>
+          <h1 id="notFoundTitle">Contenido no encontrado</h1>
+          <p>No encontramos esa ruta. Podés volver al inicio o explorar los temas activos.</p>
+        </div>
+        <div class="about-actions">
+          <button class="primary-button nav-home" type="button">Ir al inicio</button>
+          <button class="ghost-button" id="notFoundTopicsButton" type="button">Explorar temas</button>
+        </div>
+      </section>
     </main>
 
     <button class="floating-opinion-trigger" id="floatingOpinionTrigger" type="button" aria-controls="floatingOpinion" aria-expanded="false" aria-label="Abrir formulario para opinar">
@@ -386,6 +399,6 @@
     </template>
 
     <script src="firebase-config.js"></script>
-    <script src="app.js?v=20260724-product-header"></script>
+    <script src="app.js?v=20260724-real-routes"></script>
   </body>
 </html>
