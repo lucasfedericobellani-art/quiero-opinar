@@ -282,7 +282,7 @@ aboutNavButton?.addEventListener("click", () => {
 
 aboutFooterButton?.addEventListener("click", () => navigateToView("about"));
 
-aboutTopicsButton.addEventListener("click", () => navigateToView("topics"));
+aboutTopicsButton?.addEventListener("click", () => navigateToView("topics"));
 notFoundTopicsButton?.addEventListener("click", () => navigateToView("topics"));
 
 homeButtons.forEach((button) => {
