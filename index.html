@@ -14,7 +14,7 @@
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-XY98SMBP52"></script>
     <script defer src="analytics.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=20260724-contact-page">
+    <link rel="stylesheet" href="styles.css?v=20260724-contact-send">
   </head>
   <body>
     <div class="welcome-overlay hidden" id="welcomeOverlay" aria-live="polite">
@@ -296,7 +296,7 @@
               <span class="field-label">Consulta</span>
               <textarea class="contact-input" id="contactMessage" required placeholder="Escribí tu consulta..."></textarea>
             </label>
-            <p class="terms-note">El mensaje se enviará a quieroopinararg@gmail.com desde tu aplicación de correo.</p>
+            <p class="form-error contact-status hidden" id="contactStatus" role="status"></p>
             <div class="contact-actions">
               <button class="primary-button" type="submit">Enviar consulta</button>
               <button class="ghost-button nav-home" type="button">Volver al inicio</button>
@@ -430,6 +430,6 @@
     </template>
 
     <script src="firebase-config.js"></script>
-    <script src="app.js?v=20260724-contact-page"></script>
+    <script src="app.js?v=20260724-contact-send"></script>
   </body>
 </html>

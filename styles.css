@@ -1321,6 +1321,10 @@ button {
   margin-bottom: 0;
 }
 
+.contact-status.is-success {
+  color: #5ee28a;
+}
+
 #aboutView {
   width: min(1200px, 100%);
   margin: 0 auto;

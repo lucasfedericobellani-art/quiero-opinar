@@ -211,6 +211,7 @@ const contactForm = document.querySelector("#contactForm");
 const contactName = document.querySelector("#contactName");
 const contactEmail = document.querySelector("#contactEmail");
 const contactMessage = document.querySelector("#contactMessage");
+const contactStatus = document.querySelector("#contactStatus");
 const mobileViewportQuery = window.matchMedia("(max-width: 980px)");
 
 let activeTopic = "todos";
@@ -419,9 +420,9 @@ floatingOpinionForm.querySelector('button[type="submit"]')?.addEventListener("po
   floatingOpinionForm.requestSubmit();
 });
 
-contactForm?.addEventListener("submit", (event) => {
+contactForm?.addEventListener("submit", async (event) => {
   event.preventDefault();
-  submitContactForm();
+  await submitContactForm();
 });
 
 function setupFirstVisitWelcomeModal() {
@@ -948,7 +949,7 @@ function setPublishingState(form, isPublishing) {
   form?.classList.toggle("is-publishing", isPublishing);
 }
 
-function submitContactForm() {
+async function submitContactForm() {
   const message = contactMessage?.value.trim() || "";
   if (!message) {
     contactMessage?.focus();
@@ -957,21 +958,49 @@ function submitContactForm() {
 
   const name = contactName?.value.trim() || "Sin nombre";
   const email = contactEmail?.value.trim() || "Sin email informado";
-  const subject = "Consulta desde Quiero Opinar";
-  const body = [
-    "Hola, Quiero Opinar.",
-    "",
-    "Nombre:",
-    name,
-    "",
-    "Email para responder:",
-    email,
-    "",
-    "Consulta:",
-    message
-  ].join("\n");
+  const submitButton = contactForm?.querySelector('button[type="submit"]');
+  const originalText = submitButton?.textContent || "Enviar consulta";
 
-  window.location.href = `mailto:quieroopinararg@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  if (contactStatus) {
+    contactStatus.textContent = "";
+    contactStatus.classList.add("hidden");
+    contactStatus.classList.remove("is-success");
+  }
+
+  if (submitButton) {
+    submitButton.disabled = true;
+    submitButton.textContent = "Enviando...";
+  }
+
+  try {
+    const response = await fetch("/api/contact", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, email, message })
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok || !result.ok || result.skipped) {
+      throw new Error(result.error || result.reason || "send_failed");
+    }
+
+    contactForm?.reset();
+    if (contactStatus) {
+      contactStatus.textContent = "Consulta enviada. Gracias por escribirnos.";
+      contactStatus.classList.remove("hidden");
+      contactStatus.classList.add("is-success");
+    }
+  } catch (error) {
+    if (contactStatus) {
+      contactStatus.textContent = "No se pudo enviar la consulta. Probá nuevamente en unos minutos.";
+      contactStatus.classList.remove("hidden");
+      contactStatus.classList.remove("is-success");
+    }
+  } finally {
+    if (submitButton) {
+      submitButton.disabled = false;
+      submitButton.textContent = originalText;
+    }
+  }
 }
 
 function showView(viewName, options = {}) {
