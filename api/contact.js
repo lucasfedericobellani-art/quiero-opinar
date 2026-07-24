@@ -47,7 +47,8 @@ function isValidEmail(value) {
 
 async function sendContactEmail({ name, email, message }) {
   const apiKey = process.env.RESEND_API_KEY;
-  const to = process.env.CONTACT_EMAIL || "quieroopinararg@gmail.com";
+  const intendedTo = "quieroopinararg@gmail.com";
+  const to = process.env.CONTACT_EMAIL || process.env.ADMIN_ALERT_EMAIL || "lucasfedericobellani@gmail.com";
   const from = process.env.ADMIN_ALERT_FROM || "Quiero Opinar <alertas@quieroopinar.com.ar>";
 
   if (!apiKey) {
@@ -71,6 +72,7 @@ async function sendContactEmail({ name, email, message }) {
       subject: "Nueva consulta desde Quiero Opinar",
       text: [
         "Nueva consulta recibida desde quieroopinar.com.ar.",
+        `Destino solicitado: ${intendedTo}`,
         "",
         `Nombre: ${safeName}`,
         `Email para responder: ${safeEmail}`,
@@ -84,7 +86,8 @@ async function sendContactEmail({ name, email, message }) {
   });
 
   if (!response.ok) {
-    throw new Error(`resend_${response.status}`);
+    const errorBody = await response.text().catch(() => "");
+    throw new Error(`resend_${response.status}_${errorBody.slice(0, 240)}`);
   }
 
   return { skipped: false };
