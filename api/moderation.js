@@ -164,6 +164,7 @@ function sanitizeReply(reply) {
 function sanitizeOpinion(doc) {
   return {
     id: doc.id,
+    publicNumber: Number(doc.publicNumber || 0),
     author: doc.author || "Opinion",
     topic: doc.topic || "sin-tema",
     text: doc.text || "",
@@ -295,6 +296,26 @@ async function assertPublishCooldown(ctx, ipHash) {
   return remainingSeconds;
 }
 
+async function createOpinionRecord(ctx, opinion) {
+  const opinionRef = ctx.doc("opinions", opinion.id);
+  const counterRef = ctx.doc("meta", "opinions");
+  let opinionWithNumber = opinion;
+
+  await ctx.runTransaction(async (transaction) => {
+    const counterSnapshot = await transaction.get(counterRef);
+    const currentNumber = snapshotExists(counterSnapshot) ? Number(snapshotData(counterSnapshot).nextPublicNumber || 1) : 1;
+    const publicNumber = Number.isFinite(currentNumber) && currentNumber > 0 ? currentNumber : 1;
+    opinionWithNumber = { ...opinion, publicNumber };
+    transaction.set(counterRef, {
+      nextPublicNumber: publicNumber + 1,
+      updatedAt: ctx.timestamp()
+    }, { merge: true });
+    transaction.set(opinionRef, opinionWithNumber);
+  });
+
+  return opinionWithNumber;
+}
+
 async function createOpinion(ctx, body, ipHash, response) {
   const text = String(body.text || "").trim();
   const topic = String(body.topic || "sin-tema").trim() || "sin-tema";
@@ -349,7 +370,7 @@ async function createOpinion(ctx, body, ipHash, response) {
     ip: ipHash
   };
 
-  await ctx.set(ctx.doc("opinions", opinion.id), opinion);
+  const persistedOpinion = await createOpinionRecord(ctx, opinion);
   if (topicRecord && topic !== "todos") {
     await ctx.set(ctx.doc("topics", topic), {
       id: topic,
@@ -358,7 +379,7 @@ async function createOpinion(ctx, body, ipHash, response) {
       icon: String(topicRecord.icon || "assets/icons/generic.svg").trim()
     }, { merge: true });
   }
-  response.status(201).json({ ok: true, opinion: sanitizeOpinion(opinion), mode: ctx.mode });
+  response.status(201).json({ ok: true, opinion: sanitizeOpinion(persistedOpinion), mode: ctx.mode });
 }
 
 async function createReply(ctx, body, ipHash, response) {

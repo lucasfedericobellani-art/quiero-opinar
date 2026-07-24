@@ -535,6 +535,20 @@ function getOpinionById(opinionId) {
   return opinions.find((item) => item.id === opinionId);
 }
 
+function getOpinionByRouteId(routeId) {
+  const normalizedRouteId = String(routeId || "").trim();
+  if (!normalizedRouteId) return null;
+
+  const exactMatch = getOpinionById(normalizedRouteId);
+  if (exactMatch) return exactMatch;
+
+  if (/^\d+$/.test(normalizedRouteId)) {
+    return opinions.find((opinion) => getOpinionNumber(opinion) === normalizedRouteId) || null;
+  }
+
+  return null;
+}
+
 function getTopicOpinions(topicId) {
   const visibleOpinions = getVisibleOpinions();
   if (topicId === "todos") return visibleOpinions;
@@ -629,6 +643,7 @@ function getOpinionAuthorLabel(opinion) {
 }
 
 function getOpinionNumber(opinion) {
+  if (Number(opinion.publicNumber || 0) > 0) return String(Number(opinion.publicNumber));
   const label = getOpinionAuthorLabel(opinion);
   const match = label.match(/\d+/);
   return match ? match[0] : "";
@@ -904,7 +919,7 @@ function updateRouteMetadata(viewName) {
     title = `${topic?.name || "Tema"} | Quiero Opinar`;
     description = topic?.description || "Opiniones de este tema en Quiero Opinar.";
   } else if (viewName === "detail") {
-    const opinion = getOpinionById(selectedOpinionId);
+    const opinion = getOpinionByRouteId(selectedOpinionId);
     title = opinion ? `Opinión #${getOpinionNumber(opinion)} | Quiero Opinar` : "Opinión no encontrada | Quiero Opinar";
     description = opinion ? truncateText(opinion.text, 140) : "No encontramos esta opinión.";
   } else if (viewName === "search") {
@@ -1131,11 +1146,13 @@ function restorePendingScrollPosition() {
 
 function refreshCurrentDetailHistoryState() {
   if (currentView !== "detail" || !selectedOpinionId) return;
+  const opinion = getOpinionByRouteId(selectedOpinionId);
+  if (!opinion) return;
   const state = window.history.state || {};
   const detailState = {
     ...state,
     view: "detail",
-    opinionId: selectedOpinionId,
+    opinionId: opinion.id,
     returnState: state.returnState || {
       view: lastViewBeforeDetail || "home",
       activeTopic,
@@ -1146,7 +1163,8 @@ function refreshCurrentDetailHistoryState() {
     },
     directEntry: Boolean(state.directEntry)
   };
-  window.history.replaceState(detailState, "", getOpinionPath({ id: selectedOpinionId }));
+  selectedOpinionId = opinion.id;
+  window.history.replaceState(detailState, "", getOpinionPath(opinion));
 }
 
 function scrollPageToTopAfterLayout() {
@@ -1305,7 +1323,8 @@ function openOpinion(opinionId, options = {}) {
 }
 
 function getOpinionPath(opinion) {
-  return `/opinion/${encodeURIComponent(opinion.id)}`;
+  const publicId = getOpinionNumber(opinion) || opinion.id;
+  return `/opinion/${encodeURIComponent(publicId)}`;
 }
 
 function getOpinionUrl(opinion) {
@@ -1804,7 +1823,7 @@ function renderTopicDetail() {
 
 function renderDetail() {
   detailShell.innerHTML = "";
-  const opinion = getOpinionById(selectedOpinionId);
+  const opinion = getOpinionByRouteId(selectedOpinionId);
 
   if (!opinion || opinion.hidden) {
     const empty = document.createElement("p");
@@ -1814,6 +1833,7 @@ function renderDetail() {
     return;
   }
 
+  selectedOpinionId = opinion.id;
   detailShell.append(createOpinionCard(opinion, true));
   const related = document.createElement("section");
   related.className = "detail-discovery discovery-panel";
@@ -2260,6 +2280,7 @@ function normalizeOpinion(opinion) {
 
   return {
     id: opinion.id || createId(),
+    publicNumber: Number(opinion.publicNumber || 0),
     author: opinion.author || "Opinion",
     topic: normalizedTopic === "sin-tema" && detectedTopic.score > 0 ? detectedTopic.id : normalizedTopic,
     text: opinion.text || "",
@@ -2288,6 +2309,7 @@ function normalizeDateValue(value) {
 function sanitizeOpinionForRemote(opinion) {
   return {
     id: opinion.id,
+    publicNumber: Number(opinion.publicNumber || 0),
     author: opinion.author,
     topic: opinion.topic,
     text: opinion.text,
@@ -2369,15 +2391,15 @@ function render() {
 
 function openInitialOpinionFromUrl() {
   if (hasHandledInitialOpinion || !hasLoadedOpinions) return;
-  const opinionId = selectedOpinionId || getOpinionIdFromLocation();
-  if (!opinionId) {
+  const routeOpinionId = selectedOpinionId || getOpinionIdFromLocation();
+  if (!routeOpinionId) {
     hasHandledInitialOpinion = true;
     return;
   }
-  const opinion = getOpinionById(opinionId);
+  const opinion = getOpinionByRouteId(routeOpinionId);
   if (opinion && !opinion.hidden) {
     hasHandledInitialOpinion = true;
-    openOpinion(opinionId, { replaceHistory: true, directEntry: true });
+    openOpinion(opinion.id, { replaceHistory: true, directEntry: true });
     return;
   }
 
