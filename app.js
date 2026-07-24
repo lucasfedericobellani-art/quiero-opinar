@@ -92,6 +92,7 @@ const legalOpenButton = document.querySelector("#legalOpenButton");
 const legalTitle = document.querySelector("#legalTitle");
 const legalCloseButton = document.querySelector("#legalCloseButton");
 const legalTriggers = document.querySelectorAll(".legal-trigger");
+const aboutFooterButton = document.querySelector("#aboutFooterButton");
 const homeView = document.querySelector("#homeView");
 const aboutView = document.querySelector("#aboutView");
 const topicsView = document.querySelector("#topicsView");
@@ -100,6 +101,7 @@ const detailView = document.querySelector("#detailView");
 const searchView = document.querySelector("#searchView");
 const aboutNavButton = document.querySelector("#aboutNavButton");
 const topicsNavButton = document.querySelector("#topicsNavButton");
+const mainNavButtons = document.querySelectorAll(".top-nav .nav-button");
 const mobileMenuToggle = document.querySelector("#mobileMenuToggle");
 const topNav = document.querySelector("#topNav");
 const aboutTopicsButton = document.querySelector("#aboutTopicsButton");
@@ -150,8 +152,9 @@ let dataStore = createLocalDataStore();
 hydrateInitialContentFromCache();
 
 setupFirstVisitWelcomeModal();
+updateHeaderNavigation(currentView);
 
-legalOpenButton.addEventListener("click", () => {
+legalOpenButton?.addEventListener("click", () => {
   closeMobileMenu(false);
   openLegalModal({ pushHistory: true });
 });
@@ -195,10 +198,12 @@ topicsNavButton.addEventListener("click", () => {
   closeMobileMenu(false);
 });
 
-aboutNavButton.addEventListener("click", () => {
+aboutNavButton?.addEventListener("click", () => {
   navigateToView("about");
   closeMobileMenu(false);
 });
+
+aboutFooterButton?.addEventListener("click", () => navigateToView("about"));
 
 aboutTopicsButton.addEventListener("click", () => navigateToView("topics"));
 
@@ -245,13 +250,13 @@ searchInputs.forEach((input) => {
   });
 });
 
-mobileMenuToggle.addEventListener("click", () => {
+mobileMenuToggle?.addEventListener("click", () => {
   setMobileMenuOpen(!isMobileMenuOpen);
 });
 
 document.addEventListener("click", (event) => {
   if (!isMobileMenuOpen) return;
-  if (topNav.contains(event.target) || mobileMenuToggle.contains(event.target)) return;
+  if (topNav.contains(event.target) || mobileMenuToggle?.contains(event.target)) return;
   closeMobileMenu(false);
 });
 
@@ -408,7 +413,7 @@ function closeLegalModal(options = {}) {
   }
 
   legalOverlay.classList.add("hidden");
-  if (options.restoreFocus !== false) legalOpenButton.focus();
+  if (options.restoreFocus !== false) (legalOpenButton || document.querySelector(".legal-trigger"))?.focus();
 }
 
 function openLegalModal(options = {}) {
@@ -432,6 +437,7 @@ function openLegalModal(options = {}) {
 }
 
 function setMobileMenuOpen(isOpen) {
+  if (!mobileMenuToggle) return;
   isMobileMenuOpen = isOpen;
   topNav.classList.toggle("is-open", isOpen);
   mobileMenuToggle.classList.toggle("is-open", isOpen);
@@ -440,6 +446,7 @@ function setMobileMenuOpen(isOpen) {
 }
 
 function closeMobileMenu(restoreFocus = true) {
+  if (!mobileMenuToggle) return;
   if (!isMobileMenuOpen) return;
 
   setMobileMenuOpen(false);
@@ -824,12 +831,26 @@ function showView(viewName, options = {}) {
   detailView.classList.toggle("hidden", viewName !== "detail");
   searchView.classList.toggle("hidden", viewName !== "search");
   if (viewName === "home") isMainComposerVisible = true;
+  updateHeaderNavigation(viewName);
   closeMobileMenu(false);
   closeFloatingOpinionPanel(false);
   syncUrlForView(viewName);
   updateFloatingOpinionVisibility();
   if (scrollToTop) window.scrollTo({ top: 0, behavior: "smooth" });
   if (pendingScrollRestore !== null) restorePendingScrollPosition();
+}
+
+function updateHeaderNavigation(viewName) {
+  mainNavButtons.forEach((button) => {
+    const isActive = (button.id === "homeNavButton" && viewName === "home") ||
+      (button.id === "topicsNavButton" && (viewName === "topics" || viewName === "topicDetail"));
+    button.classList.toggle("active", isActive);
+    if (isActive) {
+      button.setAttribute("aria-current", "page");
+    } else {
+      button.removeAttribute("aria-current");
+    }
+  });
 }
 
 function navigateToView(viewName, options = {}) {
