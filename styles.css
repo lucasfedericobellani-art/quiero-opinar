@@ -1471,26 +1471,8 @@ button {
 }
 
 .topics-heading-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 18px;
+  display: block;
   max-width: 760px;
-}
-
-.topic-total-count {
-  flex: 0 0 auto;
-  min-height: 32px;
-  display: inline-flex;
-  align-items: center;
-  padding: 0 12px;
-  border: 1px solid rgba(255, 176, 0, 0.24);
-  border-radius: 999px;
-  background: rgba(255, 122, 0, 0.06);
-  color: var(--text-hot);
-  font-size: 0.82rem;
-  font-weight: 800;
-  white-space: nowrap;
 }
 
 .ghost-button {
@@ -2247,6 +2229,8 @@ button {
   }
 
   .site-header {
+    position: static;
+    top: auto;
     grid-template-columns: 1fr;
     column-gap: 0;
     row-gap: 10px;
@@ -2307,16 +2291,6 @@ button {
   .about-hero,
   .about-grid {
     grid-template-columns: 1fr;
-  }
-
-  .topics-heading-row {
-    display: grid;
-    justify-items: start;
-    gap: 12px;
-  }
-
-  .topic-total-count {
-    min-height: 34px;
   }
 
   .topic-search-wrap {

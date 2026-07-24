@@ -116,7 +116,6 @@ const aboutTopicsButton = document.querySelector("#aboutTopicsButton");
 const notFoundTopicsButton = document.querySelector("#notFoundTopicsButton");
 const boardGrid = document.querySelector("#boardGrid");
 const topicSearchInput = document.querySelector("#topicSearchInput");
-const topicTotalCount = document.querySelector("#topicTotalCount");
 const topicDetailIcon = document.querySelector("#topicDetailIcon");
 const topicDetailTitle = document.querySelector("#topicDetailTitle");
 const topicDetailDescription = document.querySelector("#topicDetailDescription");
@@ -126,8 +125,6 @@ const searchTitle = document.querySelector("#searchTitle");
 const searchDescription = document.querySelector("#searchDescription");
 const searchResultsList = document.querySelector("#searchResultsList");
 const discoveryGrid = document.querySelector("#discoveryGrid");
-const backFromDetailButton = document.querySelector("#backFromDetailButton");
-const backFromTopicButton = document.querySelector("#backFromTopicButton");
 const homeButtons = document.querySelectorAll(".nav-home");
 const notificationStack = document.querySelector("#notificationStack");
 const reportNotice = document.querySelector("#reportNotice");
@@ -241,16 +238,6 @@ reportReasonList?.addEventListener("click", (event) => {
   reportReasonSubmit.focus();
 });
 
-backFromDetailButton.addEventListener("click", () => {
-  const state = window.history.state;
-  if (currentView === "detail" && state?.view === "detail" && !state.directEntry) {
-    window.history.back();
-    return;
-  }
-
-  goHome();
-});
-backFromTopicButton.addEventListener("click", () => navigateToView("topics"));
 topicSearchInput.addEventListener("input", renderBoard);
 searchInputs.forEach((input) => {
   input.addEventListener("input", () => syncSearchInputs(input.value));
@@ -614,14 +601,6 @@ function getContributionNumberMap() {
       createdAt: opinion.createdAt,
       fallback: opinion.id
     });
-
-    opinion.replies.forEach((reply, index) => {
-      entries.push({
-        key: `reply:${opinion.id}:${reply.id || index}`,
-        createdAt: reply.createdAt,
-        fallback: `${opinion.id}:${reply.id || index}`
-      });
-    });
   });
 
   entries.sort((a, b) => {
@@ -647,10 +626,6 @@ function getOpinionNumber(opinion) {
   const label = getOpinionAuthorLabel(opinion);
   const match = label.match(/\d+/);
   return match ? match[0] : "";
-}
-
-function getReplyAuthorLabel(opinion, reply, index) {
-  return getContributionLabel(`reply:${opinion.id}:${reply.id || index}`);
 }
 
 function resolveSelectedTopic(topicPrompt, text) {
@@ -1649,11 +1624,6 @@ function renderBoard() {
       return a.topic.name.localeCompare(b.topic.name, "es");
     });
 
-  if (topicTotalCount) {
-    const total = topicCards.length;
-    topicTotalCount.textContent = `${total} ${total === 1 ? "categoría" : "categorías"}`;
-  }
-
   const visibleTopics = topicCards.filter(({ topic }) => {
     if (!query) return true;
     return normalizeText(`${topic.name} ${topic.description}`).includes(query);
@@ -1922,7 +1892,7 @@ function createOpinionCard(opinion, isDetail) {
     const item = document.createElement("div");
     item.className = "reply-card";
     item.innerHTML = `
-      <p class="reply"><strong>${getReplyAuthorLabel(opinion, normalizedReply, index)}:</strong> ${escapeHtml(normalizedReply.text)}</p>
+      <p class="reply"><strong>Respuesta:</strong> ${escapeHtml(normalizedReply.text)}</p>
       <span class="date-stamp reply-date">${formatDate(normalizedReply.createdAt)}</span>
       <div class="reply-actions">
         <button class="like-button${normalizedReply.liked ? " liked" : ""}" type="button" aria-label="Me gusta respuesta">
