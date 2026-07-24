@@ -166,7 +166,7 @@ function sanitizeOpinion(doc) {
     id: doc.id,
     publicNumber: Number(doc.publicNumber || 0),
     author: doc.author || "Opinion",
-    topic: doc.topic || "sin-tema",
+    topic: doc.topic || "actualidad",
     text: doc.text || "",
     views: Number(doc.views || 0),
     likes: Number(doc.likes || 0),
@@ -318,7 +318,7 @@ async function createOpinionRecord(ctx, opinion) {
 
 async function createOpinion(ctx, body, ipHash, response) {
   const text = String(body.text || "").trim();
-  const topic = String(body.topic || "sin-tema").trim() || "sin-tema";
+  const topic = String(body.topic || "actualidad").trim() || "actualidad";
   const topicText = String(body.topicText || "").trim();
   const topicRecord = body.topicRecord && typeof body.topicRecord === "object" ? body.topicRecord : null;
 

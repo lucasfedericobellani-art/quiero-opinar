@@ -1,17 +1,23 @@
 let topics = [
   { id: "todos", name: "Todos", description: "Feed general", icon: "assets/icons/todos.svg" },
   { id: "sin-tema", name: "Sin tema específico", description: "Opiniones libres", icon: "assets/icons/sin-tema.svg" },
+  { id: "actualidad", name: "Actualidad", description: "Noticias, agenda pública y conversación del día", icon: "assets/icons/generic.svg" },
   { id: "historia", name: "Quiero contar una historia", description: "Relatos personales", icon: "assets/icons/historia.svg" },
   { id: "economia", name: "Economía", description: "Precios, trabajo y empresas", icon: "assets/icons/economia.svg" },
   { id: "agro", name: "Agro", description: "Campo, producción rural y sector agropecuario", icon: "assets/icons/agro.svg" },
   { id: "politica", name: "Política", description: "Gobierno, partidos y debate público", icon: "assets/icons/politica.svg" },
+  { id: "sociedad", name: "Sociedad", description: "Comunidad, vínculos y vida cotidiana", icon: "assets/icons/generic.svg" },
   { id: "clima", name: "Clima", description: "Tiempo, pronóstico y fenómenos meteorológicos", icon: "assets/icons/generic.svg" },
   { id: "seguridad", name: "Seguridad", description: "Ciudad, justicia y prevención", icon: "assets/icons/seguridad.svg" },
   { id: "cine", name: "Cine", description: "Películas, series y cultura visual", icon: "assets/icons/cine.svg" },
+  { id: "musica", name: "Música", description: "Artistas, canciones, recitales y cultura musical", icon: "assets/icons/generic.svg" },
   { id: "tecnologia", name: "Tecnología", description: "Internet, IA y productos digitales", icon: "assets/icons/tecnologia.svg" },
   { id: "educacion", name: "Educación", description: "Escuela, crianza, docentes y aprendizaje", icon: "assets/icons/generic.svg" },
   { id: "deportes", name: "Deportes", description: "Clubes, torneos y pasiones", icon: "assets/icons/deportes.svg" },
+  { id: "transporte", name: "Transporte", description: "Colectivos, trenes, tránsito y movilidad", icon: "assets/icons/generic.svg" },
   { id: "autos", name: "Autos", description: "Modelos, rutas, mecánica y mercado", icon: "assets/icons/autos.svg" },
+  { id: "mascotas", name: "Mascotas", description: "Animales, cuidados y convivencia", icon: "assets/icons/generic.svg" },
+  { id: "influencers", name: "Influencers", description: "Creadores, redes y cultura digital", icon: "assets/icons/generic.svg" },
   { id: "formula-1", name: "Fórmula 1", description: "Pilotos, carreras, equipos y estrategia", icon: "assets/icons/formula-1.svg" },
   { id: "videojuegos", name: "Videojuegos", description: "Juegos, consolas, PC y cultura gamer", icon: "assets/icons/videojuegos.svg" }
 ];
@@ -23,12 +29,17 @@ const topicRules = [
   { id: "agro", words: ["agro", "campo", "rural", "agricultura", "ganaderia", "grano", "granos", "soja", "maiz", "trigo", "cosecha", "siembra", "tambo", "estancia", "chacra", "productor agropecuario", "sector agropecuario"] },
   { id: "economia", words: ["economia", "precio", "precios", "inflacion", "dolar", "sueldo", "trabajo", "empresa", "impuesto", "alquiler", "tarifa", "mercado"] },
   { id: "politica", words: ["politica", "gobierno", "presidente", "diputado", "senado", "partido", "eleccion", "voto", "ministro", "congreso", "estado", "derecha", "izquierda", "milei", "miley", "libertario", "libertarios", "libertontos", "peronismo", "peronista", "peronistas"] },
+  { id: "sociedad", words: ["sociedad", "comunidad", "gente", "vecinos", "barrio", "familia", "relaciones", "convivencia", "costumbres", "social"] },
   { id: "clima", words: ["clima", "tiempo", "pronostico", "pronóstico", "lluvia", "llueve", "llover", "tormenta", "granizo", "nieve", "nevar", "nevando", "frio", "frío", "calor", "humedad", "viento", "temporal", "alerta meteorologica", "alerta meteorológica"] },
   { id: "seguridad", words: ["seguridad", "robo", "delito", "policia", "justicia", "barrio", "calle", "violencia", "denuncia", "prevención"] },
   { id: "cine", words: ["cine", "pelicula", "peliculas", "serie", "series", "actor", "actriz", "director", "netflix", "streaming", "documental"] },
+  { id: "musica", words: ["musica", "música", "cancion", "canción", "canciones", "artista", "banda", "recital", "concierto", "disco", "album", "álbum", "spotify"] },
   { id: "educacion", words: ["educacion", "educación", "escuela", "colegio", "escolar", "clase", "clases", "docente", "docentes", "maestro", "maestra", "profesor", "profesora", "alumno", "alumnos", "estudiante", "estudiantes", "hijo", "hijos", "crianza", "aprendizaje"] },
   { id: "tecnologia", words: ["tecnologia", "internet", "ia", "inteligencia artificial", "app", "software", "celular", "celulares", "celu", "celus", "telefono", "telefonos", "smartphone", "smartphones", "movil", "moviles", "samsung", "galaxy", "iphone", "apple", "android", "xiaomi", "motorola", "moto g", "huawei", "notebook", "notebooks", "computadora", "computadoras", "pc", "tablet", "redes", "wifi", "programacion", "datos"] },
   { id: "deportes", words: ["deporte", "deportes", "futbol", "basquet", "tenis", "club", "torneo", "partido", "seleccion", "gol", "cancha"] },
+  { id: "transporte", words: ["transporte", "colectivo", "bondi", "tren", "subte", "metro", "trafico", "tráfico", "transito", "tránsito", "ruta", "movilidad", "viaje", "pasaje"] },
+  { id: "mascotas", words: ["mascota", "mascotas", "perro", "perros", "gato", "gatos", "animal", "animales", "veterinaria", "adopcion", "adopción"] },
+  { id: "influencers", words: ["influencer", "influencers", "creador", "creadores", "tiktoker", "youtuber", "instagramer", "streamer", "redes sociales", "viral"] },
   { id: "historia", words: ["historia", "me paso", "me ocurrio", "cuento", "relato", "experiencia", "anecdota", "vivencia"] }
 ];
 
@@ -71,6 +82,7 @@ const unsafeContentTerms = [
 const topicIconPaths = {
   todos: '<circle cx="12" cy="12" r="9"></circle><path d="M8 12h8"></path><path d="M12 8v8"></path>',
   "sin-tema": '<circle cx="12" cy="12" r="9"></circle><path d="M9.5 9a2.6 2.6 0 0 1 5 1.1c0 2.1-2.5 2.2-2.5 4"></path><path d="M12 17h.01"></path>',
+  actualidad: '<path d="M4 19V5a2 2 0 0 1 2-2h11a3 3 0 0 1 3 3v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"></path><path d="M8 7h7"></path><path d="M8 11h8"></path><path d="M8 15h5"></path>',
   historia: '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path><path d="M8 7h8"></path><path d="M8 11h6"></path>',
   economia: '<path d="M3 3v18h18"></path><path d="m7 15 4-4 3 3 5-7"></path><path d="M18 7h1v1"></path>',
   agro: '<path d="M12 22V8"></path><path d="M5 12c4 0 7 3 7 7-4 0-7-3-7-7z"></path><path d="M19 5c-4 0-7 3-7 7 4 0 7-3 7-7z"></path>',
@@ -84,6 +96,12 @@ const topicIconPaths = {
   autos: '<path d="M5 17h14"></path><path d="M6 17l1.5-5h9L18 17"></path><path d="M8 17v2"></path><path d="M16 17v2"></path><path d="M7.5 12 9 8h6l1.5 4"></path>',
   "formula-1": '<path d="M4 16h12a4 4 0 0 0 0-8H9"></path><path d="M4 8h5"></path><path d="M4 12h9"></path><circle cx="7" cy="18" r="2"></circle><circle cx="17" cy="18" r="2"></circle>',
   videojuegos: '<path d="M6 11h4"></path><path d="M8 9v4"></path><path d="M15 12h.01"></path><path d="M18 10h.01"></path><path d="M7 7h10a5 5 0 0 1 4.7 6.7l-1.1 3.2a2.3 2.3 0 0 1-3.8.9L14 15h-4l-2.8 2.8a2.3 2.3 0 0 1-3.8-.9l-1.1-3.2A5 5 0 0 1 7 7z"></path>',
+  mascotas: '<path d="M11.5 14.5c-1.3-2-4.5-.9-4.5 1.6 0 1.6 1.4 2.9 3.1 2.9h3.8c1.7 0 3.1-1.3 3.1-2.9 0-2.5-3.2-3.6-4.5-1.6-.3.5-.7.5-1 0z"></path><circle cx="7.5" cy="9" r="1.9"></circle><circle cx="12" cy="7" r="2"></circle><circle cx="16.5" cy="9" r="1.9"></circle><circle cx="18.5" cy="13" r="1.6"></circle><circle cx="5.5" cy="13" r="1.6"></circle>',
+  animales: '<path d="M11.5 14.5c-1.3-2-4.5-.9-4.5 1.6 0 1.6 1.4 2.9 3.1 2.9h3.8c1.7 0 3.1-1.3 3.1-2.9 0-2.5-3.2-3.6-4.5-1.6-.3.5-.7.5-1 0z"></path><circle cx="7.5" cy="9" r="1.9"></circle><circle cx="12" cy="7" r="2"></circle><circle cx="16.5" cy="9" r="1.9"></circle><circle cx="18.5" cy="13" r="1.6"></circle><circle cx="5.5" cy="13" r="1.6"></circle>',
+  influencers: '<path d="M16 11a4 4 0 1 0-8 0"></path><path d="M5 21a7 7 0 0 1 14 0"></path><path d="M18 4.5 20 3l2 1.5"></path><path d="M20 3v6"></path>',
+  sociedad: '<path d="M16 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"></path><circle cx="9.5" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path>',
+  transporte: '<path d="M6 17h12"></path><path d="M6 17v3"></path><path d="M18 17v3"></path><rect x="5" y="4" width="14" height="13" rx="2"></rect><path d="M8 8h8"></path><path d="M8 12h8"></path><circle cx="8.5" cy="15" r=".5"></circle><circle cx="15.5" cy="15" r=".5"></circle>',
+  musica: '<path d="M9 18V5l10-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="16" cy="16" r="3"></circle>',
   generic: '<circle cx="12" cy="12" r="8"></circle><path d="M12 8v4l3 2"></path>',
   message: '<path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"></path>',
   replies: '<path d="M17 6.1A7 7 0 0 0 5 11v1l-2 3h4.2A7 7 0 0 0 19 10"></path><path d="M15 3h6v6"></path><path d="m21 3-7 7"></path>',
@@ -96,12 +114,23 @@ const topicAccentClasses = {
   deportes: "topic-accent-green",
   clima: "topic-accent-blue",
   economia: "topic-accent-gold",
+  actualidad: "topic-accent-orange",
   musica: "topic-accent-violet",
   autos: "topic-accent-steel",
   tecnologia: "topic-accent-blue",
   seguridad: "topic-accent-red",
-  agro: "topic-accent-green"
+  agro: "topic-accent-green",
+  mascotas: "topic-accent-green",
+  animales: "topic-accent-green",
+  influencers: "topic-accent-violet",
+  sociedad: "topic-accent-blue",
+  transporte: "topic-accent-steel"
 };
+const hiddenPublicTopicNames = new Set([
+  "sin tema especifico",
+  "la derecha nunca mas",
+  "ok"
+]);
 const onboardingSeenKey = "quieroOpinarOnboardingSeen";
 
 let opinions = [];
@@ -545,7 +574,7 @@ function getTopicName(topicId) {
 }
 
 function getVisibleTopics() {
-  return topics.filter((topic) => topic.id !== "todos");
+  return topics.filter((topic) => topic.id !== "todos" && !isHiddenPublicTopic(topic));
 }
 
 function getVisibleOpinions() {
@@ -667,17 +696,17 @@ function resolveSelectedTopic(topicPrompt, text) {
   const detectedFromPrompt = detectTopic(prompt);
   if (detectedFromPrompt.score > 0) return detectedFromPrompt.id;
 
-  if (prompt) return findOrCreateTopic(prompt);
+  if (prompt && !isHiddenPublicTopicName(prompt)) return findOrCreateTopic(prompt);
 
   const detectedFromText = detectTopic(text);
   if (detectedFromText.score > 0) return detectedFromText.id;
 
-  return "sin-tema";
+  return "actualidad";
 }
 
 function detectTopic(text) {
   const normalized = normalizeText(text);
-  let winner = { id: "sin-tema", score: 0 };
+  let winner = { id: "actualidad", score: 0 };
 
   topicRules.forEach((rule) => {
     const score = rule.words.reduce((total, word) => {
@@ -710,6 +739,7 @@ function normalizeText(value) {
 
 function findOrCreateTopic(topicPrompt) {
   const name = formatTopicName(topicPrompt);
+  if (isHiddenPublicTopicName(name)) return "actualidad";
   const existingTopic = getVisibleTopics().find((topic) => {
     return normalizeText(topic.name) === normalizeText(name);
   });
@@ -2072,8 +2102,24 @@ function openRandomOpinion(sourceOpinions) {
 
 function getTopicIconMarkup(topic, large = false) {
   const sizeClass = large ? " large" : "";
-  const iconKey = topicIconPaths[topic.id] ? topic.id : "generic";
+  const iconKey = getTopicIconKey(topic);
   return `<span class="topic-icon${sizeClass}" aria-hidden="true">${getIconMarkup(iconKey)}</span>`;
+}
+
+function getTopicIconKey(topic) {
+  const rawId = normalizeText(topic.id || "").trim();
+  const idKey = getTopicNameKey(topic.id);
+  const nameKey = getTopicNameKey(topic.name);
+  if (topicIconPaths[rawId]) return rawId;
+  if (topicIconPaths[idKey]) return idKey;
+  if (topicIconPaths[nameKey]) return nameKey;
+  if (nameKey.includes("mascota")) return "mascotas";
+  if (nameKey.includes("animal")) return "animales";
+  if (nameKey.includes("influencer")) return "influencers";
+  if (nameKey.includes("sociedad")) return "sociedad";
+  if (nameKey.includes("transporte") || nameKey.includes("colectivo") || nameKey.includes("tren")) return "transporte";
+  if (nameKey.includes("musica")) return "musica";
+  return "generic";
 }
 
 function getIconMarkup(iconKey) {
@@ -2082,7 +2128,7 @@ function getIconMarkup(iconKey) {
 }
 
 function getTopicAccentClass(topic) {
-  return topicAccentClasses[topic.id] || "topic-accent-orange";
+  return topicAccentClasses[getTopicIconKey(topic)] || topicAccentClasses[topic.id] || "topic-accent-orange";
 }
 
 function normalizeReply(reply) {
@@ -2289,15 +2335,29 @@ function mergeTopics(remoteTopics) {
   return Array.from(byId.values());
 }
 
+function isHiddenPublicTopic(topic) {
+  return isHiddenPublicTopicName(topic.id) || isHiddenPublicTopicName(topic.name);
+}
+
+function isHiddenPublicTopicName(value) {
+  return hiddenPublicTopicNames.has(getTopicNameKey(value));
+}
+
+function getTopicNameKey(value) {
+  return normalizeText(String(value || ""))
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
 function normalizeOpinion(opinion) {
   const detectedTopic = detectTopic(opinion.text || "");
-  const normalizedTopic = opinion.topic || "sin-tema";
+  const normalizedTopic = opinion.topic || "actualidad";
 
   return {
     id: opinion.id || createId(),
     publicNumber: Number(opinion.publicNumber || 0),
     author: opinion.author || "Opinion",
-    topic: normalizedTopic === "sin-tema" && detectedTopic.score > 0 ? detectedTopic.id : normalizedTopic,
+    topic: normalizedTopic === "sin-tema" ? (detectedTopic.score > 0 ? detectedTopic.id : "actualidad") : normalizedTopic,
     text: opinion.text || "",
     views: Number(opinion.views || 0),
     likes: Number(opinion.likes || 0),
