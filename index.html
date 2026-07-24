@@ -14,7 +14,7 @@
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-XY98SMBP52"></script>
     <script defer src="analytics.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=20260724-contact-send">
+    <link rel="stylesheet" href="styles.css?v=20260724-contact-thanks">
   </head>
   <body>
     <div class="welcome-overlay hidden" id="welcomeOverlay" aria-live="polite">
@@ -283,6 +283,11 @@
             <h1 id="contactTitle">Mandanos tu consulta</h1>
             <p>Si tenés una duda, sugerencia o necesitás pedir una revisión, escribinos desde este formulario.</p>
           </div>
+          <div class="contact-thanks hidden" id="contactThanks" role="status" aria-live="polite">
+            <p class="section-label">consulta enviada</p>
+            <h2>Gracias por escribirnos.</h2>
+            <p>El equipo va a revisar tu consulta a la brevedad y daremos una respuesta lo antes posible.</p>
+          </div>
           <form class="contact-form" id="contactForm">
             <label class="field">
               <span class="field-label">Nombre</span>
@@ -430,6 +435,6 @@
     </template>
 
     <script src="firebase-config.js"></script>
-    <script src="app.js?v=20260724-contact-send"></script>
+    <script src="app.js?v=20260724-contact-thanks"></script>
   </body>
 </html>

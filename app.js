@@ -212,6 +212,8 @@ const contactName = document.querySelector("#contactName");
 const contactEmail = document.querySelector("#contactEmail");
 const contactMessage = document.querySelector("#contactMessage");
 const contactStatus = document.querySelector("#contactStatus");
+const contactThanks = document.querySelector("#contactThanks");
+const contactShell = document.querySelector(".contact-shell");
 const mobileViewportQuery = window.matchMedia("(max-width: 980px)");
 
 let activeTopic = "todos";
@@ -984,11 +986,9 @@ async function submitContactForm() {
     }
 
     contactForm?.reset();
-    if (contactStatus) {
-      contactStatus.textContent = "Consulta enviada. Gracias por escribirnos.";
-      contactStatus.classList.remove("hidden");
-      contactStatus.classList.add("is-success");
-    }
+    contactForm?.classList.add("hidden");
+    contactThanks?.classList.remove("hidden");
+    contactShell?.classList.add("is-sent");
   } catch (error) {
     if (contactStatus) {
       contactStatus.textContent = "No se pudo enviar la consulta. Probá nuevamente en unos minutos.";
