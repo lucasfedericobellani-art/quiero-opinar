@@ -61,15 +61,14 @@ const unsafeContentTerms = [
   "tarjeta de credito",
   "pornografia infantil"
 ];
+const onboardingSeenKey = "quieroOpinarOnboardingSeen";
 
 let opinions = [];
 const resetStorageKey = "quiero-opinar:reset-2026-07-03";
 
 const welcomeOverlay = document.querySelector("#welcomeOverlay");
-const welcomeStepOne = document.querySelector("#welcomeStepOne");
-const welcomeStepTwo = document.querySelector("#welcomeStepTwo");
-const nextWelcomeButton = document.querySelector("#nextWelcomeButton");
-const enterButton = document.querySelector("#enterButton");
+const firstVisitWelcomeModal = document.querySelector("#firstVisitWelcomeModal");
+const welcomeStartButton = document.querySelector("#welcomeStartButton");
 const opinionForm = document.querySelector("#opinionForm");
 const opinionText = document.querySelector("#opinionText");
 const topicIdea = document.querySelector("#topicIdea");
@@ -149,21 +148,7 @@ let dataStore = createLocalDataStore();
 
 hydrateInitialContentFromCache();
 
-nextWelcomeButton.addEventListener("click", () => {
-  welcomeStepOne.classList.add("hidden");
-  welcomeStepTwo.classList.remove("hidden");
-  enterButton.focus();
-});
-
-enterButton.addEventListener("click", () => {
-  welcomeOverlay.classList.add("hidden");
-  syncUrlForView(currentView);
-  if (isMobileViewport()) {
-    floatingOpinionTrigger.focus();
-  } else {
-    opinionText.focus();
-  }
-});
+setupFirstVisitWelcomeModal();
 
 legalOpenButton.addEventListener("click", () => {
   closeMobileMenu(false);
@@ -183,6 +168,11 @@ legalOverlay.addEventListener("click", (event) => {
 });
 
 document.addEventListener("keydown", (event) => {
+  if (!welcomeOverlay.classList.contains("hidden")) {
+    handleWelcomeModalKeydown(event);
+    return;
+  }
+
   if (event.key !== "Escape") return;
 
   if (!legalOverlay.classList.contains("hidden")) {
@@ -343,6 +333,72 @@ floatingOpinionForm.querySelector('button[type="submit"]')?.addEventListener("po
   closeFloatingOpinionPanel(false);
   floatingOpinionForm.requestSubmit();
 });
+
+function setupFirstVisitWelcomeModal() {
+  if (!welcomeOverlay || !firstVisitWelcomeModal || !welcomeStartButton) return;
+
+  let hasSeenOnboarding = false;
+  try {
+    hasSeenOnboarding = window.localStorage.getItem(onboardingSeenKey) === "true";
+  } catch (error) {
+    hasSeenOnboarding = false;
+  }
+
+  if (hasSeenOnboarding) return;
+
+  openFirstVisitWelcomeModal();
+  welcomeStartButton.addEventListener("click", closeFirstVisitWelcomeModal);
+  welcomeOverlay.addEventListener("click", (event) => {
+    if (event.target === welcomeOverlay) closeFirstVisitWelcomeModal();
+  });
+}
+
+function openFirstVisitWelcomeModal() {
+  welcomeOverlay.classList.remove("hidden");
+  document.body.classList.add("welcome-modal-open");
+  window.requestAnimationFrame(() => welcomeStartButton.focus({ preventScroll: true }));
+}
+
+function closeFirstVisitWelcomeModal() {
+  try {
+    window.localStorage.setItem(onboardingSeenKey, "true");
+  } catch (error) {
+    // localStorage can be unavailable in strict privacy contexts.
+  }
+
+  welcomeOverlay.classList.add("hidden");
+  document.body.classList.remove("welcome-modal-open");
+  if (isMobileViewport()) {
+    floatingOpinionTrigger.focus({ preventScroll: true });
+  } else {
+    opinionText.focus({ preventScroll: true });
+  }
+}
+
+function handleWelcomeModalKeydown(event) {
+  if (event.key === "Escape") {
+    closeFirstVisitWelcomeModal();
+    return;
+  }
+
+  if (event.key !== "Tab") return;
+
+  const focusableElements = firstVisitWelcomeModal.querySelectorAll("button, [href], input, textarea, select, [tabindex]:not([tabindex='-1'])");
+  const firstFocusable = focusableElements[0];
+  const lastFocusable = focusableElements[focusableElements.length - 1];
+  if (!firstFocusable || !lastFocusable) return;
+
+  if (event.shiftKey && document.activeElement === firstFocusable) {
+    event.preventDefault();
+    lastFocusable.focus();
+    return;
+  }
+
+  if (!event.shiftKey && document.activeElement === lastFocusable) {
+    event.preventDefault();
+    firstFocusable.focus();
+  }
+}
 
 function closeLegalModal() {
   legalOverlay.classList.add("hidden");

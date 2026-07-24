@@ -13,34 +13,22 @@
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-XY98SMBP52"></script>
     <script defer src="analytics.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=20260722-fast-first-paint">
+    <link rel="stylesheet" href="styles.css?v=20260724-first-visit-welcome">
   </head>
   <body>
-    <div class="welcome-overlay" id="welcomeOverlay" aria-live="polite">
-      <section class="modal" id="welcomeStepOne" role="dialog" aria-modal="true" aria-labelledby="welcomeTitle">
+    <div class="welcome-overlay hidden" id="welcomeOverlay" aria-live="polite">
+      <section class="modal welcome-modal" id="firstVisitWelcomeModal" role="dialog" aria-modal="true" aria-labelledby="welcomeTitle">
         <p class="modal-kicker">quieroopinar.com.ar</p>
-        <h1 id="welcomeTitle">Bienvenido</h1>
+        <h1 id="welcomeTitle">La red social donde las opiniones importan m&aacute;s que los perfiles.</h1>
         <ul class="welcome-list">
-          <li>Opiná sin registrarte</li>
-          <li>Respondé opiniones</li>
-          <li>Descubrí qué piensa la gente</li>
+          <li>Opin&aacute; sin registrarte</li>
+          <li>Respond&eacute; opiniones</li>
+          <li>Todo es an&oacute;nimo</li>
         </ul>
-        <button class="primary-button" id="nextWelcomeButton" type="button">Siguiente</button>
-      </section>
-
-      <section class="modal hidden" id="welcomeStepTwo" role="dialog" aria-modal="true" aria-labelledby="privacyTitle">
-        <p class="modal-kicker">privacidad y seguridad</p>
-        <h1 id="privacyTitle">Privacidad</h1>
-        <ul class="welcome-list">
-          <li>No pedimos nombre</li>
-          <li>No pedimos mail</li>
-          <li>No pedimos teléfono</li>
-          <li>Solo guardamos la IP por motivos legales y de seguridad</li>
-        </ul>
-        <button class="primary-button" id="enterButton" type="button">Entrar</button>
+        <p class="welcome-note">No pedimos nombre, mail ni tel&eacute;fono.</p>
+        <button class="primary-button" id="welcomeStartButton" type="button">Empezar</button>
       </section>
     </div>
-
     <div class="legal-overlay hidden" id="legalOverlay" aria-live="polite">
       <section class="modal legal-modal" role="dialog" aria-modal="true" aria-labelledby="legalTitle">
         <p class="modal-kicker">términos de uso</p>
@@ -78,6 +66,9 @@
             prevención de abuso, auditoría y eventual cumplimiento de requerimientos
             legales. Esa información no será vendida ni compartida con fines
             comerciales.
+          </p>
+          <p>
+            Solo guardamos la IP por motivos legales y de seguridad.
           </p>
           <p>
             Privacidad: el sitio puede guardar el texto publicado, tema, respuestas,
@@ -404,6 +395,6 @@
     </template>
 
     <script src="firebase-config.js"></script>
-    <script src="app.js?v=20260722-politica-topic-detector"></script>
+    <script src="app.js?v=20260724-first-visit-welcome"></script>
   </body>
 </html>
