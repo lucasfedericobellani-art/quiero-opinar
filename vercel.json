@@ -27,6 +27,30 @@
       "destination": "/panel.html"
     },
     {
+      "source": "/temas",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/temas/:slug",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/opinion/:id",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/buscar",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/que-es",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/terminos",
+      "destination": "/index.html"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
