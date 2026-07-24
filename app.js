@@ -153,12 +153,12 @@ setupFirstVisitWelcomeModal();
 
 legalOpenButton.addEventListener("click", () => {
   closeMobileMenu(false);
-  openLegalModal();
+  openLegalModal({ pushHistory: true });
 });
 
 legalTriggers.forEach((trigger) => {
   trigger.addEventListener("click", () => {
-    openLegalModal();
+    openLegalModal({ pushHistory: true });
   });
 });
 
@@ -191,16 +191,16 @@ document.addEventListener("keydown", (event) => {
 });
 
 topicsNavButton.addEventListener("click", () => {
-  showView("topics");
+  navigateToView("topics");
   closeMobileMenu(false);
 });
 
 aboutNavButton.addEventListener("click", () => {
-  showView("about");
+  navigateToView("about");
   closeMobileMenu(false);
 });
 
-aboutTopicsButton.addEventListener("click", () => showView("topics"));
+aboutTopicsButton.addEventListener("click", () => navigateToView("topics"));
 
 homeButtons.forEach((button) => {
   button.addEventListener("click", () => {
@@ -235,7 +235,7 @@ backFromDetailButton.addEventListener("click", () => {
 
   goHome();
 });
-backFromTopicButton.addEventListener("click", () => showView("topics"));
+backFromTopicButton.addEventListener("click", () => navigateToView("topics"));
 topicSearchInput.addEventListener("input", renderBoard);
 searchInputs.forEach((input) => {
   input.addEventListener("input", () => syncSearchInputs(input.value));
@@ -401,12 +401,28 @@ function handleWelcomeModalKeydown(event) {
   }
 }
 
-function closeLegalModal() {
+function closeLegalModal(options = {}) {
+  if (!options.fromHistory && window.history.state?.modal === "legal") {
+    window.history.back();
+    return;
+  }
+
   legalOverlay.classList.add("hidden");
-  legalOpenButton.focus();
+  if (options.restoreFocus !== false) legalOpenButton.focus();
 }
 
-function openLegalModal() {
+function openLegalModal(options = {}) {
+  if (options.pushHistory && !isRestoringHistory) {
+    const currentState = {
+      ...(window.history.state || getCurrentNavigationState()),
+      ...getCurrentNavigationState(),
+      scrollY: window.scrollY,
+      modal: null
+    };
+    window.history.replaceState(currentState, "", window.location.href);
+    window.history.pushState({ ...currentState, modal: "legal" }, "", window.location.href);
+  }
+
   legalOverlay.classList.remove("hidden");
   legalModal.scrollTop = 0;
   legalTitle.focus({ preventScroll: true });
@@ -683,7 +699,7 @@ function formatTopicName(value) {
 
 function goHome() {
   activeTopic = "todos";
-  showView("home");
+  navigateToView("home");
   render();
 }
 
@@ -698,7 +714,7 @@ function submitSearch(value, sourceInput) {
   syncSearchInputs(searchQuery);
   sourceInput?.blur();
   renderSearchResults();
-  showView("search");
+  navigateToView("search");
 }
 
 function containsBlockedLink(value) {
@@ -816,6 +832,38 @@ function showView(viewName, options = {}) {
   if (pendingScrollRestore !== null) restorePendingScrollPosition();
 }
 
+function navigateToView(viewName, options = {}) {
+  if (!isRestoringHistory) {
+    const currentState = {
+      ...(window.history.state || getCurrentNavigationState()),
+      ...getCurrentNavigationState(),
+      scrollY: window.scrollY,
+      modal: null
+    };
+    window.history.replaceState(currentState, "", window.location.href);
+
+    const nextState = {
+      ...getCurrentNavigationState(),
+      view: viewName,
+      opinionId: null,
+      directEntry: false,
+      modal: null,
+      scrollY: 0
+    };
+    const nextPath = getPathWithoutOpinion();
+    const currentStateKey = `${currentState.view || "home"}:${currentState.searchQuery || ""}:${currentState.selectedTopicId || ""}`;
+    const nextStateKey = `${nextState.view || "home"}:${nextState.searchQuery || ""}:${nextState.selectedTopicId || ""}`;
+
+    if (options.replaceHistory || currentStateKey === nextStateKey) {
+      window.history.replaceState(nextState, "", nextPath);
+    } else {
+      window.history.pushState(nextState, "", nextPath);
+    }
+  }
+
+  showView(viewName, options);
+}
+
 function syncUrlForView(viewName) {
   if (viewName !== "home") return;
   const url = new URL(window.location.href);
@@ -870,6 +918,7 @@ function restoreViewFromHistory(state) {
   }
 
   isRestoringHistory = true;
+  closeLegalModal({ fromHistory: true, restoreFocus: false });
   activeTopic = state.activeTopic || "todos";
   selectedTopicId = state.selectedTopicId || null;
   searchQuery = state.searchQuery || "";
@@ -885,6 +934,10 @@ function restoreViewFromHistory(state) {
     pendingScrollRestore = Number.isFinite(state.scrollY) ? state.scrollY : 0;
     render();
     showView(state.view || "home", { scrollToTop: false });
+  }
+
+  if (state.modal === "legal") {
+    openLegalModal();
   }
 
   isRestoringHistory = false;
@@ -1036,7 +1089,7 @@ function openTopic(topicId) {
   selectedTopicId = topicId;
   activeTopic = topicId;
   render();
-  showView("topicDetail");
+  navigateToView("topicDetail");
 }
 
 function openOpinion(opinionId, options = {}) {
@@ -1770,7 +1823,7 @@ function renderDiscovery(target = discoveryGrid) {
   target.innerHTML = "";
   const visibleOpinions = getVisibleOpinions();
   const items = [
-    { label: "Tendencias ahora", action: () => showView("topics") },
+    { label: "Tendencias ahora", action: () => navigateToView("topics") },
     { label: "Más debatidas", action: () => showDiscoveryResults("Más debatidas", visibleOpinions.slice().sort((a, b) => b.replies.length - a.replies.length)) },
     { label: "Más apoyadas", action: () => showDiscoveryResults("Más apoyadas", visibleOpinions.slice().sort((a, b) => b.likes - a.likes)) },
     { label: "Recién publicadas", action: () => showDiscoveryResults("Recién publicadas", visibleOpinions) },
@@ -1803,7 +1856,7 @@ function showDiscoveryResults(title, results) {
   } else {
     limitedResults.forEach((opinion) => searchResultsList.append(createOpinionCard(opinion, false)));
   }
-  showView("search");
+  navigateToView("search");
 }
 
 function openRandomOpinion(sourceOpinions) {
