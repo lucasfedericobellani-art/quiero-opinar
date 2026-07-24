@@ -49,7 +49,7 @@ async function sendContactEmail({ name, email, message }) {
   const apiKey = process.env.RESEND_API_KEY;
   const intendedTo = "quieroopinararg@gmail.com";
   const to = process.env.CONTACT_EMAIL || process.env.ADMIN_ALERT_EMAIL || "lucasfedericobellani@gmail.com";
-  const from = process.env.ADMIN_ALERT_FROM || "Quiero Opinar <alertas@quieroopinar.com.ar>";
+  const from = process.env.CONTACT_FROM || process.env.ADMIN_ALERT_FROM || "Quiero Opinar <contacto@mail.quieroopinar.com.ar>";
 
   if (!apiKey) {
     return { skipped: true, reason: "missing_resend_api_key" };
