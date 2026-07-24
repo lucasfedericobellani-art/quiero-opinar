@@ -15,8 +15,8 @@
   ],
   "rewrites": [
     {
-      "source": "/api/(.*)",
-      "destination": "/api/$1"
+      "source": "/api/:path*",
+      "destination": "/api/:path*"
     },
     {
       "source": "/admin",
@@ -31,11 +31,11 @@
       "destination": "/index.html"
     },
     {
-      "source": "/temas/:slug",
+      "source": "/temas/:slug*",
       "destination": "/index.html"
     },
     {
-      "source": "/opinion/:id",
+      "source": "/opinion/:id*",
       "destination": "/index.html"
     },
     {
@@ -51,7 +51,7 @@
       "destination": "/index.html"
     },
     {
-      "source": "/(.*)",
+      "source": "/:path*",
       "destination": "/index.html"
     }
   ],
