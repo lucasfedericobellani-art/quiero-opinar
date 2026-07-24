@@ -102,6 +102,10 @@ const topicIconPaths = {
   sociedad: '<path d="M16 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"></path><circle cx="9.5" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path>',
   transporte: '<path d="M6 17h12"></path><path d="M6 17v3"></path><path d="M18 17v3"></path><rect x="5" y="4" width="14" height="13" rx="2"></rect><path d="M8 8h8"></path><path d="M8 12h8"></path><circle cx="8.5" cy="15" r=".5"></circle><circle cx="15.5" cy="15" r=".5"></circle>',
   musica: '<path d="M9 18V5l10-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="16" cy="16" r="3"></circle>',
+  television: '<rect x="4" y="6" width="16" height="11" rx="2"></rect><path d="m9 3 3 3 3-3"></path><path d="M8 21h8"></path><path d="M12 17v4"></path>',
+  vida: '<path d="M20.8 8.6c0 5.4-8.8 10.4-8.8 10.4S3.2 14 3.2 8.6A4.7 4.7 0 0 1 12 6.2a4.7 4.7 0 0 1 8.8 2.4z"></path><path d="M8 12h2.2l1.1-2.4 1.7 5 1.2-2.6H16"></path>',
+  comida: '<path d="M6 3v7"></path><path d="M10 3v7"></path><path d="M6 7h4"></path><path d="M8 10v11"></path><path d="M17 3c-1.7 1.5-2.5 3.6-2.5 6.2 0 2.5.9 4 2.5 4.6V21"></path>',
+  mma: '<path d="M8 4.5h6.2c2.1 0 3.8 1.7 3.8 3.8v3.2c0 1.4-.7 2.7-1.9 3.4L13 16.8V20H8.8v-3.5l-2.7-1.8A4.5 4.5 0 0 1 4 10.9V8.5a4 4 0 0 1 4-4z"></path><path d="M8 4.5V10"></path><path d="M11 4.5V10"></path><path d="M14 4.7V10"></path><path d="M7 13h6"></path>',
   generic: '<circle cx="12" cy="12" r="8"></circle><path d="M12 8v4l3 2"></path>',
   message: '<path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"></path>',
   replies: '<path d="M17 6.1A7 7 0 0 0 5 11v1l-2 3h4.2A7 7 0 0 0 19 10"></path><path d="M15 3h6v6"></path><path d="m21 3-7 7"></path>',
@@ -124,7 +128,11 @@ const topicAccentClasses = {
   animales: "topic-accent-green",
   influencers: "topic-accent-violet",
   sociedad: "topic-accent-blue",
-  transporte: "topic-accent-steel"
+  transporte: "topic-accent-steel",
+  television: "topic-accent-blue",
+  vida: "topic-accent-red",
+  comida: "topic-accent-gold",
+  mma: "topic-accent-red"
 };
 const hiddenPublicTopicNames = new Set([
   "sin tema especifico",
@@ -2119,6 +2127,10 @@ function getTopicIconKey(topic) {
   if (nameKey.includes("sociedad")) return "sociedad";
   if (nameKey.includes("transporte") || nameKey.includes("colectivo") || nameKey.includes("tren")) return "transporte";
   if (nameKey.includes("musica")) return "musica";
+  if (nameKey.includes("television") || nameKey.includes("tele")) return "television";
+  if (nameKey.includes("vida")) return "vida";
+  if (nameKey.includes("comida") || nameKey.includes("cocina") || nameKey.includes("gastronomia")) return "comida";
+  if (nameKey.includes("mma") || nameKey.includes("ufc") || nameKey.includes("artes marciales")) return "mma";
   return "generic";
 }
 
