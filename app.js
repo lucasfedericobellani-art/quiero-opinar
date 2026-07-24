@@ -105,6 +105,7 @@ const topNav = document.querySelector("#topNav");
 const aboutTopicsButton = document.querySelector("#aboutTopicsButton");
 const boardGrid = document.querySelector("#boardGrid");
 const topicSearchInput = document.querySelector("#topicSearchInput");
+const topicTotalCount = document.querySelector("#topicTotalCount");
 const topicDetailIcon = document.querySelector("#topicDetailIcon");
 const topicDetailTitle = document.querySelector("#topicDetailTitle");
 const topicDetailDescription = document.querySelector("#topicDetailDescription");
@@ -1380,49 +1381,63 @@ function renderBoard() {
   boardGrid.innerHTML = "";
   const query = normalizeText(topicSearchInput.value.trim());
 
-  const visibleTopics = getVisibleTopics().filter((topic) => {
+  const topicCards = getVisibleTopics()
+    .map((topic) => {
+      const topicOpinions = getTopicOpinions(topic.id);
+      const replyCount = topicOpinions.reduce((total, opinion) => total + opinion.replies.length, 0);
+      const lastActivity = getLastTopicActivity(topicOpinions);
+      return {
+        topic,
+        opinionCount: topicOpinions.length,
+        replyCount,
+        lastActivity,
+        lastActivityTime: lastActivity ? new Date(lastActivity).getTime() : 0
+      };
+    })
+    .sort((a, b) => {
+      if (b.lastActivityTime !== a.lastActivityTime) return b.lastActivityTime - a.lastActivityTime;
+      if (b.opinionCount !== a.opinionCount) return b.opinionCount - a.opinionCount;
+      return a.topic.name.localeCompare(b.topic.name, "es");
+    });
+
+  if (topicTotalCount) {
+    const total = topicCards.length;
+    topicTotalCount.textContent = `${total} ${total === 1 ? "categoría" : "categorías"}`;
+  }
+
+  const visibleTopics = topicCards.filter(({ topic }) => {
     if (!query) return true;
     return normalizeText(`${topic.name} ${topic.description}`).includes(query);
   });
 
   if (!visibleTopics.length) {
     const empty = document.createElement("p");
-    empty.className = "opinion-card";
+    empty.className = "topic-empty board-empty";
     empty.textContent = "No encontramos temas con esa búsqueda.";
     boardGrid.append(empty);
     return;
   }
 
-  visibleTopics.forEach((topic) => {
-    const topicOpinions = getTopicOpinions(topic.id)
-      .slice()
-      .sort((a, b) => {
-        if (b.views !== a.views) return b.views - a.views;
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-      });
-    const replyCount = topicOpinions.reduce((total, opinion) => total + opinion.replies.length, 0);
-    const lastActivity = getLastTopicActivity(topicOpinions);
-    const hasRecentActivity = lastActivity && Date.now() - new Date(lastActivity).getTime() < 6 * 60 * 60 * 1000;
-
+  visibleTopics.forEach(({ topic, opinionCount, replyCount, lastActivity, lastActivityTime }) => {
     const column = document.createElement("article");
     column.className = "board-column";
     column.tabIndex = 0;
     column.setAttribute("role", "button");
     column.setAttribute("aria-label", `Abrir tema ${topic.name}`);
+    const activityLabel = lastActivity ? `Última actividad ${formatRelativeActivity(lastActivity)}` : "Sin actividad todavía";
+    const opinionLabel = `${opinionCount} ${opinionCount === 1 ? "opinión" : "opiniones"}`;
+    const hasActivity = lastActivityTime > 0;
     column.innerHTML = `
       <div class="board-column-header">
-        <div>
-          <h2>${getTopicIconMarkup(topic)}${escapeHtml(topic.name)}</h2>
-          <p>${escapeHtml(topic.description)}</p>
-        </div>
-        <span class="board-count">${topicOpinions.length} hilos</span>
+        <h2>${getTopicIconMarkup(topic)}<span>${escapeHtml(topic.name)}</span></h2>
+        <span class="board-arrow" aria-hidden="true">&rarr;</span>
       </div>
-      <div class="board-context">
-        <span>${replyCount} respuestas</span>
-        <span>${lastActivity ? `Última actividad ${formatDate(lastActivity)}` : "Listo para abrir debate"}</span>
-        ${hasRecentActivity ? "<strong>Actividad reciente</strong>" : ""}
+      <div class="board-meta">
+        <span>${opinionLabel}</span>
+        <span>${activityLabel}</span>
       </div>
-      <div class="board-card-list"></div>
+      <p>${escapeHtml(topic.description)}</p>
+      ${hasActivity && replyCount > 0 ? `<span class="board-activity">${replyCount} ${replyCount === 1 ? "respuesta" : "respuestas"}</span>` : ""}
     `;
     column.addEventListener("click", () => openTopic(topic.id));
     column.addEventListener("keydown", (event) => {
@@ -1432,33 +1447,9 @@ function renderBoard() {
       }
     });
 
-    const list = column.querySelector(".board-card-list");
-    if (!topicOpinions.length) {
-      const empty = document.createElement("p");
-      empty.textContent = "Podés abrir el primer hilo de este tema.";
-      list.append(empty);
-    }
-
-    topicOpinions.slice(0, 3).forEach((opinion) => {
-      const card = document.createElement("button");
-      card.className = "board-card";
-      card.type = "button";
-      card.innerHTML = `
-        <strong>${getTopicName(opinion.topic)}</strong>
-        ${escapeHtml(truncateText(opinion.text, 130))}
-        <span>${formatDate(opinion.createdAt)} - ${opinion.views} vistas - ${opinion.replies.length} respuestas - ${opinion.likes} me gusta</span>
-      `;
-      card.addEventListener("click", (event) => {
-        event.stopPropagation();
-        openOpinion(opinion.id);
-      });
-      list.append(card);
-    });
-
     boardGrid.append(column);
   });
 }
-
 function renderFeed() {
   feedList.innerHTML = "";
   activeTopicPill.textContent = getTopicName(activeTopic);
@@ -2103,6 +2094,23 @@ function formatDate(value) {
     hour: "2-digit",
     minute: "2-digit"
   });
+}
+
+function formatRelativeActivity(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+
+  const diffMinutes = Math.max(0, Math.round((Date.now() - date.getTime()) / 60000));
+  if (diffMinutes < 1) return "recién";
+  if (diffMinutes < 60) return `hace ${diffMinutes} min`;
+
+  const diffHours = Math.round(diffMinutes / 60);
+  if (diffHours < 24) return `hace ${diffHours} h`;
+
+  const diffDays = Math.round(diffHours / 24);
+  if (diffDays < 7) return `hace ${diffDays} d`;
+
+  return formatDate(value);
 }
 
 function truncateText(value, maxLength) {

@@ -13,7 +13,7 @@
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-XY98SMBP52"></script>
     <script defer src="analytics.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=20260724-anonymous-bullets">
+    <link rel="stylesheet" href="styles.css?v=20260724-topics-redesign">
   </head>
   <body>
     <div class="welcome-overlay hidden" id="welcomeOverlay" aria-live="polite">
@@ -244,11 +244,14 @@
       </section>
 
       <section class="app-view hidden" id="topicsView" aria-labelledby="topicsBoardTitle">
-        <div class="view-heading">
+        <div class="view-heading topics-heading">
           <button class="ghost-button nav-home" type="button">Volver a opiniones</button>
-          <p class="section-label">dashboard</p>
-          <h1 id="topicsBoardTitle">Temas de conversación</h1>
-          <p>Elegí un tablero para ver las opiniones activas de ese tema.</p>
+          <p class="section-label">explorar</p>
+          <h1 id="topicsBoardTitle">Temas de conversaci&oacute;n</h1>
+          <div class="topics-heading-row">
+            <p>Explor&aacute; las conversaciones por tema.</p>
+            <span class="topic-total-count" id="topicTotalCount">0 categor&iacute;as</span>
+          </div>
         </div>
         <div class="topic-search-wrap">
           <label class="sr-only" for="topicSearchInput">Buscar temas</label>
@@ -256,7 +259,6 @@
         </div>
         <div class="board-grid" id="boardGrid"></div>
       </section>
-
       <section class="app-view hidden" id="topicDetailView" aria-labelledby="topicDetailTitle">
         <div class="view-heading topic-detail-heading">
           <button class="ghost-button" id="backFromTopicButton" type="button">Volver a temas</button>
@@ -393,6 +395,6 @@
     </template>
 
     <script src="firebase-config.js"></script>
-    <script src="app.js?v=20260724-anonymous-bullets"></script>
+    <script src="app.js?v=20260724-topics-redesign"></script>
   </body>
 </html>
