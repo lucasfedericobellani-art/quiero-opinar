@@ -1272,10 +1272,7 @@ button {
 }
 
 .contact-shell.is-sent {
-  padding: clamp(12px, 3vw, 24px) 0;
-  border: 0;
-  background: transparent;
-  box-shadow: none;
+  padding: clamp(32px, 5vw, 58px);
 }
 
 .contact-shell.is-sent .contact-heading {
