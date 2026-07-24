@@ -1229,6 +1229,22 @@ button {
   color: var(--text-hot);
 }
 
+.footer-social-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.footer-social-link svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
 .footer-warning {
   color: #b36d2c;
 }
