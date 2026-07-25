@@ -154,6 +154,7 @@ function sanitizeReply(reply) {
     author: reply?.author || "Opinion",
     text: reply?.text || "",
     likes: Number(reply?.likes || 0),
+    dislikes: Number(reply?.dislikes || 0),
     reports: Number(reply?.reports || 0),
     reportReasons: Array.isArray(reply?.reportReasons) ? reply.reportReasons : [],
     moderationStatus: normalizeModerationStatus(reply?.moderationStatus),
@@ -170,6 +171,7 @@ function sanitizeOpinion(doc) {
     text: doc.text || "",
     views: Number(doc.views || 0),
     likes: Number(doc.likes || 0),
+    dislikes: Number(doc.dislikes || 0),
     createdAt: normalizeDateValue(doc.createdAt),
     replies: Array.isArray(doc.replies) ? doc.replies.map(sanitizeReply) : [],
     hidden: Boolean(doc.hidden),
@@ -359,6 +361,7 @@ async function createOpinion(ctx, body, ipHash, response) {
     text,
     views: 1,
     likes: 0,
+    dislikes: 0,
     createdAt: new Date().toISOString(),
     replies: [],
     hidden: safety.action === "review",
@@ -414,6 +417,7 @@ async function createReply(ctx, body, ipHash, response) {
     author: "Opinion",
     text,
     likes: 0,
+    dislikes: 0,
     reports: 0,
     reportReasons: [],
     moderationStatus: safety.action === "review" ? "pending" : "approved",
@@ -433,7 +437,7 @@ async function createReply(ctx, body, ipHash, response) {
 }
 
 async function registerContentAction(ctx, body, ipHash, response) {
-  const action = body.action === "report" ? "report" : "like";
+  const action = ["report", "like", "dislike"].includes(body.action) ? body.action : "like";
   const contentType = normalizeContentType(body.contentType);
   const opinionId = String(body.opinionId || body.contentId || "").trim();
   const contentId = String(body.contentId || opinionId).trim();
@@ -475,6 +479,7 @@ async function registerContentAction(ctx, body, ipHash, response) {
 
     if (contentType === "opinion") {
       if (action === "like") opinion.likes = duplicate ? Math.max(0, opinion.likes - 1) : opinion.likes + 1;
+      if (action === "dislike") opinion.dislikes = duplicate ? Math.max(0, opinion.dislikes - 1) : opinion.dislikes + 1;
       if (action === "report") {
         opinion.reports += 1;
         opinion.reportReasons = [...(opinion.reportReasons || []), { reason: reportReason, createdAt: new Date().toISOString() }];
@@ -488,6 +493,7 @@ async function registerContentAction(ctx, body, ipHash, response) {
       const reply = opinion.replies.find((item) => item.id === contentId);
       if (!reply) throw new Error("not_found");
       if (action === "like") reply.likes = duplicate ? Math.max(0, reply.likes - 1) : reply.likes + 1;
+      if (action === "dislike") reply.dislikes = duplicate ? Math.max(0, reply.dislikes - 1) : reply.dislikes + 1;
       if (action === "report") {
         reply.reports += 1;
         reply.reportReasons = [...(reply.reportReasons || []), { reason: reportReason, createdAt: new Date().toISOString() }];
@@ -503,12 +509,12 @@ async function registerContentAction(ctx, body, ipHash, response) {
     updatedOpinion = { ...opinion, ip: "" };
     active = !duplicate;
     if (ctx.mode === "client") {
-      if (duplicate && action === "like") {
+      if (duplicate && (action === "like" || action === "dislike")) {
         previewActions.delete(actionId);
       } else {
         previewActions.add(actionId);
       }
-    } else if (duplicate && action === "like") {
+    } else if (duplicate && (action === "like" || action === "dislike")) {
       transaction.delete(actionRef);
     } else {
       transaction.set(actionRef, {
@@ -564,7 +570,7 @@ module.exports = async function handler(request, response) {
 
     if (body.action === "createOpinion") return createOpinion(ctx, body, ipHash, response);
     if (body.action === "createReply") return createReply(ctx, body, ipHash, response);
-    if (body.action === "like" || body.action === "report") return registerContentAction(ctx, body, ipHash, response);
+    if (body.action === "like" || body.action === "dislike" || body.action === "report") return registerContentAction(ctx, body, ipHash, response);
 
     return reject(response, 400, "invalid_action", "Accion invalida.");
   } catch (error) {

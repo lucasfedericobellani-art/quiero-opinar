@@ -578,9 +578,11 @@ function createReply(text, likes = 0, createdAt = new Date().toISOString(), repo
     author: "Opinion",
     text,
     likes,
+    dislikes: 0,
     reports,
     createdAt,
-    liked: false
+    liked: false,
+    disliked: false
   };
 }
 
@@ -1312,7 +1314,18 @@ function showOpinionDetailAfterReply(opinionId, wasDetailView) {
     openOpinion(opinionId, { skipViewUpdate: true });
   }
 
-  scrollPageToTopAfterLayout();
+  if (!wasDetailView) scrollPageToTopAfterLayout();
+}
+
+function scrollToReplyAfterLayout(replyId) {
+  if (!replyId) return;
+  window.requestAnimationFrame(() => {
+    const target = document.querySelector(`[data-reply-id="${CSS.escape(replyId)}"]`);
+    if (!target) return;
+    target.scrollIntoView({ behavior: "smooth", block: "center" });
+    target.classList.add("reply-card-highlight");
+    window.setTimeout(() => target.classList.remove("reply-card-highlight"), 1800);
+  });
 }
 
 function openFloatingOpinionPanel() {
@@ -1555,9 +1568,16 @@ async function registerContentActionViaApi(action, contentType, contentId, opini
   if (action === "like" && contentType === "opinion") {
     opinion.liked = Boolean(data.active);
   }
+  if (action === "dislike" && contentType === "opinion") {
+    opinion.disliked = Boolean(data.active);
+  }
   if (action === "like" && contentType === "reply") {
     const reply = opinion.replies.find((item) => item.id === contentId);
     if (reply) reply.liked = Boolean(data.active);
+  }
+  if (action === "dislike" && contentType === "reply") {
+    const reply = opinion.replies.find((item) => item.id === contentId);
+    if (reply) reply.disliked = Boolean(data.active);
   }
   return { opinion, active: data.active };
 }
@@ -1974,6 +1994,7 @@ function createOpinionCard(opinion, isDetail) {
   card.querySelector(".views").textContent = `👁 ${opinion.views}`;
   card.querySelector(".replies").textContent = `💬 ${opinion.replies.length}`;
   card.querySelector(".likes").textContent = opinion.likes;
+  card.querySelector(".dislikes").textContent = opinion.dislikes;
   const lifeLabel = getLifeLabel(opinion);
   const lifeLabelElement = card.querySelector(".life-label");
   if (lifeLabel) {
@@ -1998,6 +2019,19 @@ function createOpinionCard(opinion, isDetail) {
       showToast(result.active ? "Me gusta guardado" : "Me gusta quitado");
     } catch (error) {
       showToast(getApiErrorMessage(error, "No se pudo guardar el me gusta."));
+    }
+  });
+
+  const dislikeButton = card.querySelector(".dislike-button");
+  dislikeButton.classList.toggle("disliked", opinion.disliked);
+  dislikeButton.addEventListener("click", async () => {
+    try {
+      const result = await registerContentActionViaApi("dislike", "opinion", opinion.id, opinion.id);
+      Object.assign(opinion, result.opinion);
+      render();
+      showToast(result.active ? "No me gusta guardado" : "No me gusta quitado");
+    } catch (error) {
+      showToast(getApiErrorMessage(error, "No se pudo guardar el no me gusta."));
     }
   });
 
@@ -2041,6 +2075,7 @@ function createOpinionCard(opinion, isDetail) {
 
     const item = document.createElement("div");
     item.className = "reply-card";
+    item.dataset.replyId = normalizedReply.id;
     item.innerHTML = `
       <p class="reply"><strong>Respuesta:</strong> ${escapeHtml(normalizedReply.text)}</p>
       <span class="date-stamp reply-date">${formatDate(normalizedReply.createdAt)}</span>
@@ -2048,6 +2083,10 @@ function createOpinionCard(opinion, isDetail) {
         <button class="like-button${normalizedReply.liked ? " liked" : ""}" type="button" aria-label="Me gusta respuesta">
           <span aria-hidden="true">♡</span>
           <span>${normalizedReply.likes}</span>
+        </button>
+        <button class="dislike-button${normalizedReply.disliked ? " disliked" : ""}" type="button" aria-label="No me gusta respuesta">
+          <span aria-hidden="true">&#128078;</span>
+          <span>${normalizedReply.dislikes}</span>
         </button>
         <button class="report-button opinion-action-button" type="button" aria-label="Reportar respuesta" title="Reportar respuesta">
           <svg aria-hidden="true" viewBox="0 0 24 24">
@@ -2066,6 +2105,17 @@ function createOpinionCard(opinion, isDetail) {
         showToast(result.active ? "Me gusta guardado" : "Me gusta quitado");
       } catch (error) {
         showToast(getApiErrorMessage(error, "No se pudo guardar el me gusta."));
+      }
+    });
+
+    item.querySelector(".dislike-button").addEventListener("click", async () => {
+      try {
+        const result = await registerContentActionViaApi("dislike", "reply", normalizedReply.id, opinion.id);
+        Object.assign(opinion, result.opinion);
+        render();
+        showToast(result.active ? "No me gusta guardado" : "No me gusta quitado");
+      } catch (error) {
+        showToast(getApiErrorMessage(error, "No se pudo guardar el no me gusta."));
       }
     });
 
@@ -2104,10 +2154,12 @@ function createOpinionCard(opinion, isDetail) {
 
     try {
       const updatedOpinion = await createReplyViaApi(opinion.id, reply);
+      const newReply = updatedOpinion.replies[updatedOpinion.replies.length - 1];
       Object.assign(opinion, updatedOpinion);
       replyInput.value = "";
       resizeReplyControl(replyInput);
       showOpinionDetailAfterReply(opinion.id, wasDetailView);
+      scrollToReplyAfterLayout(newReply?.id);
       showToast("Respuesta publicada");
     } catch (error) {
       showToast(getApiErrorMessage(error, "No se pudo publicar la respuesta."));
@@ -2227,11 +2279,13 @@ function normalizeReply(reply) {
       author: reply.author || "Opinion",
       text: reply.text || "",
       likes: Number(reply.likes || 0),
+      dislikes: Number(reply.dislikes || 0),
       reports: Number(reply.reports || 0),
       reportReasons: Array.isArray(reply.reportReasons) ? reply.reportReasons : [],
       moderationStatus: reply.moderationStatus || "approved",
       createdAt: normalizeDateValue(reply.createdAt),
-      liked: Boolean(reply.liked)
+      liked: Boolean(reply.liked),
+      disliked: Boolean(reply.disliked)
     };
   }
   return createReply(reply);
@@ -2450,9 +2504,11 @@ function normalizeOpinion(opinion) {
     text: opinion.text || "",
     views: Number(opinion.views || 0),
     likes: Number(opinion.likes || 0),
+    dislikes: Number(opinion.dislikes || 0),
     createdAt: normalizeDateValue(opinion.createdAt),
     replies: Array.isArray(opinion.replies) ? opinion.replies.map(normalizeReply) : [],
     liked: Boolean(opinion.liked),
+    disliked: Boolean(opinion.disliked),
     hidden: Boolean(opinion.hidden),
     moderationStatus: opinion.moderationStatus || (opinion.hidden ? "hidden" : "approved"),
     moderationReason: opinion.moderationReason || "",
@@ -2479,12 +2535,14 @@ function sanitizeOpinionForRemote(opinion) {
     text: opinion.text,
     views: opinion.views,
     likes: opinion.likes,
+    dislikes: opinion.dislikes,
     createdAt: opinion.createdAt,
     replies: opinion.replies.map((reply) => ({
       id: reply.id,
       author: reply.author,
       text: reply.text,
       likes: reply.likes,
+      dislikes: Number(reply.dislikes || 0),
       reports: Number(reply.reports || 0),
       reportReasons: Array.isArray(reply.reportReasons) ? reply.reportReasons : [],
       moderationStatus: reply.moderationStatus || "approved",

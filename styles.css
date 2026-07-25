@@ -635,6 +635,8 @@ button {
 }
 
 .primary-button {
+  position: relative;
+  overflow: hidden;
   min-height: 44px;
   padding: 0 18px;
   border: 1px solid rgba(255, 177, 74, 0.34);
@@ -656,6 +658,23 @@ button {
   align-items: start;
   margin-top: var(--space-card-gap);
   min-width: 0;
+}
+
+.primary-button::after,
+.floating-opinion-trigger::after {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  background: linear-gradient(120deg, transparent 18%, rgba(255, 255, 255, 0.58) 48%, transparent 72%);
+  opacity: 0;
+  transform: translateX(-120%);
+  pointer-events: none;
+}
+
+.opinion-button::after,
+.floating-opinion-trigger.is-visible::after {
+  animation: opinionButtonShine 3.4s ease-in-out infinite;
 }
 
 .feed-actions {
@@ -682,6 +701,7 @@ button {
   bottom: 22px;
   z-index: 21;
   display: inline-flex;
+  overflow: hidden;
   align-items: center;
   gap: 9px;
   min-height: 56px;
@@ -2078,6 +2098,7 @@ button {
 }
 
 .like-button,
+.dislike-button,
 .share-button,
 .report-button {
   display: inline-flex;
@@ -2110,9 +2131,11 @@ button {
 }
 
 .like-button:hover,
+.dislike-button:hover,
 .share-button:hover,
 .report-button:hover,
 .like-button:focus-visible,
+.dislike-button:focus-visible,
 .share-button:focus-visible,
 .report-button:focus-visible {
   border-color: rgba(255, 122, 0, 0.62);
@@ -2122,6 +2145,7 @@ button {
 }
 
 .like-button.liked,
+.dislike-button.disliked,
 .share-button.is-confirmed,
 .report-button.is-confirmed {
   border-color: var(--accent-hot);
@@ -2209,6 +2233,10 @@ button {
 .report-notice-close:focus-visible {
   border-color: var(--accent-hot);
   background: rgba(255, 122, 0, 0.12);
+}
+
+.dislike-button.disliked {
+  border-color: rgba(255, 176, 74, 0.78);
 }
 
 .report-modal-overlay {
@@ -2403,6 +2431,24 @@ button {
   }
 }
 
+@keyframes opinionButtonShine {
+  0%,
+  54% {
+    opacity: 0;
+    transform: translateX(-120%);
+  }
+
+  66% {
+    opacity: 0.42;
+  }
+
+  82%,
+  100% {
+    opacity: 0;
+    transform: translateX(120%);
+  }
+}
+
 .opinion-form.is-publishing,
 .floating-opinion-form.is-publishing {
   opacity: 0.72;
@@ -2430,6 +2476,13 @@ button {
 .reply-card {
   display: grid;
   gap: 8px;
+  border-radius: 8px;
+  transition: background 220ms ease, box-shadow 220ms ease;
+}
+
+.reply-card-highlight {
+  background: rgba(255, 122, 0, 0.08);
+  box-shadow: 0 0 0 8px rgba(255, 122, 0, 0.08);
 }
 
 .reply-date {
@@ -2540,6 +2593,12 @@ button {
   }
 
   .opinion-stats .like-button {
+    flex: 0 0 auto;
+    min-height: 32px;
+    padding: 0 8px;
+  }
+
+  .opinion-stats .dislike-button {
     flex: 0 0 auto;
     min-height: 32px;
     padding: 0 8px;
@@ -2846,6 +2905,61 @@ button {
     padding-bottom: calc(104px + env(safe-area-inset-bottom));
   }
 
+  #homeView,
+  #topicDetailView,
+  #searchView,
+  #detailView {
+    width: 100%;
+    margin-inline: auto;
+  }
+
+  #contactView {
+    width: 100%;
+  }
+
+  .contact-shell {
+    gap: 12px;
+    padding: 16px;
+  }
+
+  .contact-heading .section-label {
+    margin-bottom: 6px;
+  }
+
+  .contact-heading h1 {
+    margin: 0 0 8px;
+    font-size: clamp(2rem, 10vw, 2.6rem);
+    line-height: 1.02;
+  }
+
+  .contact-heading p:not(.section-label) {
+    margin: 0;
+    font-size: 0.98rem;
+    line-height: 1.45;
+  }
+
+  .contact-form {
+    gap: 10px;
+  }
+
+  .field,
+  .opinion-field,
+  .topic-field {
+    gap: 5px;
+  }
+
+  .field-label {
+    font-size: 0.8rem;
+  }
+
+  .contact-input {
+    min-height: 40px;
+  }
+
+  .contact-form textarea.contact-input {
+    min-height: 96px;
+  }
+
   .about-hero {
     padding: 22px;
   }
@@ -2976,6 +3090,11 @@ button {
     padding: 0 7px;
   }
 
+  .opinion-stats .dislike-button {
+    min-height: 30px;
+    padding: 0 7px;
+  }
+
   .opinion-action-button {
     flex-basis: 30px;
     width: 30px;
@@ -3040,8 +3159,28 @@ button {
   }
 
   .content-grid {
+    width: 100%;
     gap: 10px;
     margin-top: 0;
+  }
+
+  .feed-panel,
+  .topics-panel,
+  .search-panel,
+  .detail-shell,
+  .feed-list,
+  .search-results-list,
+  .topic-detail-list,
+  .opinion-card {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .feed-panel,
+  .topics-panel,
+  .search-panel {
+    padding: 16px;
   }
 
   .modal {
