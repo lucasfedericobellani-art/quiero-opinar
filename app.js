@@ -2148,10 +2148,10 @@ function createOpinionCard(opinion, isDetail) {
     opinion.replies[index] = normalizedReply;
 
     const item = document.createElement("div");
-    item.className = "reply-card";
+    item.className = "reply-item";
     item.dataset.replyId = normalizedReply.id;
     item.innerHTML = `
-      <p class="reply"><strong>Respuesta:</strong> ${escapeHtml(normalizedReply.text)}</p>
+      <p class="reply-content"><span class="reply-label">Respuesta:</span> ${escapeHtml(normalizedReply.text)}</p>
       <span class="date-stamp reply-date">${formatDate(normalizedReply.createdAt)}</span>
       <div class="reply-actions">
         <button class="like-button${normalizedReply.liked ? " liked" : ""}" type="button" aria-label="Me gusta respuesta">
