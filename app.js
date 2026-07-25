@@ -648,6 +648,74 @@ function getTopicViewTotal(topicId) {
   }, 0);
 }
 
+function getOpinionActivityTime(opinion) {
+  const timestamps = [
+    new Date(opinion.createdAt).getTime(),
+    ...opinion.replies.map((reply) => new Date(normalizeReply(reply).createdAt).getTime())
+  ].filter((timestamp) => Number.isFinite(timestamp));
+  return timestamps.length ? Math.max(...timestamps) : 0;
+}
+
+function getTopicPreviewOpinion(topicOpinions) {
+  const candidates = topicOpinions
+    .filter((opinion) => opinion && !opinion.hidden && String(opinion.text || "").trim())
+    .map((opinion) => ({
+      opinion,
+      activityTime: getOpinionActivityTime(opinion),
+      replyCount: Array.isArray(opinion.replies) ? opinion.replies.length : 0
+    }));
+
+  const withReplies = candidates
+    .filter((item) => item.replyCount > 0)
+    .sort((a, b) => b.activityTime - a.activityTime)[0];
+  return (withReplies || candidates.sort((a, b) => b.activityTime - a.activityTime)[0])?.opinion || null;
+}
+
+function getTopicActivityBadge(topicStats, now = Date.now()) {
+  if (!topicStats.lastActivityTime) return "";
+  const minutesSinceActivity = (now - topicStats.lastActivityTime) / 60000;
+  if (minutesSinceActivity <= 60) return "Activo ahora";
+  if (topicStats.recentReplyCount >= 3) return "Debate activo";
+  if (topicStats.recentOpinionCount >= 2) return "Conversacion creciendo";
+  return "";
+}
+
+function getTopicRankingScore(topicStats) {
+  // Score estable: combina actividad reciente, respuestas recientes y volumen sin dejar que una sola accion domine.
+  const hoursSinceActivity = topicStats.lastActivityTime ? Math.max(0, (Date.now() - topicStats.lastActivityTime) / 3600000) : 999;
+  const recentActivityWeight = Math.max(0, 48 - hoursSinceActivity) * 2;
+  const recentRepliesWeight = topicStats.recentReplyCount * 18;
+  const recentOpinionsWeight = topicStats.recentOpinionCount * 12;
+  const conversationWeight = Math.min(topicStats.replyCount * 2 + topicStats.opinionCount, 80);
+  const editorialBoost = topicStats.topic.id === "actualidad" || topicStats.topic.id === "sociedad" ? 6 : 0;
+  return recentActivityWeight + recentRepliesWeight + recentOpinionsWeight + conversationWeight + editorialBoost;
+}
+
+function getTopicStats(topic, topicOpinions, now = Date.now()) {
+  const recentWindowStart = now - 24 * 60 * 60 * 1000;
+  const replyCount = topicOpinions.reduce((total, opinion) => total + opinion.replies.length, 0);
+  const lastActivityTime = topicOpinions.reduce((latest, opinion) => Math.max(latest, getOpinionActivityTime(opinion)), 0);
+  const recentOpinionCount = topicOpinions.filter((opinion) => new Date(opinion.createdAt).getTime() >= recentWindowStart).length;
+  const recentReplyCount = topicOpinions.reduce((total, opinion) => {
+    return total + opinion.replies.filter((reply) => new Date(normalizeReply(reply).createdAt).getTime() >= recentWindowStart).length;
+  }, 0);
+  const previewOpinion = getTopicPreviewOpinion(topicOpinions);
+  const stats = {
+    topic,
+    topicOpinions,
+    opinionCount: topicOpinions.length,
+    replyCount,
+    recentOpinionCount,
+    recentReplyCount,
+    lastActivity: lastActivityTime ? new Date(lastActivityTime).toISOString() : "",
+    lastActivityTime,
+    previewOpinion
+  };
+  stats.activityBadge = getTopicActivityBadge(stats, now);
+  stats.score = getTopicRankingScore(stats);
+  return stats;
+}
+
 function getRecentTopicActivity() {
   const now = Date.now();
   const windowStart = now - trendingWindowHours * 60 * 60 * 1000;
@@ -1773,67 +1841,73 @@ function clearReplyKeyboardAssist() {
 function renderBoard() {
   boardGrid.innerHTML = "";
   const query = normalizeText(topicSearchInput.value.trim());
+  const now = Date.now();
+  const opinionsByTopic = new Map();
+  getVisibleOpinions().forEach((opinion) => {
+    if (!opinionsByTopic.has(opinion.topic)) opinionsByTopic.set(opinion.topic, []);
+    opinionsByTopic.get(opinion.topic).push(opinion);
+  });
 
   const topicCards = getVisibleTopics()
-    .map((topic) => {
-      const topicOpinions = getTopicOpinions(topic.id);
-      const replyCount = topicOpinions.reduce((total, opinion) => total + opinion.replies.length, 0);
-      const lastActivity = getLastTopicActivity(topicOpinions);
-      return {
-        topic,
-        opinionCount: topicOpinions.length,
-        replyCount,
-        lastActivity,
-        lastActivityTime: lastActivity ? new Date(lastActivity).getTime() : 0
-      };
-    })
+    .map((topic) => getTopicStats(topic, opinionsByTopic.get(topic.id) || [], now))
     .sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
       if (b.lastActivityTime !== a.lastActivityTime) return b.lastActivityTime - a.lastActivityTime;
       if (b.opinionCount !== a.opinionCount) return b.opinionCount - a.opinionCount;
       return a.topic.name.localeCompare(b.topic.name, "es");
     });
 
-  const visibleTopics = topicCards.filter(({ topic }) => {
+  const visibleTopics = topicCards.filter(({ topic, previewOpinion }) => {
     if (!query) return true;
-    return normalizeText(`${topic.name} ${topic.description}`).includes(query);
+    return normalizeText(`${topic.name} ${topic.description} ${previewOpinion?.text || ""}`).includes(query);
   });
 
   if (!visibleTopics.length) {
     const empty = document.createElement("p");
     empty.className = "topic-empty board-empty";
-    empty.textContent = "No encontramos temas con esa búsqueda.";
+    empty.textContent = "No encontramos temas con esa busqueda.";
     boardGrid.append(empty);
     return;
   }
 
-  visibleTopics.forEach(({ topic, opinionCount, replyCount, lastActivity }) => {
-    const column = document.createElement("article");
-    column.className = `board-column ${getTopicAccentClass(topic)}`;
-    column.tabIndex = 0;
-    column.setAttribute("role", "button");
-    column.setAttribute("aria-label", `Abrir tema ${topic.name}`);
-    const activityLabel = lastActivity ? `Actividad ${formatRelativeActivity(lastActivity)}` : "Sin actividad todavía";
+  visibleTopics.forEach(({ topic, opinionCount, replyCount, lastActivity, previewOpinion, activityBadge }) => {
+    const column = document.createElement("a");
+    column.className = `board-column ${getTopicAccentClass(topic)}${previewOpinion ? "" : " is-empty-topic"}`;
+    column.href = `${routePaths.topics}/${encodeURIComponent(getTopicSlug(topic))}`;
+    const opinionLabel = `${opinionCount} ${opinionCount === 1 ? "opinion" : "opiniones"}`;
+    const replyLabel = `${replyCount} ${replyCount === 1 ? "respuesta" : "respuestas"}`;
+    const activityLabel = lastActivity ? `Actividad ${formatRelativeActivity(lastActivity)}` : "Sin actividad todavia";
+    column.setAttribute("aria-label", `Abrir tema ${topic.name}. ${opinionLabel}, ${replyLabel}. ${activityLabel}.`);
+    const previewLabel = previewOpinion ? "Ultima opinion" : "Todavia no hay opiniones";
+    const previewText = previewOpinion?.text || topic.description || "Tema creado por la comunidad";
     column.innerHTML = `
       <div class="board-column-header">
         <div class="board-title-group">
           ${getTopicIconMarkup(topic)}
-          <h2>${escapeHtml(topic.name)}</h2>
+          <div class="board-title-copy">
+            <div class="board-title-line">
+              <h2>${escapeHtml(topic.name)}</h2>
+              ${activityBadge ? `<span class="board-activity-badge">${escapeHtml(activityBadge)}</span>` : ""}
+            </div>
+          </div>
         </div>
         <span class="board-arrow" aria-hidden="true">${getIconMarkup("arrow")}</span>
       </div>
-      <p class="board-description">${escapeHtml(topic.description || "Tema creado por la comunidad")}</p>
+      <div class="board-preview">
+        <span class="board-preview-label">${escapeHtml(previewLabel)}</span>
+        <p>${escapeHtml(previewText)}</p>
+        ${previewOpinion ? "" : `<span class="board-empty-cta">Abri el debate ${getIconMarkup("arrow")}</span>`}
+      </div>
       <div class="board-meta">
-        <span class="board-stat">${getIconMarkup("message")}<strong>${opinionCount}</strong> ${opinionCount === 1 ? "opinión" : "opiniones"}</span>
+        <span class="board-stat">${getIconMarkup("message")}<strong>${opinionCount}</strong> ${opinionCount === 1 ? "opinion" : "opiniones"}</span>
         <span class="board-stat">${getIconMarkup("replies")}<strong>${replyCount}</strong> ${replyCount === 1 ? "respuesta" : "respuestas"}</span>
       </div>
       <span class="board-activity">${getIconMarkup("clock")}${activityLabel}</span>
     `;
-    column.addEventListener("click", () => openTopic(topic.id));
-    column.addEventListener("keydown", (event) => {
-      if (event.key === "Enter" || event.key === " ") {
-        event.preventDefault();
-        openTopic(topic.id);
-      }
+    column.addEventListener("click", (event) => {
+      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
+      event.preventDefault();
+      openTopic(topic.id);
     });
 
     boardGrid.append(column);
