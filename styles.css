@@ -6,11 +6,23 @@
   --bg-lift: #0b0b0c;
   --surface: #111113;
   --surface-soft: #171719;
-  --text: #ff8a1f;
-  --text-hot: #ffb14a;
-  --muted: #b86622;
-  --line: rgba(255, 138, 31, 0.26);
-  --line-strong: rgba(255, 138, 31, 0.54);
+  --color-brand-primary: #ff8a1f;
+  --color-brand-primary-hover: #ffb14a;
+  --color-brand-primary-muted: #b86622;
+  --color-text-primary: #ffb14a;
+  --color-text-secondary: #b89a7d;
+  --color-text-muted: #8e7661;
+  --color-text-user-content: #f3efea;
+  --color-text-user-content-secondary: #d8d2cb;
+  --color-border-default: rgba(255, 138, 31, 0.26);
+  --color-border-active: rgba(255, 138, 31, 0.54);
+  --color-surface-card: #0a0a0b;
+  --color-surface-elevated: #111113;
+  --text: var(--color-brand-primary);
+  --text-hot: var(--color-text-primary);
+  --muted: var(--color-brand-primary-muted);
+  --line: var(--color-border-default);
+  --line-strong: var(--color-border-active);
   --accent: #ff7a00;
   --accent-hot: #ffb000;
   --shadow: 0 28px 90px rgba(255, 92, 0, 0.16);
@@ -43,7 +55,7 @@ body {
   background:
     radial-gradient(circle at 20% -10%, rgba(255, 122, 0, 0.18), transparent 34rem),
     linear-gradient(180deg, #090807 0%, var(--bg) 52%, #020202 100%);
-  color: var(--text);
+  color: var(--color-brand-primary);
 }
 
 body.welcome-modal-open {
@@ -137,7 +149,7 @@ button {
 
 .modal p {
   margin: 0 0 24px;
-  color: var(--text);
+  color: var(--color-text-user-content-secondary);
   font-size: 1rem;
   line-height: 1.7;
 }
@@ -153,7 +165,7 @@ button {
 .welcome-list li {
   position: relative;
   padding-left: 22px;
-  color: var(--text);
+  color: var(--color-text-user-content-secondary);
   line-height: 1.45;
 }
 
@@ -486,7 +498,7 @@ button {
 .composer-subtitle {
   max-width: 310px;
   margin: 8px 0 0;
-  color: #d47c31;
+  color: var(--color-text-secondary);
   font-size: 0.92rem;
   line-height: 1.45;
 }
@@ -517,7 +529,7 @@ button {
 }
 
 .field-label {
-  color: var(--text-hot);
+  color: var(--color-brand-primary-hover);
   font-size: 0.86rem;
   font-weight: 700;
 }
@@ -525,7 +537,7 @@ button {
 .terms-note {
   grid-column: 1 / -1;
   margin: 0;
-  color: var(--muted);
+  color: var(--color-text-muted);
   font-size: 0.8rem;
   line-height: 1.45;
 }
@@ -548,8 +560,9 @@ button {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #080809;
-  color: var(--text-hot);
+  color: var(--color-text-user-content);
   font-size: 0.96rem;
+  font-weight: 500;
   line-height: 1.45;
   outline: none;
 }
@@ -561,7 +574,7 @@ button {
 .opinion-form textarea::placeholder,
 .reply-form input::placeholder,
 .reply-form textarea::placeholder {
-  color: rgba(255, 138, 31, 0.48);
+  color: var(--color-text-muted);
 }
 
 .opinion-form textarea:focus,
@@ -585,12 +598,13 @@ button {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #080809;
-  color: var(--text-hot);
+  color: var(--color-text-user-content);
+  font-weight: 500;
   outline: none;
 }
 
 .topic-input::placeholder {
-  color: rgba(255, 138, 31, 0.48);
+  color: var(--color-text-muted);
 }
 
 .topic-search-wrap {
@@ -866,7 +880,7 @@ button {
 
 .admin-copy {
   margin: 0 0 16px;
-  color: #d47c31;
+  color: var(--color-text-secondary);
   line-height: 1.65;
 }
 
@@ -1313,7 +1327,7 @@ button {
 
 .contact-thanks p:not(.section-label) {
   margin: 0;
-  color: #d47c31;
+  color: var(--color-text-secondary);
   font-size: clamp(1.02rem, 1.4vw, 1.2rem);
   line-height: 1.65;
 }
@@ -1337,12 +1351,13 @@ button {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #080809;
-  color: var(--text-hot);
+  color: var(--color-text-user-content);
+  font-weight: 500;
   outline: none;
 }
 
 .contact-input::placeholder {
-  color: rgba(255, 138, 31, 0.48);
+  color: var(--color-text-muted);
 }
 
 .contact-input:focus {
@@ -1411,7 +1426,7 @@ button {
 .about-hero p:not(.section-label) {
   max-width: 760px;
   margin: 0;
-  color: #d47c31;
+  color: var(--color-text-secondary);
   font-size: clamp(1.04rem, 1.35vw, 1.18rem);
   line-height: 1.68;
 }
@@ -1493,7 +1508,7 @@ button {
 .about-grid p {
   max-width: 680px;
   margin: 0;
-  color: #d47c31;
+  color: var(--color-text-secondary);
   line-height: 1.68;
 }
 
@@ -1723,7 +1738,7 @@ button {
 .view-heading p:not(.section-label) {
   max-width: 620px;
   margin: 0;
-  color: #d47c31;
+  color: var(--color-text-secondary);
   line-height: 1.55;
 }
 
@@ -1898,7 +1913,7 @@ button {
   border: 1px solid rgba(255, 176, 74, 0.2);
   border-radius: 999px;
   background: rgba(255, 122, 0, 0.06);
-  color: #ffb14a;
+  color: var(--color-brand-primary-hover);
   font-size: 0.68rem;
   font-weight: 850;
   line-height: 1;
@@ -1912,7 +1927,7 @@ button {
 }
 
 .board-preview-label {
-  color: #a9662e;
+  color: var(--color-text-muted);
   font-size: 0.68rem;
   font-weight: 850;
   letter-spacing: 0.08em;
@@ -1924,7 +1939,7 @@ button {
   margin: 0;
   display: -webkit-box;
   overflow: hidden;
-  color: #f2d2b2;
+  color: var(--color-text-user-content);
   font-size: 1rem;
   line-height: 1.45;
   -webkit-line-clamp: 2;
@@ -1932,7 +1947,7 @@ button {
 }
 
 .is-empty-topic .board-preview p {
-  color: #c87931;
+  color: var(--color-text-secondary);
 }
 
 .board-empty-cta {
@@ -1972,13 +1987,13 @@ button {
   border: 1px solid rgba(255, 138, 31, 0.15);
   border-radius: 999px;
   background: rgba(255, 122, 0, 0.035);
-  color: #d98a3d;
+  color: var(--color-text-secondary);
   font-size: 0.8rem;
   font-weight: 700;
 }
 
 .board-stat strong {
-  color: var(--text-hot);
+  color: var(--color-text-primary);
   font-size: 0.9rem;
   font-weight: 800;
 }
@@ -1994,7 +2009,7 @@ button {
   align-items: center;
   gap: 7px;
   justify-self: start;
-  color: #a9662e;
+  color: var(--color-text-muted);
   font-size: 0.82rem;
   font-weight: 650;
 }
@@ -2092,7 +2107,9 @@ button {
   padding: 18px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: #0a0a0b;
+  background: var(--color-surface-card);
+  color: var(--color-text-user-content-secondary);
+  line-height: 1.55;
 }
 
 .feed-panel .opinion-card:first-child {
@@ -2109,7 +2126,7 @@ button {
 }
 
 .open-opinion:hover .opinion-text {
-  color: var(--text-hot);
+  color: var(--color-text-user-content);
 }
 
 .opinion-meta,
@@ -2118,7 +2135,7 @@ button {
   flex-wrap: wrap;
   align-items: center;
   gap: 10px;
-  color: var(--muted);
+  color: var(--color-text-muted);
   font-size: 0.88rem;
 }
 
@@ -2127,13 +2144,13 @@ button {
 }
 
 .date-stamp {
-  color: #a9662e;
+  color: var(--color-text-muted);
   font-size: 0.78rem;
   font-style: italic;
 }
 
 .author {
-  color: #8c6137;
+  color: var(--color-text-muted);
   font-size: 0.76rem;
   font-weight: 700;
 }
@@ -2160,10 +2177,12 @@ button {
 }
 
 .opinion-text {
-  margin: 10px 0 14px;
-  color: var(--text);
+  max-width: 720px;
+  margin: 12px 0 16px;
+  color: var(--color-text-user-content);
   font-size: 1.08rem;
-  line-height: 1.6;
+  font-weight: 500;
+  line-height: 1.62;
   white-space: pre-wrap;
 }
 
@@ -2180,7 +2199,7 @@ button {
   border: 1px solid var(--line);
   border-radius: 999px;
   background: #060606;
-  color: var(--text);
+  color: var(--color-text-secondary);
   transition: border-color 160ms ease, background 160ms ease, color 160ms ease, transform 160ms ease;
 }
 
@@ -2239,6 +2258,13 @@ button {
   color: #ffb0b0;
 }
 
+.views,
+.replies,
+.likes,
+.dislikes {
+  color: var(--color-text-secondary);
+}
+
 .notification-stack {
   position: fixed;
   right: max(16px, env(safe-area-inset-right));
@@ -2277,7 +2303,7 @@ button {
   border-radius: 8px;
   background: rgba(8, 8, 9, 0.97);
   box-shadow: 0 24px 70px rgba(0, 0, 0, 0.48);
-  color: var(--text);
+  color: var(--color-text-user-content);
   animation: noticeIn 180ms ease-out both;
 }
 
@@ -2287,7 +2313,7 @@ button {
 
 .report-notice p {
   margin: 0;
-  color: var(--text);
+  color: var(--color-text-user-content);
   font-size: 0.92rem;
   line-height: 1.5;
 }
@@ -2342,14 +2368,15 @@ button {
 
 .report-modal h2 {
   margin: 8px 0 8px;
-  color: var(--text-hot);
+  color: var(--color-brand-primary-hover);
   font-size: 1.55rem;
   letter-spacing: 0;
 }
 
 .report-modal p {
   margin: 0 0 18px;
-  color: var(--text);
+  color: var(--color-text-user-content-secondary);
+  line-height: 1.55;
 }
 
 .report-reason-list {
@@ -2364,7 +2391,7 @@ button {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #080809;
-  color: var(--text);
+  color: var(--color-text-user-content-secondary);
   font: inherit;
   font-weight: 700;
   text-align: left;
@@ -2449,7 +2476,7 @@ button {
 }
 
 .feed-loading {
-  color: var(--muted);
+  color: var(--color-text-muted);
 }
 
 .opinion-skeleton,
@@ -2563,13 +2590,17 @@ button {
 
 .reply {
   margin: 0;
-  color: #dc8436;
+  max-width: 720px;
+  color: var(--color-text-user-content-secondary);
   font-size: 0.92rem;
-  line-height: 1.5;
+  font-weight: 450;
+  line-height: 1.58;
 }
 
 .reply strong {
-  color: var(--text-hot);
+  margin-right: 3px;
+  color: var(--color-brand-primary-hover);
+  font-weight: 750;
 }
 
 .reply-card {
@@ -2615,7 +2646,8 @@ button {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #060606;
-  color: var(--text-hot);
+  color: var(--color-text-user-content);
+  font-weight: 500;
   outline: none;
 }
 
@@ -3412,14 +3444,14 @@ button {
     border: 0;
     border-radius: 0;
     background: transparent;
-    color: #f1f1f1;
+    color: var(--color-text-user-content);
     font-size: 1.55rem;
     line-height: 1.34;
     caret-color: var(--accent-hot);
   }
 
   .floating-opinion textarea::placeholder {
-    color: rgba(255, 255, 255, 0.42);
+    color: var(--color-text-muted);
   }
 
   .floating-opinion textarea:focus {
@@ -3437,7 +3469,7 @@ button {
     min-width: 0;
     padding: 0;
     border-top: 0;
-    color: rgba(255, 138, 31, 0.74);
+    color: var(--color-text-muted);
     font-size: 0.72rem;
     line-height: 1.35;
   }
