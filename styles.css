@@ -2130,6 +2130,17 @@ button {
   stroke-linejoin: round;
 }
 
+.like-button svg,
+.dislike-button svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
 .like-button:hover,
 .dislike-button:hover,
 .share-button:hover,

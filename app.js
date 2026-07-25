@@ -2081,11 +2081,16 @@ function createOpinionCard(opinion, isDetail) {
       <span class="date-stamp reply-date">${formatDate(normalizedReply.createdAt)}</span>
       <div class="reply-actions">
         <button class="like-button${normalizedReply.liked ? " liked" : ""}" type="button" aria-label="Me gusta respuesta">
-          <span aria-hidden="true">♡</span>
+          <svg aria-hidden="true" viewBox="0 0 24 24">
+            <path d="M20.8 8.6c0 5.4-8.8 10.4-8.8 10.4S3.2 14 3.2 8.6A4.7 4.7 0 0 1 12 6.2a4.7 4.7 0 0 1 8.8 2.4z"></path>
+          </svg>
           <span>${normalizedReply.likes}</span>
         </button>
         <button class="dislike-button${normalizedReply.disliked ? " disliked" : ""}" type="button" aria-label="No me gusta respuesta">
-          <span aria-hidden="true">&#128078;</span>
+          <svg aria-hidden="true" viewBox="0 0 24 24">
+            <path d="M10 15v4.5a2.5 2.5 0 0 0 4.5 1.5L19 14V4H7.6a2 2 0 0 0-1.9 1.4L3.2 13A2 2 0 0 0 5.1 15H10z"></path>
+            <path d="M19 4h2v10h-2"></path>
+          </svg>
           <span>${normalizedReply.dislikes}</span>
         </button>
         <button class="report-button opinion-action-button" type="button" aria-label="Reportar respuesta" title="Reportar respuesta">

@@ -14,7 +14,7 @@
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-XY98SMBP52"></script>
     <script defer src="analytics.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=20260725-replies-dislikes">
+    <link rel="stylesheet" href="styles.css?v=20260725-exclusive-votes">
   </head>
   <body>
     <div class="welcome-overlay hidden" id="welcomeOverlay" aria-live="polite">
@@ -409,11 +409,16 @@
           <span class="views"></span>
           <span class="replies"></span>
           <button class="like-button" type="button" aria-label="Me gusta">
-            <span aria-hidden="true">♡</span>
+            <svg aria-hidden="true" viewBox="0 0 24 24">
+              <path d="M20.8 8.6c0 5.4-8.8 10.4-8.8 10.4S3.2 14 3.2 8.6A4.7 4.7 0 0 1 12 6.2a4.7 4.7 0 0 1 8.8 2.4z"></path>
+            </svg>
             <span class="likes"></span>
           </button>
           <button class="dislike-button" type="button" aria-label="No me gusta">
-            <span aria-hidden="true">&#128078;</span>
+            <svg aria-hidden="true" viewBox="0 0 24 24">
+              <path d="M10 15v4.5a2.5 2.5 0 0 0 4.5 1.5L19 14V4H7.6a2 2 0 0 0-1.9 1.4L3.2 13A2 2 0 0 0 5.1 15H10z"></path>
+              <path d="M19 4h2v10h-2"></path>
+            </svg>
             <span class="dislikes"></span>
           </button>
           <button class="share-button opinion-action-button" type="button" aria-label="Copiar link de la opinión" title="Copiar link de la opinión">
@@ -439,6 +444,6 @@
     </template>
 
     <script src="firebase-config.js"></script>
-    <script src="app.js?v=20260725-replies-dislikes"></script>
+    <script src="app.js?v=20260725-exclusive-votes"></script>
   </body>
 </html>

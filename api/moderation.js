@@ -449,7 +449,10 @@ async function registerContentAction(ctx, body, ipHash, response) {
 
   const opinionRef = ctx.doc("opinions", opinionId);
   const actionId = hashKey(`${ipHash}:${action}:${contentType}:${contentId}`);
+  const oppositeAction = action === "like" ? "dislike" : action === "dislike" ? "like" : "";
+  const oppositeActionId = oppositeAction ? hashKey(`${ipHash}:${oppositeAction}:${contentType}:${contentId}`) : "";
   const actionRef = ctx.doc("securityActions", actionId);
+  const oppositeActionRef = oppositeActionId ? ctx.doc("securityActions", oppositeActionId) : null;
   let updatedOpinion = null;
   let active = true;
 
@@ -459,14 +462,22 @@ async function registerContentAction(ctx, body, ipHash, response) {
 
   await ctx.runTransaction(async (transaction) => {
     let duplicate = false;
+    let oppositeActive = false;
     if (ctx.mode !== "client") {
       const duplicateSnapshot = await transaction.get(actionRef);
       duplicate = snapshotExists(duplicateSnapshot);
+      if (oppositeActionRef) {
+        const oppositeSnapshot = await transaction.get(oppositeActionRef);
+        oppositeActive = snapshotExists(oppositeSnapshot);
+      }
       if (duplicate && action === "report") {
         throw new Error("already_reported");
       }
     } else if (previewActions.has(actionId)) {
       duplicate = true;
+      oppositeActive = Boolean(oppositeActionId && previewActions.has(oppositeActionId));
+    } else if (oppositeActionId && previewActions.has(oppositeActionId)) {
+      oppositeActive = true;
     }
 
     const opinionSnapshot = await transaction.get(opinionRef);
@@ -480,6 +491,8 @@ async function registerContentAction(ctx, body, ipHash, response) {
     if (contentType === "opinion") {
       if (action === "like") opinion.likes = duplicate ? Math.max(0, opinion.likes - 1) : opinion.likes + 1;
       if (action === "dislike") opinion.dislikes = duplicate ? Math.max(0, opinion.dislikes - 1) : opinion.dislikes + 1;
+      if (!duplicate && oppositeActive && action === "like") opinion.dislikes = Math.max(0, opinion.dislikes - 1);
+      if (!duplicate && oppositeActive && action === "dislike") opinion.likes = Math.max(0, opinion.likes - 1);
       if (action === "report") {
         opinion.reports += 1;
         opinion.reportReasons = [...(opinion.reportReasons || []), { reason: reportReason, createdAt: new Date().toISOString() }];
@@ -494,6 +507,8 @@ async function registerContentAction(ctx, body, ipHash, response) {
       if (!reply) throw new Error("not_found");
       if (action === "like") reply.likes = duplicate ? Math.max(0, reply.likes - 1) : reply.likes + 1;
       if (action === "dislike") reply.dislikes = duplicate ? Math.max(0, reply.dislikes - 1) : reply.dislikes + 1;
+      if (!duplicate && oppositeActive && action === "like") reply.dislikes = Math.max(0, reply.dislikes - 1);
+      if (!duplicate && oppositeActive && action === "dislike") reply.likes = Math.max(0, reply.likes - 1);
       if (action === "report") {
         reply.reports += 1;
         reply.reportReasons = [...(reply.reportReasons || []), { reason: reportReason, createdAt: new Date().toISOString() }];
@@ -513,10 +528,12 @@ async function registerContentAction(ctx, body, ipHash, response) {
         previewActions.delete(actionId);
       } else {
         previewActions.add(actionId);
+        if (oppositeActionId) previewActions.delete(oppositeActionId);
       }
     } else if (duplicate && (action === "like" || action === "dislike")) {
       transaction.delete(actionRef);
     } else {
+      if (oppositeActionRef) transaction.delete(oppositeActionRef);
       transaction.set(actionRef, {
         ipHash,
         contentType,
