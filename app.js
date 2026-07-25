@@ -2061,7 +2061,7 @@ function renderDetail() {
 
 function createOpinionCard(opinion, isDetail) {
   const card = opinionTemplate.content.firstElementChild.cloneNode(true);
-  card.querySelector(".author").textContent = `Opinión #${getOpinionNumber(opinion)}`;
+  card.querySelector(".author").textContent = `#${getOpinionNumber(opinion)}`;
   card.querySelector(".topic").textContent = getTopicName(opinion.topic);
   card.querySelector(".date-stamp").textContent = formatDate(opinion.createdAt);
   card.querySelector(".opinion-text").textContent = opinion.text;
@@ -2641,12 +2641,16 @@ function formatDate(value) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "";
 
-  return date.toLocaleString("es-AR", {
-    day: "2-digit",
-    month: "2-digit",
+  const datePart = date.toLocaleDateString("es-AR", {
+    day: "numeric",
+    month: "numeric"
+  });
+  const timePart = date.toLocaleTimeString("es-AR", {
     hour: "2-digit",
     minute: "2-digit"
   });
+
+  return `${datePart} ${timePart}`;
 }
 
 function formatRelativeActivity(value) {

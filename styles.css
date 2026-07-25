@@ -12,8 +12,8 @@
   --color-text-primary: #ffb14a;
   --color-text-secondary: #b89a7d;
   --color-text-muted: #8e7661;
-  --color-text-user-content: #f3efea;
-  --color-text-user-content-secondary: #d8d2cb;
+  --color-text-user-content: #ffe2bd;
+  --color-text-user-content-secondary: #d9c2a6;
   --color-border-default: rgba(255, 138, 31, 0.26);
   --color-border-active: rgba(255, 138, 31, 0.54);
   --color-surface-card: #0a0a0b;
@@ -30,7 +30,7 @@
   --space-section: clamp(24px, 3vw, 38px);
   --space-heading-block: clamp(14px, 1.5vw, 20px);
   --space-list-gap: clamp(18px, 2vw, 28px);
-  --space-card-gap: clamp(16px, 1.6vw, 22px);
+  --space-card-gap: clamp(12px, 1.3vw, 18px);
 }
 
 * {
@@ -2087,7 +2087,7 @@ button {
 
 .feed-list {
   display: grid;
-  gap: 24px;
+  gap: 16px;
 }
 
 .discovery-panel {
@@ -2106,19 +2106,19 @@ button {
 .opinion-card {
   position: relative;
   overflow: hidden;
-  padding: 24px 26px;
-  border: 1px solid rgba(255, 145, 0, 0.25);
-  border-radius: 16px;
+  padding: 17px 20px 16px;
+  border: 1px solid rgba(255, 145, 0, 0.18);
+  border-radius: 12px;
   background:
-    radial-gradient(circle at 15% 0%, rgba(255, 145, 0, 0.07), transparent 40%),
+    radial-gradient(circle at 15% 0%, rgba(255, 145, 0, 0.045), transparent 38%),
     linear-gradient(145deg, rgba(24, 18, 14, 0.97), rgba(9, 9, 9, 0.99));
   box-shadow:
-    0 14px 35px rgba(0, 0, 0, 0.34),
-    0 0 24px rgba(255, 130, 0, 0.035),
+    0 10px 26px rgba(0, 0, 0, 0.3),
+    0 0 18px rgba(255, 130, 0, 0.025),
     inset 0 1px 0 rgba(255, 255, 255, 0.025);
   color: var(--color-text-user-content-secondary);
-  line-height: 1.55;
-  transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease, background 180ms ease;
+  line-height: 1.5;
+  transition: border-color 200ms ease, box-shadow 200ms ease, transform 200ms ease, background 200ms ease;
 }
 
 .opinion-card::before {
@@ -2133,21 +2133,26 @@ button {
 }
 
 .feed-panel .opinion-card:first-child {
-  border-color: rgba(255, 176, 0, 0.38);
+  border-color: rgba(255, 176, 0, 0.28);
   background:
-    radial-gradient(circle at 15% 0%, rgba(255, 145, 0, 0.095), transparent 42%),
+    radial-gradient(circle at 15% 0%, rgba(255, 145, 0, 0.065), transparent 40%),
     linear-gradient(145deg, rgba(28, 19, 13, 0.98), rgba(9, 9, 9, 0.99));
 }
 
 @media (hover: hover) {
   .opinion-card:hover {
-    border-color: rgba(255, 145, 0, 0.38);
+    border-color: rgba(255, 145, 0, 0.34);
     box-shadow:
-      0 18px 42px rgba(0, 0, 0, 0.38),
-      0 0 28px rgba(255, 130, 0, 0.045),
+      0 14px 34px rgba(0, 0, 0, 0.36),
+      0 0 22px rgba(255, 130, 0, 0.035),
       inset 0 1px 0 rgba(255, 255, 255, 0.03);
     transform: translateY(-1px);
   }
+}
+
+.opinion-card:active {
+  transform: translateY(0) scale(0.998);
+  transition-duration: 120ms;
 }
 
 .open-opinion {
@@ -2167,38 +2172,50 @@ button {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   color: var(--color-text-muted);
-  font-size: 0.88rem;
+  font-size: 0.82rem;
 }
 
 .opinion-meta {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 4px 12px;
+  grid-template-columns: auto auto 1fr auto;
+  gap: 0 9px;
+  align-items: center;
+  min-height: 22px;
 }
 
 .date-stamp {
-  grid-column: 1 / -1;
+  grid-column: auto;
   color: var(--color-text-muted);
-  font-size: 0.78rem;
+  font-size: 0.76rem;
   font-style: normal;
+  white-space: nowrap;
+}
+
+.date-stamp::before {
+  content: "\00b7";
+  margin-right: 9px;
+  color: rgba(255, 138, 31, 0.42);
 }
 
 .author {
+  grid-column: 4;
   justify-self: end;
-  color: var(--color-text-muted);
-  font-size: 0.76rem;
+  color: rgba(184, 154, 125, 0.72);
+  font-size: 0.74rem;
   font-weight: 700;
+  white-space: nowrap;
 }
 
 .topic {
   position: relative;
-  padding-left: 10px;
+  padding-left: 11px;
   color: var(--accent-hot);
-  font-size: 0.82rem;
+  font-size: 0.84rem;
   font-weight: 900;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .topic::before {
@@ -2216,25 +2233,25 @@ button {
 
 .life-label {
   display: inline-flex;
-  min-height: 24px;
+  min-height: 20px;
   align-items: center;
-  padding: 0 9px;
-  border: 1px solid rgba(255, 122, 0, 0.34);
+  padding: 0 7px;
+  border: 1px solid rgba(255, 122, 0, 0.22);
   border-radius: 999px;
-  background: rgba(255, 122, 0, 0.08);
-  color: var(--accent-hot);
-  font-size: 0.72rem;
+  background: rgba(255, 122, 0, 0.045);
+  color: rgba(255, 176, 0, 0.78);
+  font-size: 0.68rem;
   font-style: normal;
   font-weight: 800;
 }
 
 .opinion-text {
   max-width: 720px;
-  margin: 18px 0 18px;
+  margin: 10px 0 13px;
   color: var(--color-text-user-content);
-  font-size: clamp(1.05rem, 1.4vw, 1.32rem);
+  font-size: clamp(1.02rem, 1.18vw, 1.18rem);
   font-weight: 500;
-  line-height: 1.55;
+  line-height: 1.48;
   letter-spacing: 0;
   white-space: pre-wrap;
 }
@@ -2247,19 +2264,19 @@ button {
   align-items: center;
   justify-content: center;
   gap: 5px;
-  min-width: 40px;
-  min-height: 40px;
-  padding: 0 11px;
-  border: 1px solid rgba(255, 145, 0, 0.14);
+  min-width: 34px;
+  min-height: 34px;
+  padding: 0 9px;
+  border: 1px solid rgba(255, 145, 0, 0.11);
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.018);
-  color: rgba(243, 239, 234, 0.68);
-  transition: border-color 160ms ease, background 160ms ease, color 160ms ease, transform 160ms ease;
+  color: rgba(255, 226, 189, 0.62);
+  transition: border-color 190ms ease, background 190ms ease, color 190ms ease, transform 190ms ease;
 }
 
 .opinion-action-button {
-  width: 40px;
-  min-width: 40px;
+  width: 34px;
+  min-width: 34px;
   padding: 0;
 }
 
@@ -2647,8 +2664,8 @@ button {
 
 .thread {
   display: grid;
-  gap: 10px;
-  margin-top: 18px;
+  gap: 8px;
+  margin-top: 12px;
   padding-left: 0;
   border-left: 0;
 }
@@ -2656,10 +2673,10 @@ button {
 .reply {
   margin: 0;
   max-width: 720px;
-  color: var(--color-text-user-content-secondary);
-  font-size: 0.92rem;
+  color: rgba(255, 226, 189, 0.82);
+  font-size: 0.9rem;
   font-weight: 450;
-  line-height: 1.58;
+  line-height: 1.5;
 }
 
 .reply strong {
@@ -2670,33 +2687,39 @@ button {
 
 .reply-card {
   display: grid;
-  gap: 8px;
-  padding: 16px 16px 14px 18px;
-  border: 1px solid rgba(255, 145, 0, 0.1);
-  border-left: 2px solid rgba(255, 145, 0, 0.48);
-  border-radius: 0 12px 12px 0;
+  gap: 6px;
+  padding: 10px 10px 10px 14px;
+  border: 0;
+  border-left: 2px solid rgba(255, 145, 0, 0.55);
+  border-radius: 0 8px 8px 0;
   background:
-    linear-gradient(90deg, rgba(255, 145, 0, 0.045), rgba(255, 255, 255, 0.012) 45%, transparent),
-    rgba(255, 255, 255, 0.018);
-  transition: background 220ms ease, box-shadow 220ms ease;
+    linear-gradient(90deg, rgba(255, 145, 0, 0.035), rgba(255, 255, 255, 0.012) 54%, transparent),
+    rgba(255, 226, 189, 0.018);
+  box-shadow: none;
+  transition: background 200ms ease, box-shadow 200ms ease, border-color 200ms ease;
 }
 
 .reply-card-highlight {
-  background: rgba(255, 122, 0, 0.08);
-  box-shadow: 0 0 0 8px rgba(255, 122, 0, 0.08);
+  border-left-color: rgba(255, 176, 0, 0.78);
+  background: rgba(255, 122, 0, 0.07);
+  box-shadow: 0 0 0 5px rgba(255, 122, 0, 0.045);
 }
 
 .reply-date {
   margin-top: -2px;
-  color: rgba(216, 210, 203, 0.62);
-  font-size: 0.82rem;
+  color: rgba(217, 194, 166, 0.56);
+  font-size: 0.74rem;
   font-style: normal;
+}
+
+.reply-date::before {
+  content: none;
 }
 
 .reply-actions {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   justify-self: start;
 }
 
@@ -2708,19 +2731,19 @@ button {
   display: grid;
   grid-template-columns: 1fr auto;
   align-items: start;
-  gap: 10px;
-  margin-top: 18px;
-  padding-top: 16px;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 12px;
   border-top: 1px solid rgba(255, 255, 255, 0.055);
 }
 
 .reply-form input,
 .reply-form textarea {
   min-width: 0;
-  min-height: 52px;
-  padding: 13px 14px;
+  min-height: 44px;
+  padding: 10px 12px;
   border: 1px solid rgba(255, 145, 0, 0.18);
-  border-radius: 12px;
+  border-radius: 10px;
   background: rgba(0, 0, 0, 0.36);
   color: var(--color-text-user-content);
   font-weight: 500;
@@ -2728,7 +2751,7 @@ button {
 }
 
 .reply-form textarea {
-  height: 52px;
+  height: 44px;
   max-height: 150px;
   resize: none;
   overflow: hidden;
@@ -2739,8 +2762,8 @@ button {
 }
 
 .reply-form button {
-  min-height: 52px;
-  padding: 0 16px;
+  min-height: 44px;
+  padding: 0 14px;
   border: 1px solid rgba(255, 133, 0, 0.55);
   border-radius: 999px;
   background: linear-gradient(180deg, rgba(255, 137, 0, 0.12), rgba(255, 115, 0, 0.045));
@@ -3421,8 +3444,8 @@ button {
   }
 
   .opinion-card {
-    padding: 18px 16px;
-    border-radius: 14px;
+    padding: 15px 14px;
+    border-radius: 12px;
   }
 
   .opinion-card::before {
@@ -3431,25 +3454,25 @@ button {
   }
 
   .opinion-meta {
-    grid-template-columns: 1fr auto;
-    gap: 5px 12px;
-    align-items: start;
+    grid-template-columns: auto auto 1fr auto;
+    gap: 0 8px;
+    align-items: center;
   }
 
   .opinion-text {
-    margin-top: 16px;
-    margin-bottom: 16px;
+    margin-top: 10px;
+    margin-bottom: 12px;
     font-size: clamp(1rem, 4.6vw, 1.16rem);
-    line-height: 1.56;
+    line-height: 1.48;
   }
 
   .thread {
-    margin-top: 16px;
+    margin-top: 12px;
   }
 
   .reply-card {
-    padding: 14px 13px 13px 15px;
-    border-radius: 0 10px 10px 0;
+    padding: 10px 9px 10px 13px;
+    border-radius: 0 8px 8px 0;
   }
 
   .feed-panel,
