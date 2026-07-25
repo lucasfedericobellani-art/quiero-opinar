@@ -2928,6 +2928,12 @@ button {
     width: 100%;
   }
 
+  body:has(#contactView:not(.hidden)) .header-search,
+  body:has(#contactView:not(.hidden)) .floating-opinion-trigger,
+  body:has(#contactView:not(.hidden)) .contact-actions .ghost-button {
+    display: none;
+  }
+
   .contact-shell {
     gap: 12px;
     padding: 16px;
