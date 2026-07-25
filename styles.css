@@ -2883,6 +2883,14 @@ button {
   background: linear-gradient(180deg, rgba(255, 148, 0, 0.22), rgba(255, 117, 0, 0.1));
 }
 
+.reply-form-error {
+  margin: 8px 0 0;
+  color: rgba(255, 177, 74, 0.86);
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
 .detail-shell {
   max-width: 820px;
 }

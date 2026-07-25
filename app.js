@@ -1361,41 +1361,6 @@ function refreshCurrentDetailHistoryState() {
   window.history.replaceState(detailState, "", getOpinionPath(opinion));
 }
 
-function scrollPageToTopAfterLayout() {
-  window.requestAnimationFrame(() => {
-    window.scrollTo({ top: 0, behavior: "auto" });
-    window.setTimeout(() => window.scrollTo({ top: 0, behavior: "auto" }), 220);
-  });
-}
-
-function showOpinionDetailAfterReply(opinionId, wasDetailView) {
-  activeReplyControl?.blur?.();
-  activeReplyControl = null;
-  clearReplyKeyboardAssist();
-  selectedOpinionId = opinionId;
-
-  if (wasDetailView) {
-    render();
-    showView("detail", { scrollToTop: false });
-    refreshCurrentDetailHistoryState();
-  } else {
-    openOpinion(opinionId, { skipViewUpdate: true });
-  }
-
-  if (!wasDetailView) scrollPageToTopAfterLayout();
-}
-
-function scrollToReplyAfterLayout(replyId) {
-  if (!replyId) return;
-  window.requestAnimationFrame(() => {
-    const target = document.querySelector(`[data-reply-id="${CSS.escape(replyId)}"]`);
-    if (!target) return;
-    target.scrollIntoView({ behavior: "smooth", block: "center" });
-    target.classList.add("reply-card-highlight");
-    window.setTimeout(() => target.classList.remove("reply-card-highlight"), 1800);
-  });
-}
-
 function openFloatingOpinionPanel() {
   isFloatingOpinionOpen = true;
   updateViewportMetrics();
@@ -2059,6 +2024,86 @@ function renderDetail() {
   renderDiscovery(related.querySelector(".discovery-grid"));
 }
 
+function createReplyElement(opinion, normalizedReply) {
+  const item = document.createElement("div");
+  item.className = "reply-item";
+  item.dataset.replyId = normalizedReply.id;
+  item.innerHTML = `
+    <p class="reply-content"><span class="reply-label">Respuesta:</span> ${escapeHtml(normalizedReply.text)}</p>
+    <span class="date-stamp reply-date">${formatDate(normalizedReply.createdAt)}</span>
+    <div class="reply-actions">
+      <button class="like-button${normalizedReply.liked ? " liked" : ""}" type="button" aria-label="Me gusta respuesta">
+        <svg aria-hidden="true" viewBox="0 0 24 24">
+          <path d="M20.8 8.6c0 5.4-8.8 10.4-8.8 10.4S3.2 14 3.2 8.6A4.7 4.7 0 0 1 12 6.2a4.7 4.7 0 0 1 8.8 2.4z"></path>
+        </svg>
+        <span>${normalizedReply.likes}</span>
+      </button>
+      <button class="dislike-button${normalizedReply.disliked ? " disliked" : ""}" type="button" aria-label="No me gusta respuesta">
+        <svg aria-hidden="true" viewBox="0 0 24 24">
+          <path d="M10 15v4.5a2.5 2.5 0 0 0 4.5 1.5L19 14V4H7.6a2 2 0 0 0-1.9 1.4L3.2 13A2 2 0 0 0 5.1 15H10z"></path>
+          <path d="M19 4h2v10h-2"></path>
+        </svg>
+        <span>${normalizedReply.dislikes}</span>
+      </button>
+      <button class="report-button opinion-action-button" type="button" aria-label="Reportar respuesta" title="Reportar respuesta">
+        <svg aria-hidden="true" viewBox="0 0 24 24">
+          <path d="M5 21V4"></path>
+          <path d="M5 4h12l-1.5 4L17 12H5"></path>
+        </svg>
+      </button>
+    </div>
+  `;
+
+  item.querySelector(".like-button").addEventListener("click", async (event) => {
+    event.stopPropagation();
+    try {
+      const result = await registerContentActionViaApi("like", "reply", normalizedReply.id, opinion.id);
+      Object.assign(opinion, result.opinion);
+      render();
+      showToast(result.active ? "Me gusta guardado" : "Me gusta quitado");
+    } catch (error) {
+      showToast(getApiErrorMessage(error, "No se pudo guardar el me gusta."));
+    }
+  });
+
+  item.querySelector(".dislike-button").addEventListener("click", async (event) => {
+    event.stopPropagation();
+    try {
+      const result = await registerContentActionViaApi("dislike", "reply", normalizedReply.id, opinion.id);
+      Object.assign(opinion, result.opinion);
+      render();
+      showToast(result.active ? "No me gusta guardado" : "No me gusta quitado");
+    } catch (error) {
+      showToast(getApiErrorMessage(error, "No se pudo guardar el no me gusta."));
+    }
+  });
+
+  item.querySelector(".report-button").addEventListener("click", async (event) => {
+    event.stopPropagation();
+    const reason = await askReportReason();
+    if (!reason) return;
+    try {
+      const result = await registerContentActionViaApi("report", "reply", normalizedReply.id, opinion.id, reason);
+      Object.assign(opinion, result.opinion);
+      render();
+      showToast("Reporte enviado");
+    } catch (error) {
+      showToast(getApiErrorMessage(error, "No se pudo enviar el reporte."));
+    }
+  });
+
+  return item;
+}
+
+function renderReplyThread(thread, opinion) {
+  thread.innerHTML = "";
+  opinion.replies.forEach((reply, index) => {
+    const normalizedReply = normalizeReply(reply);
+    opinion.replies[index] = normalizedReply;
+    thread.append(createReplyElement(opinion, normalizedReply));
+  });
+}
+
 function createOpinionCard(opinion, isDetail) {
   const card = opinionTemplate.content.firstElementChild.cloneNode(true);
   card.querySelector(".author").textContent = `#${getOpinionNumber(opinion)}`;
@@ -2143,105 +2188,62 @@ function createOpinionCard(opinion, isDetail) {
   });
 
   const thread = card.querySelector(".thread");
-  opinion.replies.forEach((reply, index) => {
-    const normalizedReply = normalizeReply(reply);
-    opinion.replies[index] = normalizedReply;
-
-    const item = document.createElement("div");
-    item.className = "reply-item";
-    item.dataset.replyId = normalizedReply.id;
-    item.innerHTML = `
-      <p class="reply-content"><span class="reply-label">Respuesta:</span> ${escapeHtml(normalizedReply.text)}</p>
-      <span class="date-stamp reply-date">${formatDate(normalizedReply.createdAt)}</span>
-      <div class="reply-actions">
-        <button class="like-button${normalizedReply.liked ? " liked" : ""}" type="button" aria-label="Me gusta respuesta">
-          <svg aria-hidden="true" viewBox="0 0 24 24">
-            <path d="M20.8 8.6c0 5.4-8.8 10.4-8.8 10.4S3.2 14 3.2 8.6A4.7 4.7 0 0 1 12 6.2a4.7 4.7 0 0 1 8.8 2.4z"></path>
-          </svg>
-          <span>${normalizedReply.likes}</span>
-        </button>
-        <button class="dislike-button${normalizedReply.disliked ? " disliked" : ""}" type="button" aria-label="No me gusta respuesta">
-          <svg aria-hidden="true" viewBox="0 0 24 24">
-            <path d="M10 15v4.5a2.5 2.5 0 0 0 4.5 1.5L19 14V4H7.6a2 2 0 0 0-1.9 1.4L3.2 13A2 2 0 0 0 5.1 15H10z"></path>
-            <path d="M19 4h2v10h-2"></path>
-          </svg>
-          <span>${normalizedReply.dislikes}</span>
-        </button>
-        <button class="report-button opinion-action-button" type="button" aria-label="Reportar respuesta" title="Reportar respuesta">
-          <svg aria-hidden="true" viewBox="0 0 24 24">
-            <path d="M5 21V4"></path>
-            <path d="M5 4h12l-1.5 4L17 12H5"></path>
-          </svg>
-        </button>
-      </div>
-    `;
-
-    item.querySelector(".like-button").addEventListener("click", async () => {
-      try {
-        const result = await registerContentActionViaApi("like", "reply", normalizedReply.id, opinion.id);
-        Object.assign(opinion, result.opinion);
-        render();
-        showToast(result.active ? "Me gusta guardado" : "Me gusta quitado");
-      } catch (error) {
-        showToast(getApiErrorMessage(error, "No se pudo guardar el me gusta."));
-      }
-    });
-
-    item.querySelector(".dislike-button").addEventListener("click", async () => {
-      try {
-        const result = await registerContentActionViaApi("dislike", "reply", normalizedReply.id, opinion.id);
-        Object.assign(opinion, result.opinion);
-        render();
-        showToast(result.active ? "No me gusta guardado" : "No me gusta quitado");
-      } catch (error) {
-        showToast(getApiErrorMessage(error, "No se pudo guardar el no me gusta."));
-      }
-    });
-
-    item.querySelector(".report-button").addEventListener("click", async () => {
-      const reason = await askReportReason();
-      if (!reason) return;
-      try {
-        const result = await registerContentActionViaApi("report", "reply", normalizedReply.id, opinion.id, reason);
-        Object.assign(opinion, result.opinion);
-        render();
-        showToast("Reporte enviado");
-      } catch (error) {
-        showToast(getApiErrorMessage(error, "No se pudo enviar el reporte."));
-      }
-    });
-
-    thread.append(item);
-  });
+  renderReplyThread(thread, opinion);
 
   const replyForm = card.querySelector(".reply-form");
   const replyInput = replyForm.querySelector("textarea, input");
+  const replySubmitButton = replyForm.querySelector('button[type="submit"]');
+  const replyError = document.createElement("p");
+  replyError.className = "reply-form-error hidden";
+  replyError.setAttribute("role", "alert");
+  replyForm.after(replyError);
   resizeReplyControl(replyInput);
+  replyForm.addEventListener("click", (event) => event.stopPropagation());
+  replyForm.addEventListener("pointerdown", (event) => event.stopPropagation());
+  replySubmitButton?.addEventListener("click", (event) => event.stopPropagation());
   replyForm.addEventListener("submit", async (event) => {
     event.preventDefault();
-    const wasDetailView = currentView === "detail";
+    event.stopPropagation();
     const reply = replyInput.value.trim();
+    replyError.classList.add("hidden");
+    replyError.textContent = "";
     if (!reply) return;
     if (containsBlockedLink(reply)) {
+      replyError.textContent = "No se pueden publicar links en opiniones ni respuestas.";
+      replyError.classList.remove("hidden");
       rejectLinkedContent();
       return;
     }
     if (containsUnsafeContent(reply)) {
-      showToast("No se puede publicar contenido con datos sensibles, amenazas o material prohibido.");
+      replyError.textContent = "No se puede publicar contenido con datos sensibles, amenazas o material prohibido.";
+      replyError.classList.remove("hidden");
       return;
+    }
+
+    const originalButtonText = replySubmitButton?.textContent || "Responder";
+    if (replySubmitButton) {
+      replySubmitButton.disabled = true;
+      replySubmitButton.textContent = "Publicando...";
     }
 
     try {
       const updatedOpinion = await createReplyViaApi(opinion.id, reply);
-      const newReply = updatedOpinion.replies[updatedOpinion.replies.length - 1];
       Object.assign(opinion, updatedOpinion);
       replyInput.value = "";
       resizeReplyControl(replyInput);
-      showOpinionDetailAfterReply(opinion.id, wasDetailView);
-      scrollToReplyAfterLayout(newReply?.id);
+      replyInput.blur();
+      clearReplyKeyboardAssist();
+      card.querySelector(".replies").textContent = `💬 ${opinion.replies.length}`;
+      renderReplyThread(thread, opinion);
       showToast("Respuesta publicada");
     } catch (error) {
-      showToast(getApiErrorMessage(error, "No se pudo publicar la respuesta."));
+      replyError.textContent = getApiErrorMessage(error, "No pudimos publicar tu respuesta. Intentá nuevamente.");
+      replyError.classList.remove("hidden");
+    } finally {
+      if (replySubmitButton) {
+        replySubmitButton.disabled = false;
+        replySubmitButton.textContent = originalButtonText;
+      }
     }
   });
 
