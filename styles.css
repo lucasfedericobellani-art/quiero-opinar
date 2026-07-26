@@ -4839,3 +4839,31 @@ button {
     border-radius: 999px !important;
   }
 }
+
+/* Keep action rows still on touch devices; they should never become a draggable strip. */
+.opinion-card .opinion-stats,
+.opinion-card .reply-actions {
+  overflow: visible !important;
+  overscroll-behavior: contain !important;
+}
+
+@media (max-width: 720px) {
+  body.reply-menu-open {
+    overflow: hidden !important;
+    touch-action: none !important;
+  }
+
+  .opinion-card .opinion-stats,
+  .opinion-card .reply-actions {
+    overflow-x: visible !important;
+    overflow-y: visible !important;
+    touch-action: none !important;
+  }
+
+  .opinion-card .opinion-stats > button,
+  .opinion-card .reply-actions > button {
+    touch-action: manipulation !important;
+    user-select: none !important;
+    -webkit-user-select: none !important;
+  }
+}

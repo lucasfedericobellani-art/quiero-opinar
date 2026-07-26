@@ -239,6 +239,7 @@ let isRestoringHistory = false;
 let pendingScrollRestore = null;
 let activeReplyControl = null;
 let replyViewportTimers = [];
+let replyScrollAnimationFrame = 0;
 let dataStore = createLocalDataStore();
 
 hydrateInitialContentFromCache();
@@ -1796,13 +1797,40 @@ function clearReplyViewportTimers() {
   replyViewportTimers = [];
 }
 
-function scheduleActiveReplyControlVisibility() {
+function animateReplyScrollBy(delta) {
+  if (Math.abs(delta) < 2) return;
+  if (replyScrollAnimationFrame) {
+    window.cancelAnimationFrame(replyScrollAnimationFrame);
+    replyScrollAnimationFrame = 0;
+  }
+
+  const startY = window.scrollY;
+  const maxY = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+  const targetY = Math.max(0, Math.min(maxY, startY + delta));
+  const distance = targetY - startY;
+  if (Math.abs(distance) < 2) return;
+
+  const duration = 240;
+  const startedAt = performance.now();
+  const easeOut = (progress) => 1 - Math.pow(1 - progress, 3);
+
+  const step = (now) => {
+    const progress = Math.min(1, (now - startedAt) / duration);
+    window.scrollTo({ top: startY + distance * easeOut(progress), behavior: "auto" });
+    if (progress < 1) {
+      replyScrollAnimationFrame = window.requestAnimationFrame(step);
+      return;
+    }
+    replyScrollAnimationFrame = 0;
+  };
+
+  replyScrollAnimationFrame = window.requestAnimationFrame(step);
+}
+
+function scheduleActiveReplyControlVisibility(delay = 70) {
   if (!activeReplyControl || !isMobileViewport()) return;
   clearReplyViewportTimers();
-  window.requestAnimationFrame(ensureActiveReplyControlVisible);
-  [80, 220, 420, 680].forEach((delay) => {
-    replyViewportTimers.push(window.setTimeout(ensureActiveReplyControlVisible, delay));
-  });
+  replyViewportTimers.push(window.setTimeout(ensureActiveReplyControlVisible, delay));
 }
 
 function ensureActiveReplyControlVisible() {
@@ -1837,12 +1865,15 @@ function ensureActiveReplyControlVisible() {
   const maxUpDelta = Math.max(100, Math.min(180, viewport.height * 0.24));
   if (delta > 0) delta = Math.min(delta, maxDownDelta);
   if (delta < 0) delta = Math.max(delta, -maxUpDelta);
-  if (Math.abs(delta) < 2) return;
-  window.scrollBy({ top: delta, behavior: "smooth" });
+  animateReplyScrollBy(delta);
 }
 
 function clearReplyKeyboardAssist() {
   clearReplyViewportTimers();
+  if (replyScrollAnimationFrame) {
+    window.cancelAnimationFrame(replyScrollAnimationFrame);
+    replyScrollAnimationFrame = 0;
+  }
   activeReplyControl = null;
   document.body.classList.remove("reply-field-focused");
   document.documentElement.style.setProperty("--reply-keyboard-offset", "0px");
@@ -2111,12 +2142,27 @@ function setReplyQuote(replyForm, quote) {
 
 function scrollReplyComposerIntoView(replyForm, replyInput) {
   const isMobile = isMobileViewport();
+  if (isMobile) {
+    window.requestAnimationFrame(() => {
+      try {
+        replyInput.focus({ preventScroll: true });
+      } catch {
+        replyInput.focus();
+      }
+      activeReplyControl = replyInput;
+      resizeReplyControl(replyInput);
+      updateViewportMetrics();
+      scheduleActiveReplyControlVisibility(90);
+    });
+    return;
+  }
+
   window.requestAnimationFrame(() => {
     const viewport = getVisualViewportBounds();
     const card = replyForm.closest(".opinion-card");
-    const targetElement = isMobile ? replyForm : (card || replyForm);
+    const targetElement = card || replyForm;
     const targetRect = targetElement.getBoundingClientRect();
-    const targetTop = viewport.top + (isMobile ? 118 : 78);
+    const targetTop = viewport.top + 78;
     const targetScrollY = Math.max(0, window.scrollY + targetRect.top - targetTop);
     const distance = Math.abs(targetScrollY - window.scrollY);
 
@@ -2133,7 +2179,7 @@ function scrollReplyComposerIntoView(replyForm, replyInput) {
       activeReplyControl = replyInput;
       resizeReplyControl(replyInput);
       scheduleActiveReplyControlVisibility();
-    }, isMobile ? 190 : 120);
+    }, 120);
   });
 }
 
@@ -2190,6 +2236,7 @@ function openReplyActionMenu(button, items) {
   });
   positionReplyActionPopover();
   popover.classList.add("is-open");
+  document.body.classList.add("reply-menu-open");
 }
 
 function closeReplyActionMenu(restoreFocus = false) {
@@ -2203,6 +2250,7 @@ function closeReplyActionMenu(restoreFocus = false) {
     replyActionPopover.classList.remove("is-open");
     replyActionPopover.innerHTML = "";
   }
+  document.body.classList.remove("reply-menu-open");
 }
 
 function positionReplyActionPopover() {
