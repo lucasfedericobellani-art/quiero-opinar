@@ -4167,7 +4167,8 @@ button {
     font-size: 0.94rem;
   }
 
-  body.mobile-composer-open .floating-opinion-trigger {
+  body.mobile-composer-open .floating-opinion-trigger,
+  body.reply-field-focused .floating-opinion-trigger {
     opacity: 0;
     visibility: hidden;
     pointer-events: none;

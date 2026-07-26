@@ -1842,16 +1842,19 @@ function ensureActiveReplyControlVisible() {
   const controlRect = activeReplyControl.getBoundingClientRect();
   const anchor = form.querySelector(".reply-quote-preview:not(.hidden)") || activeReplyControl;
   const anchorRect = anchor.getBoundingClientRect();
+  const submitButton = form.querySelector('button[type="submit"]');
+  const endRect = submitButton?.getBoundingClientRect() || controlRect;
   const replyOffset = getEffectiveReplyKeyboardOffset(
     parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--keyboard-offset")) || 0
   );
   const visibleBottom = Math.min(viewport.bottom, window.innerHeight - replyOffset);
   const topLimit = viewport.top + 88;
-  const bottomLimit = Math.max(topLimit + 160, visibleBottom - 28);
+  const bottomLimit = Math.max(topLimit + 170, visibleBottom - 22);
+  const contentBottom = Math.max(controlRect.bottom, endRect.bottom);
   let delta = 0;
 
-  if (controlRect.bottom > bottomLimit) {
-    delta = controlRect.bottom - bottomLimit;
+  if (contentBottom > bottomLimit) {
+    delta = contentBottom - bottomLimit;
   }
 
   if (anchorRect.top - delta < topLimit) {
