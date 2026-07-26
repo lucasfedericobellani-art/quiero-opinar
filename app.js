@@ -326,7 +326,7 @@ function showQuoteActionForSelection() {
     return;
   }
 
-  const sourceText = quoteSource.textContent.replace(/^Respuesta:\s*/i, "");
+  const sourceText = quoteSource.textContent;
   const quote = createQuotePayload(quoteSource.dataset.quoteSourceType, quoteSource.dataset.quoteSourceId, sourceText, selectedText);
   if (!quote) {
     hideQuoteSelectionButton();
@@ -743,7 +743,8 @@ function updateActivityIndicator(now = Date.now()) {
   const realActivity = getRecentActivitySignals(getVisibleOpinions(), now);
   displayedActivityCache.value = getDisplayedActiveUsers(realActivity, displayedActivityCache.value);
   displayedActivityCache.updatedAt = now;
-  activityIndicatorText.textContent = `${displayedActivityCache.value} personas participando ahora`;
+  const noun = isMobileViewport() ? "" : " personas";
+  activityIndicatorText.textContent = `${displayedActivityCache.value}${noun} opinando ahora`;
 }
 
 function getHotTopicScore(topicStats, now = Date.now()) {
@@ -797,7 +798,7 @@ function createQuotePayload(sourceType, sourceId, sourceText, selectedText = "")
 function renderQuoteMarkup(quote) {
   const normalizedQuote = normalizeQuoteRecord(quote);
   if (!normalizedQuote) return "";
-  return `<blockquote class="reply-quote"><span>Cita</span><p>${escapeHtml(normalizedQuote.quotedText)}</p></blockquote>`;
+  return `<blockquote class="reply-quote"><p>${escapeHtml(normalizedQuote.quotedText)}</p></blockquote>`;
 }
 
 function getSelectedQuoteText(container) {
@@ -2320,7 +2321,7 @@ function createReplyElement(opinion, normalizedReply) {
   item.dataset.replyId = normalizedReply.id;
   item.innerHTML = `
     ${renderQuoteMarkup(normalizedReply.quote)}
-    <p class="reply-content quotable-text" data-quote-source-type="reply" data-quote-source-id="${escapeHtml(normalizedReply.id)}"><span class="reply-label">Respuesta:</span> ${escapeHtml(normalizedReply.text)}</p>
+    <p class="reply-content quotable-text" data-quote-source-type="reply" data-quote-source-id="${escapeHtml(normalizedReply.id)}">${escapeHtml(normalizedReply.text)}</p>
     <span class="date-stamp reply-date">${formatDate(normalizedReply.createdAt)}</span>
     <div class="reply-actions">
       <button class="quote-button" type="button" aria-label="Citar respuesta" title="Citar respuesta">

@@ -30,6 +30,10 @@ function getDisplayedActiveUsers(realActivity, previousValue = MIN_DISPLAYED_ACT
   return previousValue + Math.sign(baseValue - previousValue) * maxStep;
 }
 
+function getActivityIndicatorText(value, isMobile = false) {
+  return `${value}${isMobile ? "" : " personas"} opinando ahora`;
+}
+
 function getHotTopicScore(topicStats, now, windowHours = 6) {
   const recentWindowStart = now - windowHours * 60 * 60 * 1000;
   const recentOpinionCount = topicStats.opinions.filter((opinion) => opinion.createdAt >= recentWindowStart).length;
@@ -48,6 +52,9 @@ function run() {
   assert.strictEqual(getDisplayedActiveUsers(13, 13), 16, "activity above floor rises smoothly");
   assert.strictEqual(getDisplayedActiveUsers(80, 13), 19, "large jumps are smoothed");
   assert.strictEqual(getDisplayedActiveUsers(Number.NaN, 16), 13, "missing activity returns toward floor");
+  assert.strictEqual(getActivityIndicatorText(13), "13 personas opinando ahora", "desktop activity wording is exact");
+  assert.strictEqual(getActivityIndicatorText(13, true), "13 opinando ahora", "mobile activity wording is compact");
+  assert(!getActivityIndicatorText(13).includes("participando"), "activity wording never says participando");
 
   const now = Date.now();
   const hot = getHotTopicScore({

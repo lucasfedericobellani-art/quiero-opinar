@@ -703,42 +703,25 @@ button {
   align-items: center;
   justify-content: flex-end;
   gap: 10px;
+  min-width: 0;
 }
 
 .activity-indicator {
   display: inline-flex;
   align-items: center;
-  min-height: 30px;
-  gap: 8px;
-  padding: 0 11px;
-  border: 1px solid rgba(255, 176, 74, 0.16);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.035);
-  color: var(--feed-text-secondary);
-  font-size: 0.82rem;
-  font-weight: 650;
-  white-space: nowrap;
+  min-width: 0;
+  color: rgba(245, 238, 226, 0.62);
+  font: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  letter-spacing: 0;
+  text-transform: none;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
-.activity-indicator-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 999px;
-  background: rgba(255, 176, 74, 0.88);
-  box-shadow: 0 0 0 0 rgba(255, 176, 74, 0.22);
-  animation: activityPulse 2.8s ease-in-out infinite;
-}
-
-@keyframes activityPulse {
-  0%, 100% {
-    opacity: 0.72;
-    box-shadow: 0 0 0 0 rgba(255, 176, 74, 0.18);
-  }
-
-  50% {
-    opacity: 1;
-    box-shadow: 0 0 0 5px rgba(255, 176, 74, 0);
-  }
+.activity-divider {
+  color: rgba(245, 238, 226, 0.38);
 }
 
 .mobile-trending-link {
@@ -1617,9 +1600,14 @@ button {
 
 .panel-heading.horizontal {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
+  min-width: 0;
+}
+
+.panel-heading.horizontal > div:first-child {
+  min-width: 0;
 }
 
 .feed-panel .panel-heading {
@@ -1630,36 +1618,18 @@ button {
 .live-label {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 7px;
+  min-width: 0;
+  max-width: 100%;
+  flex-wrap: wrap;
 }
 
 .live-dot {
-  width: 10px;
-  height: 10px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
-  background: #ff2d2d;
-  box-shadow: 0 0 0 rgba(255, 45, 45, 0.55), 0 0 18px rgba(255, 45, 45, 0.9);
-  animation: livePulse 1.25s ease-in-out infinite;
-}
-
-@keyframes livePulse {
-  0% {
-    opacity: 0.65;
-    transform: scale(0.86);
-    box-shadow: 0 0 0 0 rgba(255, 45, 45, 0.45), 0 0 12px rgba(255, 45, 45, 0.75);
-  }
-
-  55% {
-    opacity: 1;
-    transform: scale(1.15);
-    box-shadow: 0 0 0 7px rgba(255, 45, 45, 0), 0 0 24px rgba(255, 45, 45, 1);
-  }
-
-  100% {
-    opacity: 0.65;
-    transform: scale(0.86);
-    box-shadow: 0 0 0 0 rgba(255, 45, 45, 0), 0 0 12px rgba(255, 45, 45, 0.75);
-  }
+  background: rgba(255, 98, 82, 0.88);
+  box-shadow: 0 0 12px rgba(255, 98, 82, 0.38);
 }
 
 .pill {
@@ -2199,6 +2169,7 @@ button {
   flex-wrap: wrap;
   gap: 10px;
   margin-top: 10px;
+  min-width: 0;
 }
 
 .opinion-card {
@@ -2762,8 +2733,7 @@ button {
   .quote-button,
   .quote-selection-button,
   .board-arrow,
-  .topic-icon,
-  .activity-indicator-dot {
+  .topic-icon {
     transition: none;
     animation: none;
   }
@@ -2799,32 +2769,39 @@ button {
 
 .reply-content {
   margin: 0;
+  min-width: 0;
   max-width: 720px;
   color: var(--feed-text-secondary);
   font-size: clamp(0.92rem, 1vw, 1rem);
   font-weight: 450;
   line-height: 1.55;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .reply-quote,
 .reply-quote-preview {
-  margin: 0 0 9px;
-  padding: 8px 10px 8px 12px;
+  width: fit-content;
+  max-width: 100%;
+  min-width: 0;
+  margin: 0 0 8px;
+  padding: 0 0 0 10px;
   border-left: 2px solid rgba(255, 176, 74, 0.42);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.035);
+  border-radius: 0;
+  background: transparent;
   color: var(--feed-text-muted);
+  box-shadow: none;
 }
 
 .reply-quote span,
 .reply-quote-preview-label {
   display: block;
-  margin-bottom: 3px;
-  color: rgba(255, 214, 153, 0.78);
-  font-size: 0.68rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  margin-bottom: 2px;
+  color: rgba(245, 238, 226, 0.48);
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: none;
+  letter-spacing: 0;
 }
 
 .reply-quote p,
@@ -2832,14 +2809,18 @@ button {
   margin: 0;
   color: var(--feed-text-secondary);
   font-size: 0.86rem;
-  line-height: 1.42;
+  line-height: 1.45;
+  display: -webkit-box;
+  max-width: min(620px, 100%);
+  overflow: hidden;
   overflow-wrap: anywhere;
+  word-break: break-word;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
 }
 
 .reply-label {
-  margin-right: 6px;
-  color: var(--feed-accent-soft);
-  font-weight: 700;
+  display: none;
 }
 
 .reply-item {
@@ -2993,8 +2974,9 @@ button {
 .reply-quote-preview {
   position: relative;
   grid-column: 1 / -1;
+  width: auto;
   margin: 0;
-  padding-right: 42px;
+  padding-right: 38px;
 }
 
 .reply-quote-remove {
@@ -3432,6 +3414,36 @@ button {
     display: none;
   }
 
+  .feed-panel .panel-heading.horizontal {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .feed-actions {
+    justify-content: flex-start;
+  }
+
+  .live-label {
+    gap: 6px;
+  }
+
+  .activity-indicator {
+    max-width: 100%;
+  }
+
+  .discovery-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .discovery-chip {
+    width: 100%;
+    min-width: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
   .contact-shell {
     gap: 12px;
     padding: 16px;
@@ -3827,6 +3839,13 @@ button {
     font-size: 0.94rem;
   }
 
+  .floating-opinion-trigger span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   body.mobile-composer-open .floating-opinion-trigger {
     opacity: 0;
     visibility: hidden;
@@ -3958,5 +3977,21 @@ button {
     min-height: 38px;
     padding: 0 14px;
     font-size: 0.86rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .discovery-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .floating-opinion-trigger {
+    width: 52px;
+    justify-content: center;
+    padding: 0;
+  }
+
+  .floating-opinion-trigger span {
+    display: none;
   }
 }
