@@ -1039,6 +1039,35 @@ button {
   white-space: pre-wrap;
 }
 
+.admin-topic-form {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.admin-topic-edit {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.admin-topic-input {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #141416;
+  color: var(--text);
+  padding: 10px 12px;
+  font: inherit;
+}
+
+.admin-topic-input:focus {
+  outline: 2px solid rgba(255, 122, 0, 0.3);
+  border-color: rgba(255, 122, 0, 0.68);
+}
+
 .admin-opinion-card.has-reports {
   border-color: rgba(255, 61, 61, 0.58);
 }
@@ -3486,6 +3515,10 @@ button {
   .admin-opinion-head {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .admin-topic-edit {
+    grid-template-columns: 1fr;
   }
 
   .analytics-head,

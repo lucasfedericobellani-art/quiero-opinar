@@ -213,12 +213,14 @@ function getModeratedOpinions() {
 }
 
 function getFilteredOpinions() {
-  const sourceOpinions = activeAdminPanel === "moderated"
+  const query = adminSearchQuery.trim();
+  const sourceOpinions = query
+    ? opinions
+    : activeAdminPanel === "moderated"
     ? getModeratedOpinions()
     : activeAdminPanel === "moderation"
       ? getModerationQueueOpinions()
       : opinions;
-  const query = adminSearchQuery.trim();
   if (!query) {
     return sourceOpinions;
   }
@@ -277,6 +279,13 @@ function renderAdminList() {
         </div>
       </div>
       <p class="admin-opinion-text">${escapeHtml(opinion.text)}</p>
+      <form class="admin-topic-form" data-id="${escapeHtml(opinion.id)}">
+        <label class="field-label" for="topic-${escapeHtml(opinion.id)}">Tema</label>
+        <div class="admin-topic-edit">
+          <input id="topic-${escapeHtml(opinion.id)}" class="admin-topic-input" name="topic" type="text" value="${escapeHtml(opinion.topic)}" maxlength="80" required>
+          <button class="ghost-button" type="submit">Guardar tema</button>
+        </div>
+      </form>
       <div class="admin-meta">
         <span>${opinion.views} vistas</span>
         <span>${opinion.likes} likes</span>
@@ -894,6 +903,42 @@ async function initializeAdmin() {
       window.alert("No se pudo aplicar la acción. Revisar permisos de administrador.");
     } finally {
       button.disabled = false;
+    }
+  });
+
+  adminOpinionList.addEventListener("submit", async (event) => {
+    const form = event.target.closest(".admin-topic-form");
+    if (!form) return;
+    event.preventDefault();
+
+    const opinionId = form.getAttribute("data-id");
+    const opinion = opinions.find((item) => item.id === opinionId);
+    const input = form.querySelector(".admin-topic-input");
+    const button = form.querySelector("button[type='submit']");
+    const nextTopic = input.value.trim();
+
+    if (!opinion || !nextTopic) return;
+    if (nextTopic.length > 80) {
+      window.alert("El tema no puede superar 80 caracteres.");
+      return;
+    }
+    if (nextTopic === opinion.topic) return;
+
+    const { doc, updateDoc } = firestoreModule;
+    button.disabled = true;
+    input.disabled = true;
+
+    try {
+      await updateDoc(doc(db, "opinions", opinionId), {
+        topic: nextTopic,
+        moderatedAt: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error("No se pudo actualizar el tema.", error);
+      window.alert("No se pudo guardar el tema. Revisar permisos de administrador.");
+    } finally {
+      button.disabled = false;
+      input.disabled = false;
     }
   });
 }
