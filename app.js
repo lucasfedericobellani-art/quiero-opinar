@@ -2252,7 +2252,12 @@ function createReplyElement(opinion, normalizedReply) {
     }
   };
 
-  item.querySelector(".reply-menu-button").addEventListener("click", (event) => {
+  const replyMenuButton = item.querySelector(".reply-menu-button");
+  replyMenuButton.addEventListener("pointerdown", (event) => {
+    event.stopPropagation();
+  });
+  replyMenuButton.addEventListener("click", (event) => {
+    event.preventDefault();
     event.stopPropagation();
     openReplyActionMenu(event.currentTarget, [
       { label: "Responder citando", icon: "quote", action: quoteReply },
@@ -2400,7 +2405,11 @@ function createOpinionCard(opinion, isDetail) {
     }
   };
 
+  opinionMenuButton.addEventListener("pointerdown", (event) => {
+    event.stopPropagation();
+  });
   opinionMenuButton.addEventListener("click", (event) => {
+    event.preventDefault();
     event.stopPropagation();
     openReplyActionMenu(opinionMenuButton, [
       { label: "Compartir", icon: "share", action: shareOpinionFromMenu },
