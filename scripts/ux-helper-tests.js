@@ -15,10 +15,23 @@ function normalizeQuoteText(value) {
   return String(value || "").replace(/\s+/g, " ").trim().slice(0, QUOTE_MAX_LENGTH);
 }
 
-function sourceContainsQuote(sourceText, quoteText) {
+function sourceContainsQuote(sourceText, quoteText, minLength = QUOTE_MIN_LENGTH) {
   const source = normalizeText(sourceText).replace(/\s+/g, " ");
   const quote = normalizeText(quoteText).replace(/\s+/g, " ");
-  return quote.length >= QUOTE_MIN_LENGTH && source.includes(quote);
+  return quote.length >= minLength && source.includes(quote);
+}
+
+function createQuotePayload(sourceType, sourceId, sourceText, selectedText = "") {
+  const fallbackText = normalizeQuoteText(sourceText);
+  const selectedQuote = normalizeQuoteText(selectedText);
+  const quoteText = selectedQuote || fallbackText.slice(0, QUOTE_MAX_LENGTH).trim();
+  const minLength = selectedQuote ? QUOTE_MIN_LENGTH : 1;
+  if (!sourceContainsQuote(sourceText, quoteText, minLength)) return null;
+  return {
+    quotedText: quoteText,
+    quotedSourceId: sourceId,
+    quotedSourceType: sourceType === "reply" ? "reply" : "opinion"
+  };
 }
 
 function getDisplayedActiveUsers(realActivity, previousValue = MIN_DISPLAYED_ACTIVITY) {
@@ -78,6 +91,12 @@ function run() {
   assert(sourceContainsQuote("La universidad debería ser paga.", "universidad debería"), "quote supports accents");
   assert(!sourceContainsQuote("Texto original", "fragmento inventado"), "manipulated quote is rejected");
   assert(!sourceContainsQuote("Texto original", "corto"), "short quote is rejected");
+  assert.deepStrictEqual(createQuotePayload("reply", "r1", "hjola"), {
+    quotedText: "hjola",
+    quotedSourceId: "r1",
+    quotedSourceType: "reply"
+  }, "quote button supports short replies");
+  assert.strictEqual(createQuotePayload("reply", "r1", "hjola", "hjo"), null, "short manual selections are still rejected");
   assert.strictEqual(normalizeQuoteText(`  ${"a".repeat(400)}  `).length, QUOTE_MAX_LENGTH, "quote is truncated");
 
   console.log("ux helper tests ok");

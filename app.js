@@ -778,16 +778,18 @@ function normalizeQuoteText(value) {
   return String(value || "").replace(/\s+/g, " ").trim().slice(0, quoteMaxLength);
 }
 
-function sourceContainsQuote(sourceText, quoteText) {
+function sourceContainsQuote(sourceText, quoteText, minLength = quoteMinLength) {
   const source = normalizeText(sourceText).replace(/\s+/g, " ");
   const quote = normalizeText(quoteText).replace(/\s+/g, " ");
-  return quote.length >= quoteMinLength && source.includes(quote);
+  return quote.length >= minLength && source.includes(quote);
 }
 
 function createQuotePayload(sourceType, sourceId, sourceText, selectedText = "") {
   const fallbackText = normalizeQuoteText(sourceText);
-  const quoteText = normalizeQuoteText(selectedText) || fallbackText.slice(0, quoteMaxLength).trim();
-  if (!sourceContainsQuote(sourceText, quoteText)) return null;
+  const selectedQuote = normalizeQuoteText(selectedText);
+  const quoteText = selectedQuote || fallbackText.slice(0, quoteMaxLength).trim();
+  const minLength = selectedQuote ? quoteMinLength : 1;
+  if (!sourceContainsQuote(sourceText, quoteText, minLength)) return null;
   return {
     quotedText: quoteText,
     quotedSourceId: sourceId,
@@ -2325,7 +2327,7 @@ function createReplyElement(opinion, normalizedReply) {
     <span class="date-stamp reply-date">${formatDate(normalizedReply.createdAt)}</span>
     <div class="reply-actions">
       <button class="quote-button" type="button" aria-label="Citar respuesta" title="Citar respuesta">
-        <span aria-hidden="true">“</span>
+        <span aria-hidden="true">&ldquo;</span>
       </button>
       <button class="like-button${normalizedReply.liked ? " liked" : ""}" type="button" aria-label="Me gusta respuesta">
         <svg aria-hidden="true" viewBox="0 0 24 24">
