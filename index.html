@@ -12,6 +12,7 @@
     <meta property="og:description" content="Opiniones anónimas, temas de conversación y debates abiertos.">
     <meta property="og:url" content="https://www.quieroopinar.com/">
     <meta property="og:type" content="website">
+    <meta name="robots" content="noindex, nofollow">
     <meta name="twitter:card" content="summary">
     <meta name="twitter:title" content="Quiero Opinar | Opiniones anónimas">
     <meta name="twitter:description" content="Opiniones anónimas, temas de conversación y debates abiertos.">
@@ -171,6 +172,10 @@
                 <h2 id="feedTitle">Últimas opiniones</h2>
               </div>
               <div class="feed-actions">
+                <span class="activity-indicator" id="activityIndicator" aria-live="polite">
+                  <span class="activity-indicator-dot" aria-hidden="true"></span>
+                  <span id="activityIndicatorText">Participación activa</span>
+                </span>
                 <span class="pill" id="activeTopicPill">Todos</span>
               </div>
             </div>
@@ -415,7 +420,7 @@
             </span>
             <span class="author"></span>
           </div>
-          <p class="opinion-text"></p>
+          <p class="opinion-text quotable-text" data-quote-source-type="opinion"></p>
         </button>
         <div class="opinion-stats">
           <span class="views"></span>
@@ -439,6 +444,9 @@
               <path d="M14 11a5 5 0 0 0-7.1 0l-2.1 2.1a5 5 0 0 0 7.1 7.1l1.2-1.2"></path>
             </svg>
           </button>
+          <button class="quote-button opinion-action-button" type="button" aria-label="Citar opinión" title="Citar opinión">
+            <span aria-hidden="true">“</span>
+          </button>
           <button class="report-button opinion-action-button" type="button" aria-label="Reportar opinión" title="Reportar opinión">
             <svg aria-hidden="true" viewBox="0 0 24 24">
               <path d="M5 21V4"></path>
@@ -449,6 +457,11 @@
         <div class="thread"></div>
         <form class="reply-form">
           <label class="sr-only">Responder opinión</label>
+          <div class="reply-quote-preview hidden" aria-live="polite">
+            <span class="reply-quote-preview-label">Citando</span>
+            <p></p>
+            <button type="button" class="reply-quote-remove" aria-label="Eliminar cita">×</button>
+          </div>
           <textarea rows="1" placeholder="Responder..." required></textarea>
           <button type="submit">Responder</button>
         </form>

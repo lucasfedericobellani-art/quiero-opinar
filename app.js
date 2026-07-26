@@ -23,6 +23,15 @@ let topics = [
 ];
 
 const SITE_URL = window.QO_SITE_CONFIG?.siteUrl || "https://www.quieroopinar.com";
+const previewSandboxEnabled = Boolean(window.QO_SITE_CONFIG?.previewSandbox);
+const minDisplayedActivity = 13;
+const activityRefreshMs = 60000;
+const activityWindowMinutes = 30;
+const hotTopicLimit = 4;
+const hotTopicWindowHours = 6;
+const hotTopicMinScore = 4;
+const quoteMinLength = 8;
+const quoteMaxLength = 280;
 
 const topicRules = [
   { id: "formula-1", words: ["formula 1", "f1", "ferrari", "red bull", "mercedes", "mclaren", "verstappen", "hamilton", "leclerc", "colapinto", "piloto", "carrera", "gran premio", "pit stop"] },
@@ -166,6 +175,8 @@ const topicList = document.querySelector("#topicList");
 const feedList = document.querySelector("#feedList");
 const opinionTemplate = document.querySelector("#opinionTemplate");
 const activeTopicPill = document.querySelector("#activeTopicPill");
+const activityIndicator = document.querySelector("#activityIndicator");
+const activityIndicatorText = document.querySelector("#activityIndicatorText");
 const searchInputs = document.querySelectorAll(".search-input");
 const legalOverlay = document.querySelector("#legalOverlay");
 const legalModal = document.querySelector(".legal-modal");
@@ -237,6 +248,11 @@ let pendingScrollRestore = null;
 let activeReplyControl = null;
 let replyViewportTimer = 0;
 let dataStore = createLocalDataStore();
+let displayedActivityCache = {
+  value: minDisplayedActivity,
+  updatedAt: 0
+};
+let quoteSelectionButton = null;
 
 hydrateInitialContentFromCache();
 
@@ -281,6 +297,54 @@ document.addEventListener("keydown", (event) => {
   if (isFloatingOpinionOpen) closeFloatingOpinionPanel();
   if (isMobileMenuOpen) closeMobileMenu();
 });
+
+document.addEventListener("selectionchange", () => {
+  if (!quoteSelectionButton || quoteSelectionButton.classList.contains("hidden")) return;
+  const selection = window.getSelection?.();
+  if (!selection || selection.isCollapsed || !selection.toString().trim()) hideQuoteSelectionButton();
+});
+
+document.addEventListener("mouseup", showQuoteActionForSelection);
+document.addEventListener("touchend", () => window.setTimeout(showQuoteActionForSelection, 120), { passive: true });
+
+function showQuoteActionForSelection() {
+  const selection = window.getSelection?.();
+  const selectedText = normalizeQuoteText(selection?.toString() || "");
+  if (!selection || selectedText.length < quoteMinLength) {
+    hideQuoteSelectionButton();
+    return;
+  }
+
+  const range = selection.rangeCount ? selection.getRangeAt(0) : null;
+  const container = range?.commonAncestorContainer?.nodeType === Node.TEXT_NODE
+    ? range.commonAncestorContainer.parentElement
+    : range?.commonAncestorContainer;
+  const quoteSource = container?.closest?.(".quotable-text");
+  const card = quoteSource?.closest?.(".opinion-card");
+  if (!quoteSource || !card || !quoteSource.contains(selection.anchorNode) || !quoteSource.contains(selection.focusNode)) {
+    hideQuoteSelectionButton();
+    return;
+  }
+
+  const sourceText = quoteSource.textContent.replace(/^Respuesta:\s*/i, "");
+  const quote = createQuotePayload(quoteSource.dataset.quoteSourceType, quoteSource.dataset.quoteSourceId, sourceText, selectedText);
+  if (!quote) {
+    hideQuoteSelectionButton();
+    return;
+  }
+
+  const button = ensureQuoteSelectionButton();
+  const rect = range.getBoundingClientRect();
+  button.onclick = (event) => {
+    event.preventDefault();
+    quoteIntoReplyForm(card, quote);
+    window.getSelection()?.removeAllRanges();
+    hideQuoteSelectionButton();
+  };
+  button.style.left = `${Math.min(window.innerWidth - 86, Math.max(12, rect.left + rect.width / 2 - 32))}px`;
+  button.style.top = `${Math.max(12, rect.top + window.scrollY - 44)}px`;
+  button.classList.remove("hidden");
+}
 
 topicsNavButton.addEventListener("click", () => {
   navigateToView("topics");
@@ -574,7 +638,7 @@ function createPastDate(minutesAgo) {
   return new Date(Date.now() - minutesAgo * 60 * 1000).toISOString();
 }
 
-function createReply(text, likes = 0, createdAt = new Date().toISOString(), reports = 0) {
+function createReply(text, likes = 0, createdAt = new Date().toISOString(), reports = 0, quote = null) {
   return {
     id: createId(),
     author: "Opinion",
@@ -583,6 +647,7 @@ function createReply(text, likes = 0, createdAt = new Date().toISOString(), repo
     dislikes: 0,
     reports,
     createdAt,
+    quote,
     liked: false,
     disliked: false
   };
@@ -648,6 +713,139 @@ function getTopicViewTotal(topicId) {
     const replyViews = opinion.replies.reduce((replyTotal, reply) => replyTotal + getReplyViews(reply), 0);
     return total + Number(opinion.views || 0) + replyViews;
   }, 0);
+}
+
+function getRecentActivitySignals(sourceOpinions = getVisibleOpinions(), now = Date.now(), windowMinutes = activityWindowMinutes) {
+  const windowStart = now - windowMinutes * 60 * 1000;
+  return sourceOpinions.reduce((total, opinion) => {
+    const opinionTime = new Date(opinion.createdAt).getTime();
+    const opinionSignal = Number.isFinite(opinionTime) && opinionTime >= windowStart ? 1 : 0;
+    const replySignals = opinion.replies.reduce((replyTotal, reply) => {
+      const replyTime = new Date(normalizeReply(reply).createdAt).getTime();
+      return replyTotal + (Number.isFinite(replyTime) && replyTime >= windowStart ? 1 : 0);
+    }, 0);
+    return total + opinionSignal + replySignals;
+  }, 0);
+}
+
+function getDisplayedActiveUsers(realActivity, previousValue = minDisplayedActivity) {
+  const safeActivity = Number.isFinite(realActivity) ? Math.max(0, realActivity) : 0;
+  const baseValue = Math.max(minDisplayedActivity, safeActivity + 12);
+  const maxStep = safeActivity > previousValue ? 6 : 3;
+  if (!Number.isFinite(previousValue)) return baseValue;
+  if (Math.abs(baseValue - previousValue) <= maxStep) return baseValue;
+  return previousValue + Math.sign(baseValue - previousValue) * maxStep;
+}
+
+function updateActivityIndicator(now = Date.now()) {
+  if (!activityIndicator || !activityIndicatorText) return;
+  if (displayedActivityCache.updatedAt && now - displayedActivityCache.updatedAt < activityRefreshMs) return;
+  const realActivity = getRecentActivitySignals(getVisibleOpinions(), now);
+  displayedActivityCache.value = getDisplayedActiveUsers(realActivity, displayedActivityCache.value);
+  displayedActivityCache.updatedAt = now;
+  activityIndicatorText.textContent = `${displayedActivityCache.value} personas participando ahora`;
+}
+
+function getHotTopicScore(topicStats, now = Date.now()) {
+  const recentWindowStart = now - hotTopicWindowHours * 60 * 60 * 1000;
+  const recentOpinionCount = topicStats.topicOpinions.filter((opinion) => {
+    const createdAt = new Date(opinion.createdAt).getTime();
+    return Number.isFinite(createdAt) && createdAt >= recentWindowStart;
+  }).length;
+  const recentReplyCount = topicStats.topicOpinions.reduce((total, opinion) => {
+    return total + opinion.replies.filter((reply) => {
+      const createdAt = new Date(normalizeReply(reply).createdAt).getTime();
+      return Number.isFinite(createdAt) && createdAt >= recentWindowStart;
+    }).length;
+  }, 0);
+  const totalActivity = Math.max(1, topicStats.opinionCount + topicStats.replyCount);
+  const velocity = (recentOpinionCount * 2.4 + recentReplyCount * 1.4) / Math.sqrt(totalActivity);
+  const freshness = topicStats.lastActivityTime && topicStats.lastActivityTime >= recentWindowStart ? 2 : 0;
+  return Number((velocity + freshness).toFixed(2));
+}
+
+function getHotTopicMap(topicStatsList, now = Date.now()) {
+  const hotTopics = topicStatsList
+    .map((stats) => ({ ...stats, hotScore: getHotTopicScore(stats, now) }))
+    .filter((stats) => stats.hotScore >= hotTopicMinScore)
+    .sort((a, b) => b.hotScore - a.hotScore || b.lastActivityTime - a.lastActivityTime)
+    .slice(0, hotTopicLimit);
+  return new Map(hotTopics.map((stats, index) => [stats.topic.id, { rank: index + 1, score: stats.hotScore }]));
+}
+
+function normalizeQuoteText(value) {
+  return String(value || "").replace(/\s+/g, " ").trim().slice(0, quoteMaxLength);
+}
+
+function sourceContainsQuote(sourceText, quoteText) {
+  const source = normalizeText(sourceText).replace(/\s+/g, " ");
+  const quote = normalizeText(quoteText).replace(/\s+/g, " ");
+  return quote.length >= quoteMinLength && source.includes(quote);
+}
+
+function createQuotePayload(sourceType, sourceId, sourceText, selectedText = "") {
+  const fallbackText = normalizeQuoteText(sourceText);
+  const quoteText = normalizeQuoteText(selectedText) || fallbackText.slice(0, quoteMaxLength).trim();
+  if (!sourceContainsQuote(sourceText, quoteText)) return null;
+  return {
+    quotedText: quoteText,
+    quotedSourceId: sourceId,
+    quotedSourceType: sourceType === "reply" ? "reply" : "opinion"
+  };
+}
+
+function renderQuoteMarkup(quote) {
+  const normalizedQuote = normalizeQuoteRecord(quote);
+  if (!normalizedQuote) return "";
+  return `<blockquote class="reply-quote"><span>Cita</span><p>${escapeHtml(normalizedQuote.quotedText)}</p></blockquote>`;
+}
+
+function getSelectedQuoteText(container) {
+  const selection = window.getSelection?.();
+  if (!selection || selection.isCollapsed || !selection.toString().trim()) return "";
+  if (!container.contains(selection.anchorNode) || !container.contains(selection.focusNode)) return "";
+  return selection.toString();
+}
+
+function setReplyQuote(replyForm, quote) {
+  const normalizedQuote = normalizeQuoteRecord(quote);
+  replyForm._pendingQuote = normalizedQuote;
+  const preview = replyForm.querySelector(".reply-quote-preview");
+  const previewText = preview?.querySelector("p");
+  if (!preview || !previewText) return;
+  if (!normalizedQuote) {
+    preview.classList.add("hidden");
+    previewText.textContent = "";
+    return;
+  }
+  previewText.textContent = normalizedQuote.quotedText;
+  preview.classList.remove("hidden");
+}
+
+function quoteIntoReplyForm(card, quote) {
+  const replyForm = card.querySelector(".reply-form");
+  const replyInput = replyForm?.querySelector("textarea, input");
+  if (!replyForm || !replyInput || !quote) return;
+  setReplyQuote(replyForm, quote);
+  replyInput.focus();
+  resizeReplyControl(replyInput);
+  showToast("Cita agregada a la respuesta");
+}
+
+function ensureQuoteSelectionButton() {
+  if (quoteSelectionButton) return quoteSelectionButton;
+  quoteSelectionButton = document.createElement("button");
+  quoteSelectionButton.type = "button";
+  quoteSelectionButton.className = "quote-selection-button hidden";
+  quoteSelectionButton.textContent = "Citar";
+  quoteSelectionButton.setAttribute("aria-label", "Citar texto seleccionado");
+  document.body.append(quoteSelectionButton);
+  return quoteSelectionButton;
+}
+
+function hideQuoteSelectionButton() {
+  quoteSelectionButton?.classList.add("hidden");
+  quoteSelectionButton?.removeAttribute("data-card-id");
 }
 
 function getOpinionActivityTime(opinion) {
@@ -1047,14 +1245,16 @@ async function submitContactForm() {
   }
 
   try {
-    const response = await fetch("/api/contact", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, message })
-    });
-    const result = await response.json().catch(() => ({}));
-    if (!response.ok || !result.ok || result.skipped) {
-      throw new Error(result.error || result.reason || "send_failed");
+    if (!previewSandboxEnabled) {
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, message })
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result.ok || result.skipped) {
+        throw new Error(result.error || result.reason || "send_failed");
+      }
     }
 
     contactForm?.reset();
@@ -1562,6 +1762,11 @@ function getApiErrorMessage(error, fallback = "No se pudo completar la accion.")
 }
 
 async function callModerationApi(payload) {
+  if (previewSandboxEnabled) {
+    const error = new Error("El preview usa datos locales de prueba.");
+    error.code = "preview_sandbox";
+    throw error;
+  }
   const response = await fetch("/api/moderation", {
     method: "POST",
     headers: {
@@ -1585,6 +1790,28 @@ async function callModerationApi(payload) {
 async function createOpinionViaApi(text, topic) {
   const selectedTopic = resolveSelectedTopic(topic, text);
   const topicRecord = getTopic(selectedTopic);
+  if (previewSandboxEnabled) {
+    const opinion = normalizeOpinion({
+      id: createId(),
+      publicNumber: opinions.length + 1,
+      author: createAnonymousId(),
+      topic: selectedTopic,
+      text,
+      views: 1,
+      likes: 0,
+      dislikes: 0,
+      createdAt: new Date().toISOString(),
+      replies: [],
+      hidden: false,
+      moderationStatus: "approved",
+      reportReasons: [],
+      reports: 0,
+      shares: 0,
+      ip: ""
+    });
+    if (topicRecord && selectedTopic !== "todos") topics = mergeTopics([topicRecord]);
+    return opinion;
+  }
   const data = await callModerationApi({
     action: "createOpinion",
     text,
@@ -1601,17 +1828,40 @@ async function createOpinionViaApi(text, topic) {
   return normalizeOpinion(data.opinion);
 }
 
-async function createReplyViaApi(opinionId, text) {
+async function createReplyViaApi(opinionId, text, quote = null) {
+  if (previewSandboxEnabled) {
+    const opinion = opinions.find((item) => item.id === opinionId);
+    if (!opinion) throw new Error("No se encontro la opinion.");
+    opinion.replies.push(createReply(text, 0, new Date().toISOString(), 0, normalizeQuoteRecord(quote)));
+    opinion.views += 1;
+    await dataStore.updateOpinion(opinion);
+    return normalizeOpinion(opinion);
+  }
   const data = await callModerationApi({
     action: "createReply",
     opinionId,
-    text
+    text,
+    quote
   });
 
   return normalizeOpinion(data.opinion);
 }
 
 async function registerContentActionViaApi(action, contentType, contentId, opinionId, reason = "") {
+  if (previewSandboxEnabled) {
+    const opinion = opinions.find((item) => item.id === opinionId);
+    if (!opinion) throw new Error("No se encontro el contenido.");
+    const target = contentType === "reply" ? opinion.replies.find((reply) => reply.id === contentId) : opinion;
+    if (!target) throw new Error("No se encontro el contenido.");
+    if (action === "like") target.likes = Math.max(0, Number(target.likes || 0) + 1);
+    if (action === "dislike") target.dislikes = Math.max(0, Number(target.dislikes || 0) + 1);
+    if (action === "report") {
+      target.reports = Math.max(0, Number(target.reports || 0) + 1);
+      target.reportReasons = [...(target.reportReasons || []), { reason, createdAt: new Date().toISOString() }];
+    }
+    await dataStore.updateOpinion(opinion);
+    return { opinion: normalizeOpinion(opinion), active: true };
+  }
   const data = await callModerationApi({
     action,
     contentType,
@@ -1683,12 +1933,16 @@ function hideReportNotice() {
 
 function renderTopics() {
   topicList.innerHTML = "";
+  updateActivityIndicator();
 
   if (!hasLoadedOpinions && !getVisibleOpinions().length) {
     renderTopicSkeletons();
     return;
   }
 
+  const now = Date.now();
+  const topicStats = getVisibleTopics().map((topic) => getTopicStats(topic, getTopicOpinions(topic.id), now));
+  const hotTopicMap = getHotTopicMap(topicStats, now);
   const trendingTopics = getRecentTopicActivity();
 
   if (!trendingTopics.length) {
@@ -1712,6 +1966,13 @@ function renderTopics() {
     name.textContent = topic.name;
     strong.append(name);
     content.append(strong);
+    const hotTopic = hotTopicMap.get(topic.id);
+    if (hotTopic) {
+      const hot = document.createElement("span");
+      hot.className = "topic-hot-chip";
+      hot.textContent = "En tendencia";
+      content.append(hot);
+    }
     const count = document.createElement("span");
     count.className = "topic-count";
     count.setAttribute("aria-label", `${topic.totalViews} vistas totales`);
@@ -1858,9 +2119,12 @@ function renderBoard() {
     return;
   }
 
-  visibleTopics.forEach(({ topic, opinionCount, replyCount, lastActivity, previewOpinion, activityBadge }) => {
+  const hotTopicMap = getHotTopicMap(topicCards, now);
+
+  visibleTopics.forEach(({ topic, opinionCount, replyCount, recentOpinionCount, recentReplyCount, lastActivity, previewOpinion, activityBadge }) => {
+    const hotTopic = hotTopicMap.get(topic.id);
     const column = document.createElement("a");
-    column.className = `board-column ${getTopicAccentClass(topic)}${previewOpinion ? "" : " is-empty-topic"}`;
+    column.className = `board-column ${getTopicAccentClass(topic)}${previewOpinion ? "" : " is-empty-topic"}${hotTopic ? " is-hot-topic" : ""}`;
     column.href = `${routePaths.topics}/${encodeURIComponent(getTopicSlug(topic))}`;
     const opinionLabel = `${opinionCount} ${opinionCount === 1 ? "opinion" : "opiniones"}`;
     const replyLabel = `${replyCount} ${replyCount === 1 ? "respuesta" : "respuestas"}`;
@@ -1876,6 +2140,7 @@ function renderBoard() {
             <div class="board-title-line">
               <h2>${escapeHtml(topic.name)}</h2>
               ${activityBadge ? `<span class="board-activity-badge">${escapeHtml(activityBadge)}</span>` : ""}
+              ${hotTopic ? `<span class="board-hot-badge">En tendencia</span>` : ""}
             </div>
           </div>
         </div>
@@ -1889,6 +2154,7 @@ function renderBoard() {
       <div class="board-meta">
         <span class="board-stat">${getIconMarkup("message")}<strong>${opinionCount}</strong> ${opinionCount === 1 ? "opinion" : "opiniones"}</span>
         <span class="board-stat">${getIconMarkup("replies")}<strong>${replyCount}</strong> ${replyCount === 1 ? "respuesta" : "respuestas"}</span>
+        ${hotTopic ? `<span class="board-stat hot-topic-stat"><strong>+${recentOpinionCount + recentReplyCount}</strong> ultimas ${hotTopicWindowHours} h</span>` : ""}
       </div>
       <span class="board-activity">${getIconMarkup("clock")}${activityLabel}</span>
     `;
@@ -1904,6 +2170,7 @@ function renderBoard() {
 function renderFeed() {
   feedList.innerHTML = "";
   activeTopicPill.textContent = getTopicName(activeTopic);
+  updateActivityIndicator();
 
   const filteredOpinions = getTopicOpinions(activeTopic);
 
@@ -2052,9 +2319,13 @@ function createReplyElement(opinion, normalizedReply) {
   item.className = "reply-item";
   item.dataset.replyId = normalizedReply.id;
   item.innerHTML = `
-    <p class="reply-content"><span class="reply-label">Respuesta:</span> ${escapeHtml(normalizedReply.text)}</p>
+    ${renderQuoteMarkup(normalizedReply.quote)}
+    <p class="reply-content quotable-text" data-quote-source-type="reply" data-quote-source-id="${escapeHtml(normalizedReply.id)}"><span class="reply-label">Respuesta:</span> ${escapeHtml(normalizedReply.text)}</p>
     <span class="date-stamp reply-date">${formatDate(normalizedReply.createdAt)}</span>
     <div class="reply-actions">
+      <button class="quote-button" type="button" aria-label="Citar respuesta" title="Citar respuesta">
+        <span aria-hidden="true">“</span>
+      </button>
       <button class="like-button${normalizedReply.liked ? " liked" : ""}" type="button" aria-label="Me gusta respuesta">
         <svg aria-hidden="true" viewBox="0 0 24 24">
           <path d="M20.8 8.6c0 5.4-8.8 10.4-8.8 10.4S3.2 14 3.2 8.6A4.7 4.7 0 0 1 12 6.2a4.7 4.7 0 0 1 8.8 2.4z"></path>
@@ -2076,6 +2347,12 @@ function createReplyElement(opinion, normalizedReply) {
       </button>
     </div>
   `;
+
+  item.querySelector(".quote-button").addEventListener("click", (event) => {
+    event.stopPropagation();
+    const quote = createQuotePayload("reply", normalizedReply.id, normalizedReply.text, getSelectedQuoteText(item));
+    quoteIntoReplyForm(item.closest(".opinion-card"), quote);
+  });
 
   item.querySelector(".like-button").addEventListener("click", async (event) => {
     event.stopPropagation();
@@ -2129,10 +2406,12 @@ function renderReplyThread(thread, opinion) {
 
 function createOpinionCard(opinion, isDetail) {
   const card = opinionTemplate.content.firstElementChild.cloneNode(true);
+  card.dataset.opinionId = opinion.id;
   card.querySelector(".author").textContent = `#${getOpinionNumber(opinion)}`;
   card.querySelector(".topic").textContent = getTopicName(opinion.topic);
   card.querySelector(".date-stamp").textContent = formatDate(opinion.createdAt);
   card.querySelector(".opinion-text").textContent = opinion.text;
+  card.querySelector(".opinion-text").dataset.quoteSourceId = opinion.id;
   card.querySelector(".views").textContent = `👁 ${opinion.views}`;
   card.querySelector(".replies").textContent = `💬 ${opinion.replies.length}`;
   card.querySelector(".likes").textContent = opinion.likes;
@@ -2194,6 +2473,13 @@ function createOpinionCard(opinion, isDetail) {
     }, 1800);
   });
 
+  const quoteButton = card.querySelector(".quote-button");
+  quoteButton.addEventListener("click", (event) => {
+    event.stopPropagation();
+    const quote = createQuotePayload("opinion", opinion.id, opinion.text, getSelectedQuoteText(card.querySelector(".opinion-text")));
+    quoteIntoReplyForm(card, quote);
+  });
+
   const reportButton = card.querySelector(".report-button");
   reportButton.addEventListener("click", async () => {
     const reason = await askReportReason();
@@ -2216,11 +2502,18 @@ function createOpinionCard(opinion, isDetail) {
   const replyForm = card.querySelector(".reply-form");
   const replyInput = replyForm.querySelector("textarea, input");
   const replySubmitButton = replyForm.querySelector('button[type="submit"]');
+  const replyQuoteRemove = replyForm.querySelector(".reply-quote-remove");
   const replyError = document.createElement("p");
   replyError.className = "reply-form-error hidden";
   replyError.setAttribute("role", "alert");
   replyForm.after(replyError);
   resizeReplyControl(replyInput);
+  setReplyQuote(replyForm, null);
+  replyQuoteRemove?.addEventListener("click", (event) => {
+    event.stopPropagation();
+    setReplyQuote(replyForm, null);
+    replyInput.focus();
+  });
   replyForm.addEventListener("click", (event) => event.stopPropagation());
   replyForm.addEventListener("pointerdown", (event) => event.stopPropagation());
   replySubmitButton?.addEventListener("click", (event) => event.stopPropagation());
@@ -2250,9 +2543,10 @@ function createOpinionCard(opinion, isDetail) {
     }
 
     try {
-      const updatedOpinion = await createReplyViaApi(opinion.id, reply);
+      const updatedOpinion = await createReplyViaApi(opinion.id, reply, replyForm._pendingQuote || null);
       Object.assign(opinion, updatedOpinion);
       replyInput.value = "";
+      setReplyQuote(replyForm, null);
       resizeReplyControl(replyInput);
       replyInput.blur();
       clearReplyKeyboardAssist();
@@ -2388,11 +2682,21 @@ function normalizeReply(reply) {
       reportReasons: Array.isArray(reply.reportReasons) ? reply.reportReasons : [],
       moderationStatus: reply.moderationStatus || "approved",
       createdAt: normalizeDateValue(reply.createdAt),
+      quote: normalizeQuoteRecord(reply.quote),
       liked: Boolean(reply.liked),
       disliked: Boolean(reply.disliked)
     };
   }
   return createReply(reply);
+}
+
+function normalizeQuoteRecord(quote) {
+  if (!quote || typeof quote !== "object") return null;
+  const quotedText = normalizeQuoteText(quote.quotedText);
+  const quotedSourceId = String(quote.quotedSourceId || "").trim();
+  const quotedSourceType = quote.quotedSourceType === "reply" ? "reply" : "opinion";
+  if (!quotedText || !quotedSourceId) return null;
+  return { quotedText, quotedSourceId, quotedSourceType };
 }
 
 function resetPersistedContentIfNeeded() {
@@ -2485,6 +2789,9 @@ function createLocalDataStore() {
 async function createFirebaseDataStore() {
   const config = window.QO_FIREBASE_CONFIG;
   const appCheckConfig = window.QO_FIREBASE_APPCHECK_CONFIG || {};
+  if (previewSandboxEnabled) {
+    return createLocalDataStore();
+  }
   if (!window.QO_USE_FIREBASE || !isValidFirebaseConfig(config)) {
     return createLocalDataStore();
   }
@@ -2650,7 +2957,8 @@ function sanitizeOpinionForRemote(opinion) {
       reports: Number(reply.reports || 0),
       reportReasons: Array.isArray(reply.reportReasons) ? reply.reportReasons : [],
       moderationStatus: reply.moderationStatus || "approved",
-      createdAt: reply.createdAt
+      createdAt: reply.createdAt,
+      quote: normalizeQuoteRecord(reply.quote)
     })),
     hidden: Boolean(opinion.hidden),
     moderationStatus: opinion.moderationStatus || (opinion.hidden ? "hidden" : "approved"),
@@ -2758,6 +3066,10 @@ async function initializeAppData() {
 
   updateFloatingOpinionVisibility();
   render();
+  window.setInterval(() => {
+    displayedActivityCache.updatedAt = 0;
+    updateActivityIndicator();
+  }, activityRefreshMs);
   window.setInterval(renderTopics, trendingRefreshHours * 60 * 60 * 1000);
 }
 

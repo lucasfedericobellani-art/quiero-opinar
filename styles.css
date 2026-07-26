@@ -699,8 +699,46 @@ button {
 
 .feed-actions {
   display: inline-flex;
+  flex-wrap: wrap;
   align-items: center;
+  justify-content: flex-end;
   gap: 10px;
+}
+
+.activity-indicator {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  gap: 8px;
+  padding: 0 11px;
+  border: 1px solid rgba(255, 176, 74, 0.16);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.035);
+  color: var(--feed-text-secondary);
+  font-size: 0.82rem;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.activity-indicator-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: rgba(255, 176, 74, 0.88);
+  box-shadow: 0 0 0 0 rgba(255, 176, 74, 0.22);
+  animation: activityPulse 2.8s ease-in-out infinite;
+}
+
+@keyframes activityPulse {
+  0%, 100% {
+    opacity: 0.72;
+    box-shadow: 0 0 0 0 rgba(255, 176, 74, 0.18);
+  }
+
+  50% {
+    opacity: 1;
+    box-shadow: 0 0 0 5px rgba(255, 176, 74, 0);
+  }
 }
 
 .mobile-trending-link {
@@ -1702,6 +1740,31 @@ button {
   white-space: nowrap;
 }
 
+.topic-hot-chip,
+.board-hot-badge {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 8px;
+  border: 1px solid rgba(255, 176, 74, 0.18);
+  border-radius: 999px;
+  background: rgba(255, 176, 74, 0.07);
+  color: rgba(255, 214, 153, 0.88) !important;
+  font-size: 0.72rem !important;
+  font-weight: 800;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+.board-column.is-hot-topic {
+  border-color: rgba(255, 176, 74, 0.32);
+}
+
+.hot-topic-stat {
+  color: rgba(255, 214, 153, 0.86);
+}
+
 .topic-empty {
   margin: 0;
   padding: 16px;
@@ -2696,9 +2759,13 @@ button {
   .dislike-button,
   .share-button,
   .report-button,
+  .quote-button,
+  .quote-selection-button,
   .board-arrow,
-  .topic-icon {
+  .topic-icon,
+  .activity-indicator-dot {
     transition: none;
+    animation: none;
   }
 
   .board-column:hover,
@@ -2737,6 +2804,36 @@ button {
   font-size: clamp(0.92rem, 1vw, 1rem);
   font-weight: 450;
   line-height: 1.55;
+}
+
+.reply-quote,
+.reply-quote-preview {
+  margin: 0 0 9px;
+  padding: 8px 10px 8px 12px;
+  border-left: 2px solid rgba(255, 176, 74, 0.42);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.035);
+  color: var(--feed-text-muted);
+}
+
+.reply-quote span,
+.reply-quote-preview-label {
+  display: block;
+  margin-bottom: 3px;
+  color: rgba(255, 214, 153, 0.78);
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.reply-quote p,
+.reply-quote-preview p {
+  margin: 0;
+  color: var(--feed-text-secondary);
+  font-size: 0.86rem;
+  line-height: 1.42;
+  overflow-wrap: anywhere;
 }
 
 .reply-label {
@@ -2823,6 +2920,20 @@ button {
   margin-top: 10px;
 }
 
+.quote-selection-button {
+  position: absolute;
+  z-index: 60;
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1px solid rgba(255, 176, 74, 0.28);
+  border-radius: 999px;
+  background: rgba(12, 12, 14, 0.96);
+  color: rgba(255, 214, 153, 0.94);
+  font-size: 0.78rem;
+  font-weight: 800;
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.32);
+}
+
 .reply-item .like-button {
   justify-self: start;
 }
@@ -2877,6 +2988,25 @@ button {
   margin-top: 20px;
   padding-top: 0;
   border-top: 0;
+}
+
+.reply-quote-preview {
+  position: relative;
+  grid-column: 1 / -1;
+  margin: 0;
+  padding-right: 42px;
+}
+
+.reply-quote-remove {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  width: 28px;
+  min-height: 28px !important;
+  padding: 0 !important;
+  border-color: rgba(255, 176, 74, 0.14) !important;
+  background: transparent !important;
+  color: var(--feed-text-muted) !important;
 }
 
 .reply-form input,

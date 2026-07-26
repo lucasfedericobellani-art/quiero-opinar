@@ -4,6 +4,8 @@ const { allowedOrigins } = require("./site-config");
 const COOLDOWN_SECONDS = 45;
 const MAX_TEXT_LENGTH = 5000;
 const MAX_TOPIC_LENGTH = 80;
+const MIN_QUOTE_LENGTH = 8;
+const MAX_QUOTE_LENGTH = 280;
 const MAX_REQUEST_BYTES = 12000;
 const MAX_REPLIES_PER_OPINION = 500;
 const AUTO_HIDE_REPORT_THRESHOLD = 3;
@@ -110,6 +112,43 @@ function validateTopic(topic) {
     !blockedLinkPattern.test(topic);
 }
 
+function normalizeQuoteText(value) {
+  return String(value || "").replace(/\s+/g, " ").trim().slice(0, MAX_QUOTE_LENGTH);
+}
+
+function normalizeQuoteSourceType(value) {
+  return value === "reply" ? "reply" : "opinion";
+}
+
+function normalizeSearchText(value) {
+  return normalizeForModeration(value).replace(/\s+/g, " ");
+}
+
+function sourceContainsQuote(sourceText, quoteText) {
+  const quote = normalizeSearchText(quoteText);
+  const source = normalizeSearchText(sourceText);
+  return quote.length >= MIN_QUOTE_LENGTH && quote.length <= MAX_QUOTE_LENGTH && source.includes(quote);
+}
+
+function validateReplyQuote(bodyQuote, opinion) {
+  if (!bodyQuote) return null;
+  if (typeof bodyQuote !== "object") throw new Error("invalid_quote");
+  const quotedText = normalizeQuoteText(bodyQuote.quotedText);
+  const quotedSourceId = String(bodyQuote.quotedSourceId || "").trim();
+  const quotedSourceType = normalizeQuoteSourceType(bodyQuote.quotedSourceType);
+  if (!quotedText || !quotedSourceId) throw new Error("invalid_quote");
+  if (quotedText.length < MIN_QUOTE_LENGTH || quotedText.length > MAX_QUOTE_LENGTH) throw new Error("invalid_quote");
+
+  if (quotedSourceType === "opinion") {
+    if (quotedSourceId !== opinion.id || !sourceContainsQuote(opinion.text, quotedText)) throw new Error("invalid_quote");
+  } else {
+    const sourceReply = opinion.replies.find((reply) => reply.id === quotedSourceId);
+    if (!sourceReply || !sourceContainsQuote(sourceReply.text, quotedText)) throw new Error("invalid_quote");
+  }
+
+  return { quotedText, quotedSourceId, quotedSourceType };
+}
+
 function normalizeModerationStatus(value, hidden = false) {
   if (["pending", "approved", "reported", "hidden", "deleted"].includes(value)) return value;
   return hidden ? "hidden" : "approved";
@@ -158,6 +197,11 @@ function sanitizeReply(reply) {
     reports: Number(reply?.reports || 0),
     reportReasons: Array.isArray(reply?.reportReasons) ? reply.reportReasons : [],
     moderationStatus: normalizeModerationStatus(reply?.moderationStatus),
+    quote: reply?.quote && typeof reply.quote === "object" ? {
+      quotedText: normalizeQuoteText(reply.quote.quotedText),
+      quotedSourceId: String(reply.quote.quotedSourceId || ""),
+      quotedSourceType: normalizeQuoteSourceType(reply.quote.quotedSourceType)
+    } : null,
     createdAt: normalizeDateValue(reply?.createdAt)
   };
 }
@@ -408,6 +452,13 @@ async function createReply(ctx, body, ipHash, response) {
   }
 
   const opinion = opinionRecord.data;
+  let quote = null;
+  try {
+    quote = validateReplyQuote(body.quote, opinion);
+  } catch (error) {
+    return reject(response, 400, "invalid_quote", "No se pudo validar la cita seleccionada.");
+  }
+
   if (opinion.replies.length >= MAX_REPLIES_PER_OPINION) {
     return reject(response, 429, "reply_limit", "Esta opinion ya alcanzo el limite de respuestas.");
   }
@@ -421,6 +472,7 @@ async function createReply(ctx, body, ipHash, response) {
     reports: 0,
     reportReasons: [],
     moderationStatus: safety.action === "review" ? "pending" : "approved",
+    quote,
     createdAt: new Date().toISOString()
   });
   if (safety.action === "review") {

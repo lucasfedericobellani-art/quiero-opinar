@@ -4,7 +4,11 @@
   "private": true,
   "scripts": {
     "dev": "vercel dev",
-    "start": "vercel dev"
+    "start": "vercel dev",
+    "lint": "node --check app.js && node --check api/moderation.js && node --check api/contact.js && node --check api/admin-alert.js && node --check api/site-config.js && node --check site-config.js",
+    "typecheck": "npm run lint",
+    "test": "node scripts/ux-helper-tests.js",
+    "build": "node scripts/build-static.js"
   },
   "dependencies": {
     "firebase": "^10.14.1",
