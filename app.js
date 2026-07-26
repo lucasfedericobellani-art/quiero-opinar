@@ -801,11 +801,7 @@ function createQuotePayload(sourceType, sourceId, sourceText, selectedText = "")
 }
 
 function shouldShowReplyQuote(opinion, reply, replyIndex) {
-  const normalizedQuote = normalizeQuoteRecord(reply.quote);
-  if (!normalizedQuote) return false;
-  if (normalizedQuote.quotedSourceType === "opinion" && normalizedQuote.quotedSourceId === opinion.id) return false;
-  const previousReply = replyIndex > 0 ? normalizeReply(opinion.replies[replyIndex - 1]) : null;
-  return !previousReply || normalizedQuote.quotedSourceId !== previousReply.id;
+  return Boolean(normalizeQuoteRecord(reply.quote));
 }
 
 function renderQuoteContextText(quoteText) {

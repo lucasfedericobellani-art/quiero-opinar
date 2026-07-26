@@ -62,11 +62,7 @@ function formatRelativeDate(value, now) {
 }
 
 function shouldShowReplyQuote(opinion, reply, replyIndex) {
-  const quote = reply.quote;
-  if (!quote) return false;
-  if (quote.quotedSourceType === "opinion" && quote.quotedSourceId === opinion.id) return false;
-  const previousReply = replyIndex > 0 ? opinion.replies[replyIndex - 1] : null;
-  return !previousReply || quote.quotedSourceId !== previousReply.id;
+  return Boolean(reply.quote);
 }
 
 function getHotTopicScore(topicStats, now, windowHours = 6) {
@@ -129,8 +125,8 @@ function run() {
     { id: "r2", quote: { quotedSourceType: "reply", quotedSourceId: "r1" } },
     { id: "r3", quote: { quotedSourceType: "reply", quotedSourceId: "r1" } }
   ];
-  assert.strictEqual(shouldShowReplyQuote(quotedOpinion, quotedOpinion.replies[0], 0), false, "direct opinion quote is visually redundant");
-  assert.strictEqual(shouldShowReplyQuote(quotedOpinion, quotedOpinion.replies[1], 1), false, "immediate previous reply quote is visually redundant");
+  assert.strictEqual(shouldShowReplyQuote(quotedOpinion, quotedOpinion.replies[0], 0), true, "direct opinion quote remains visible");
+  assert.strictEqual(shouldShowReplyQuote(quotedOpinion, quotedOpinion.replies[1], 1), true, "immediate previous reply quote remains visible");
   assert.strictEqual(shouldShowReplyQuote(quotedOpinion, quotedOpinion.replies[2], 2), true, "older reply quote is shown for context");
 
   console.log("ux helper tests ok");
