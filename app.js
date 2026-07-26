@@ -2104,9 +2104,11 @@ function scrollReplyComposerIntoView(replyForm, replyInput) {
   const isMobile = isMobileViewport();
   window.requestAnimationFrame(() => {
     const viewport = getVisualViewportBounds();
-    const rect = replyForm.getBoundingClientRect();
-    const targetTop = viewport.top + (isMobile ? 118 : Math.max(110, viewport.height * 0.28));
-    const targetScrollY = Math.max(0, window.scrollY + rect.top - targetTop);
+    const card = replyForm.closest(".opinion-card");
+    const targetElement = isMobile ? replyForm : (card || replyForm);
+    const targetRect = targetElement.getBoundingClientRect();
+    const targetTop = viewport.top + (isMobile ? 118 : 78);
+    const targetScrollY = Math.max(0, window.scrollY + targetRect.top - targetTop);
     const distance = Math.abs(targetScrollY - window.scrollY);
 
     if (distance > 8) {
