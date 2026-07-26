@@ -2185,6 +2185,13 @@ button {
   }
 }
 
+@media (min-width: 981px) {
+  :root {
+    --feed-text-primary: #d9c2a6;
+    --feed-text-secondary: #b89a7d;
+  }
+}
+
 .opinion-card:active {
   transform: translateY(0) scale(0.998);
   transition-duration: 120ms;
