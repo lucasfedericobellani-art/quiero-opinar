@@ -1,9 +1,4 @@
-const allowedOrigins = new Set([
-  "https://quieroopinar.com.ar",
-  "https://www.quieroopinar.com.ar",
-  "http://localhost:3000",
-  "http://localhost:5173",
-]);
+const { SITE_URL, allowedOrigins } = require("./site-config");
 
 function setSecurityHeaders(req, res) {
   const origin = req.headers.origin;
@@ -49,7 +44,7 @@ async function sendContactEmail({ name, email, message }) {
   const apiKey = process.env.RESEND_API_KEY;
   const intendedTo = "quieroopinararg@gmail.com";
   const to = process.env.CONTACT_EMAIL || process.env.ADMIN_ALERT_EMAIL || "lucasfedericobellani@gmail.com";
-  const from = process.env.CONTACT_FROM || process.env.ADMIN_ALERT_FROM || "Quiero Opinar <contacto@mail.quieroopinar.com.ar>";
+  const from = process.env.CONTACT_FROM || process.env.ADMIN_ALERT_FROM || "Quiero Opinar <contacto@mail.quieroopinar.com>";
 
   if (!apiKey) {
     return { skipped: true, reason: "missing_resend_api_key" };
@@ -71,7 +66,7 @@ async function sendContactEmail({ name, email, message }) {
       reply_to: isValidEmail(safeEmail) ? safeEmail : undefined,
       subject: "Nueva consulta desde Quiero Opinar",
       text: [
-        "Nueva consulta recibida desde quieroopinar.com.ar.",
+        `Nueva consulta recibida desde ${SITE_URL}.`,
         `Destino solicitado: ${intendedTo}`,
         "",
         `Nombre: ${safeName}`,

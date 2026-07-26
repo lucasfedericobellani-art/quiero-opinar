@@ -79,7 +79,7 @@ El panel `/admin` llama a `/api/admin-alert` cuando falla un login. Para que esa
 ```sh
 RESEND_API_KEY='re_...'
 ADMIN_ALERT_EMAIL='lucasfedericobellani@gmail.com'
-ADMIN_ALERT_FROM='Quiero Opinar <alertas@quieroopinar.com.ar>'
+ADMIN_ALERT_FROM='Quiero Opinar <alertas@quieroopinar.com>'
 ```
 
 `ADMIN_ALERT_EMAIL` usa `lucasfedericobellani@gmail.com` si no se configura. `ADMIN_ALERT_FROM` debe ser un remitente verificado en Resend; si falta `RESEND_API_KEY`, el endpoint no bloquea el panel y simplemente no envia el email.

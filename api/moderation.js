@@ -1,4 +1,5 @@
 const crypto = require("crypto");
+const { allowedOrigins } = require("./site-config");
 
 const COOLDOWN_SECONDS = 45;
 const MAX_TEXT_LENGTH = 5000;
@@ -7,7 +8,6 @@ const MAX_REQUEST_BYTES = 12000;
 const MAX_REPLIES_PER_OPINION = 500;
 const AUTO_HIDE_REPORT_THRESHOLD = 3;
 const blockedLinkPattern = /(?:https?:\/\/|www\.|[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}|(?:[a-z0-9-]+\.)+[a-z]{2,}(?:\/|\b))/i;
-const allowedOriginPattern = /^https?:\/\/(localhost(:\d+)?|127\.0\.0\.1(:\d+)?|quieroopinar\.com\.ar|www\.quieroopinar\.com\.ar|quiero-opinar\.vercel\.app)$/i;
 const reportReasons = new Set(["odio", "amenaza", "datos_personales", "spam", "sexual", "ilegal", "acoso", "otro"]);
 const hardBlockTerms = [
   "matarte",
@@ -85,7 +85,7 @@ function isAllowedRequestOrigin(request) {
 
   try {
     const url = new URL(source);
-    return allowedOriginPattern.test(url.origin);
+    return allowedOrigins.has(url.origin);
   } catch {
     return false;
   }

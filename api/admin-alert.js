@@ -1,9 +1,4 @@
-const allowedOrigins = new Set([
-  "https://quieroopinar.com.ar",
-  "https://www.quieroopinar.com.ar",
-  "http://localhost:3000",
-  "http://localhost:5173",
-]);
+const { allowedOrigins } = require("./site-config");
 
 function setSecurityHeaders(req, res) {
   const origin = req.headers.origin;
@@ -52,7 +47,7 @@ function getClientIp(req) {
 async function sendAdminAlert({ email, reason, path, userAgent, ip }) {
   const apiKey = process.env.RESEND_API_KEY;
   const to = process.env.ADMIN_ALERT_EMAIL || "lucasfedericobellani@gmail.com";
-  const from = process.env.ADMIN_ALERT_FROM || "Quiero Opinar <alertas@quieroopinar.com.ar>";
+  const from = process.env.ADMIN_ALERT_FROM || "Quiero Opinar <alertas@quieroopinar.com>";
 
   if (!apiKey) {
     return { skipped: true, reason: "missing_resend_api_key" };

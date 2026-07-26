@@ -5,6 +5,16 @@
     <base href="/">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Quiero Opinar</title>
+    <meta name="description" content="Opiniones anónimas, temas de conversación y debates abiertos.">
+    <link rel="canonical" href="https://www.quieroopinar.com/">
+    <meta property="og:site_name" content="Quiero Opinar">
+    <meta property="og:title" content="Quiero Opinar | Opiniones anónimas">
+    <meta property="og:description" content="Opiniones anónimas, temas de conversación y debates abiertos.">
+    <meta property="og:url" content="https://www.quieroopinar.com/">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Quiero Opinar | Opiniones anónimas">
+    <meta name="twitter:description" content="Opiniones anónimas, temas de conversación y debates abiertos.">
     <link rel="icon" type="image/svg+xml" href="assets/logo.svg">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -19,7 +29,7 @@
   <body>
     <div class="welcome-overlay hidden" id="welcomeOverlay" aria-live="polite">
       <section class="modal welcome-modal" id="firstVisitWelcomeModal" role="dialog" aria-modal="true" aria-labelledby="welcomeTitle">
-        <p class="modal-kicker" id="welcomeTitle">quieroopinar.com.ar</p>
+        <p class="modal-kicker" id="welcomeTitle">quieroopinar.com</p>
         <ul class="welcome-list">
           <li>Sin registro</li>
           <li>Sin perfiles</li>
@@ -445,7 +455,8 @@
       </article>
     </template>
 
+    <script src="site-config.js"></script>
     <script src="firebase-config.js"></script>
-    <script src="app.js?v=20260725-inline-replies"></script>
+    <script src="app.js?v=20260726-canonical-domain"></script>
   </body>
 </html>

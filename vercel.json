@@ -3,6 +3,72 @@
   "trailingSlash": false,
   "redirects": [
     {
+      "source": "/",
+      "has": [
+        {
+          "type": "host",
+          "value": "quieroopinar.com.ar"
+        }
+      ],
+      "destination": "https://www.quieroopinar.com/",
+      "statusCode": 301
+    },
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "quieroopinar.com.ar"
+        }
+      ],
+      "destination": "https://www.quieroopinar.com/:path*",
+      "statusCode": 301
+    },
+    {
+      "source": "/",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.quieroopinar.com.ar"
+        }
+      ],
+      "destination": "https://www.quieroopinar.com/",
+      "statusCode": 301
+    },
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.quieroopinar.com.ar"
+        }
+      ],
+      "destination": "https://www.quieroopinar.com/:path*",
+      "statusCode": 301
+    },
+    {
+      "source": "/",
+      "has": [
+        {
+          "type": "host",
+          "value": "quieroopinar.com"
+        }
+      ],
+      "destination": "https://www.quieroopinar.com/",
+      "statusCode": 301
+    },
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "quieroopinar.com"
+        }
+      ],
+      "destination": "https://www.quieroopinar.com/:path*",
+      "statusCode": 301
+    },
+    {
       "source": "/app",
       "destination": "/",
       "permanent": false

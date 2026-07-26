@@ -22,6 +22,8 @@ let topics = [
   { id: "videojuegos", name: "Videojuegos", description: "Juegos, consolas, PC y cultura gamer", icon: "assets/icons/videojuegos.svg" }
 ];
 
+const SITE_URL = window.QO_SITE_CONFIG?.siteUrl || "https://www.quieroopinar.com";
+
 const topicRules = [
   { id: "formula-1", words: ["formula 1", "f1", "ferrari", "red bull", "mercedes", "mclaren", "verstappen", "hamilton", "leclerc", "colapinto", "piloto", "carrera", "gran premio", "pit stop"] },
   { id: "videojuegos", words: ["videojuego", "videojuegos", "juego", "gaming", "gamer", "playstation", "xbox", "nintendo", "steam", "pc gamer", "fortnite", "minecraft", "gta", "fifa", "valorant"] },
@@ -539,7 +541,7 @@ function updateTermsMetadata() {
     canonical.rel = "canonical";
     document.head.append(canonical);
   }
-  canonical.href = `${window.location.origin}${routePaths.terms}`;
+  canonical.href = `${SITE_URL}${routePaths.terms}`;
 }
 
 function setMobileMenuOpen(isOpen) {
@@ -1139,7 +1141,28 @@ function updateRouteMetadata(viewName) {
     canonical.rel = "canonical";
     document.head.append(canonical);
   }
-  canonical.href = `${window.location.origin}${window.location.pathname}${window.location.search}`;
+  canonical.href = getCanonicalUrl(window.location.pathname, window.location.search);
+  upsertMetaAttribute("property", "og:title", title);
+  upsertMetaAttribute("property", "og:description", description);
+  upsertMetaAttribute("property", "og:url", canonical.href);
+  upsertMetaAttribute("property", "og:type", "website");
+  upsertMetaAttribute("name", "twitter:card", "summary");
+  upsertMetaAttribute("name", "twitter:title", title);
+  upsertMetaAttribute("name", "twitter:description", description);
+}
+
+function getCanonicalUrl(pathname = window.location.pathname, search = "") {
+  return `${SITE_URL}${pathname || "/"}${search || ""}`;
+}
+
+function upsertMetaAttribute(attributeName, attributeValue, content) {
+  let tag = document.querySelector(`meta[${attributeName}="${attributeValue}"]`);
+  if (!tag) {
+    tag = document.createElement("meta");
+    tag.setAttribute(attributeName, attributeValue);
+    document.head.append(tag);
+  }
+  tag.setAttribute("content", content);
 }
 
 function updateHeaderNavigation(viewName) {
@@ -1498,7 +1521,7 @@ function getOpinionPath(opinion) {
 }
 
 function getOpinionUrl(opinion) {
-  return `${window.location.origin}${getOpinionPath(opinion)}`;
+  return `${SITE_URL}${getOpinionPath(opinion)}`;
 }
 
 async function copyTextToClipboard(value) {
