@@ -2231,6 +2231,32 @@ function bindActionMenuButton(button, getItems) {
   });
 }
 
+function syncActionMenuButtonSize(button, referenceButtons) {
+  const applySize = () => {
+    const referenceRects = referenceButtons
+      .filter(Boolean)
+      .map((item) => ({ item, rect: item.getBoundingClientRect() }))
+      .filter(({ rect }) => rect.width > 0 && rect.height > 0);
+
+    if (!button || !referenceRects.length) return;
+    const width = Math.round(Math.max(...referenceRects.map(({ rect }) => rect.width)));
+    const height = Math.round(Math.max(...referenceRects.map(({ rect }) => rect.height)));
+    const radius = getComputedStyle(referenceRects[0].item).borderRadius;
+    button.style.setProperty("width", `${width}px`, "important");
+    button.style.setProperty("min-width", `${width}px`, "important");
+    button.style.setProperty("max-width", `${width}px`, "important");
+    button.style.setProperty("height", `${height}px`, "important");
+    button.style.setProperty("min-height", `${height}px`, "important");
+    button.style.setProperty("padding", "0", "important");
+    button.style.setProperty("border-radius", radius, "important");
+  };
+
+  window.requestAnimationFrame(() => {
+    applySize();
+    window.setTimeout(applySize, 80);
+  });
+}
+
 function createReplyElement(opinion, normalizedReply) {
   const item = document.createElement("div");
   item.className = "reply-item";
@@ -2259,7 +2285,10 @@ function createReplyElement(opinion, normalizedReply) {
     </div>
   `;
 
-  item.querySelector(".like-button").addEventListener("click", async (event) => {
+  const replyLikeButton = item.querySelector(".like-button");
+  const replyDislikeButton = item.querySelector(".dislike-button");
+
+  replyLikeButton.addEventListener("click", async (event) => {
     event.stopPropagation();
     try {
       const result = await registerContentActionViaApi("like", "reply", normalizedReply.id, opinion.id);
@@ -2271,7 +2300,7 @@ function createReplyElement(opinion, normalizedReply) {
     }
   });
 
-  item.querySelector(".dislike-button").addEventListener("click", async (event) => {
+  replyDislikeButton.addEventListener("click", async (event) => {
     event.stopPropagation();
     try {
       const result = await registerContentActionViaApi("dislike", "reply", normalizedReply.id, opinion.id);
@@ -2307,6 +2336,7 @@ function createReplyElement(opinion, normalizedReply) {
   };
 
   const replyMenuButton = item.querySelector(".reply-menu-button");
+  syncActionMenuButtonSize(replyMenuButton, [replyLikeButton, replyDislikeButton]);
   bindActionMenuButton(replyMenuButton, () => [
       { label: "Responder citando", icon: "quote", action: quoteReply },
       { label: "Reportar", icon: "report", danger: true, action: reportReply }
@@ -2422,6 +2452,7 @@ function createOpinionCard(opinion, isDetail) {
   opinionMenuButton.setAttribute("aria-expanded", "false");
   opinionMenuButton.innerHTML = '<span aria-hidden="true">...</span>';
   card.querySelector(".opinion-stats")?.append(opinionMenuButton);
+  syncActionMenuButtonSize(opinionMenuButton, [likeButton, dislikeButton]);
 
   const quoteOpinion = () => {
     quoteIntoReplyForm(card, createQuotePayload("opinion", opinion.id, opinion.text));
