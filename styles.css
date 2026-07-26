@@ -4564,3 +4564,68 @@ button {
     border-radius: 9px !important;
   }
 }
+
+/* Final isolated action menu button rules. */
+.opinion-card .action-menu-button,
+.opinion-card .reply-actions > button.action-menu-button,
+.opinion-card .opinion-stats > button.action-menu-button {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  position: relative !important;
+  z-index: 5 !important;
+  pointer-events: auto !important;
+  touch-action: manipulation !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex: 0 0 auto !important;
+  gap: 6px !important;
+  width: auto !important;
+  min-width: 58px !important;
+  max-width: none !important;
+  height: 42px !important;
+  min-height: 42px !important;
+  padding: 0 14px !important;
+  border: 1px solid rgba(255, 138, 31, 0.24) !important;
+  border-radius: 12px !important;
+  background: rgba(255, 122, 0, 0.035) !important;
+  box-shadow: none !important;
+  color: rgba(255, 204, 143, 0.88) !important;
+  font: inherit !important;
+  font-size: 0.9rem !important;
+  font-weight: 800 !important;
+  line-height: 1 !important;
+  text-align: center !important;
+  cursor: pointer !important;
+}
+
+.opinion-card .action-menu-button span {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: auto !important;
+  min-width: 0 !important;
+  color: inherit !important;
+  line-height: 1 !important;
+}
+
+.opinion-card .action-menu-button:hover,
+.opinion-card .action-menu-button:focus-visible,
+.opinion-card .action-menu-button[aria-expanded="true"] {
+  border-color: rgba(255, 151, 31, 0.62) !important;
+  background: rgba(255, 122, 0, 0.08) !important;
+  color: var(--accent) !important;
+  outline: none !important;
+}
+
+@media (max-width: 720px) {
+  .opinion-card .action-menu-button,
+  .opinion-card .reply-actions > button.action-menu-button,
+  .opinion-card .opinion-stats > button.action-menu-button {
+    min-width: 58px !important;
+    height: 42px !important;
+    min-height: 42px !important;
+    padding: 0 14px !important;
+    border-radius: 12px !important;
+  }
+}

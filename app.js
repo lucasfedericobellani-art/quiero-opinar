@@ -2202,7 +2202,7 @@ function createReplyElement(opinion, normalizedReply) {
         </svg>
         <span>${normalizedReply.dislikes}</span>
       </button>
-      <button class="reply-menu-button" type="button" aria-label="Mas opciones de respuesta" aria-haspopup="menu" aria-expanded="false">
+      <button class="reply-menu-button action-menu-button" type="button" aria-label="Mas opciones de respuesta" aria-haspopup="menu" aria-expanded="false">
         <span aria-hidden="true">...</span>
       </button>
       <span class="date-stamp reply-date">${formatRelativeActivity(normalizedReply.createdAt)}</span>
@@ -2258,11 +2258,26 @@ function createReplyElement(opinion, normalizedReply) {
 
   const replyMenuButton = item.querySelector(".reply-menu-button");
   replyMenuButton.addEventListener("pointerdown", (event) => {
+    event.preventDefault();
     event.stopPropagation();
+  });
+  replyMenuButton.addEventListener("pointerup", (event) => {
+    if (event.pointerType === "mouse") return;
+    event.preventDefault();
+    event.stopPropagation();
+    replyMenuButton._ignoreNextClick = true;
+    openReplyActionMenu(event.currentTarget, [
+      { label: "Responder citando", icon: "quote", action: quoteReply },
+      { label: "Reportar", icon: "report", danger: true, action: reportReply }
+    ]);
   });
   replyMenuButton.addEventListener("click", (event) => {
     event.preventDefault();
     event.stopPropagation();
+    if (replyMenuButton._ignoreNextClick) {
+      replyMenuButton._ignoreNextClick = false;
+      return;
+    }
     openReplyActionMenu(event.currentTarget, [
       { label: "Responder citando", icon: "quote", action: quoteReply },
       { label: "Reportar", icon: "report", danger: true, action: reportReply }
@@ -2372,7 +2387,7 @@ function createOpinionCard(opinion, isDetail) {
   reportButton?.remove();
 
   const opinionMenuButton = document.createElement("button");
-  opinionMenuButton.className = "reply-menu-button opinion-menu-button";
+  opinionMenuButton.className = "reply-menu-button action-menu-button opinion-menu-button";
   opinionMenuButton.type = "button";
   opinionMenuButton.setAttribute("aria-label", "Mas opciones de opinion");
   opinionMenuButton.setAttribute("aria-haspopup", "menu");
@@ -2410,11 +2425,27 @@ function createOpinionCard(opinion, isDetail) {
   };
 
   opinionMenuButton.addEventListener("pointerdown", (event) => {
+    event.preventDefault();
     event.stopPropagation();
+  });
+  opinionMenuButton.addEventListener("pointerup", (event) => {
+    if (event.pointerType === "mouse") return;
+    event.preventDefault();
+    event.stopPropagation();
+    opinionMenuButton._ignoreNextClick = true;
+    openReplyActionMenu(opinionMenuButton, [
+      { label: "Compartir", icon: "share", action: shareOpinionFromMenu },
+      { label: "Responder citando", icon: "quote", action: quoteOpinion },
+      { label: "Reportar", icon: "report", danger: true, action: reportOpinionFromMenu }
+    ]);
   });
   opinionMenuButton.addEventListener("click", (event) => {
     event.preventDefault();
     event.stopPropagation();
+    if (opinionMenuButton._ignoreNextClick) {
+      opinionMenuButton._ignoreNextClick = false;
+      return;
+    }
     openReplyActionMenu(opinionMenuButton, [
       { label: "Compartir", icon: "share", action: shareOpinionFromMenu },
       { label: "Responder citando", icon: "quote", action: quoteOpinion },
