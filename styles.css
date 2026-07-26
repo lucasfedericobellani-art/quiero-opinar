@@ -4850,15 +4850,15 @@ button {
 
 @media (max-width: 720px) {
   body.reply-menu-open {
-    overflow: hidden !important;
-    touch-action: none !important;
+    overflow: visible !important;
+    touch-action: auto !important;
   }
 
   .opinion-card .opinion-stats,
   .opinion-card .reply-actions {
     overflow-x: visible !important;
     overflow-y: visible !important;
-    touch-action: none !important;
+    touch-action: pan-y !important;
   }
 
   .opinion-card .opinion-stats > button,

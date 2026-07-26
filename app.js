@@ -240,6 +240,9 @@ let pendingScrollRestore = null;
 let activeReplyControl = null;
 let replyViewportTimers = [];
 let replyScrollAnimationFrame = 0;
+let replyComposerFrame = 0;
+let activeReplyComposerKey = "";
+const replyDrafts = new Map();
 let dataStore = createLocalDataStore();
 
 hydrateInitialContentFromCache();
@@ -370,7 +373,9 @@ window.addEventListener("popstate", (event) => {
   restoreViewFromHistory(event.state);
 });
 
-window.addEventListener("scroll", positionReplyActionPopover, { passive: true });
+window.addEventListener("scroll", () => {
+  if (activeReplyMenu) closeReplyActionMenu(false);
+}, { passive: true });
 window.addEventListener("resize", positionReplyActionPopover);
 
 document.addEventListener("focusin", (event) => {
@@ -393,6 +398,9 @@ document.addEventListener("focusout", (event) => {
 });
 
 document.addEventListener("input", (event) => {
+  const replyForm = event.target.closest?.(".reply-form");
+  if (!replyForm) return;
+  saveReplyDraft(replyForm);
   if (event.target !== activeReplyControl) return;
   resizeReplyControl(event.target);
   scheduleActiveReplyControlVisibility();
@@ -1797,6 +1805,33 @@ function clearReplyViewportTimers() {
   replyViewportTimers = [];
 }
 
+function getReplyDraftKey(targetType, targetId, mode = "reply") {
+  return `${targetType}:${targetId}:${mode}`;
+}
+
+function saveReplyDraft(replyForm) {
+  const replyInput = replyForm?.querySelector("textarea, input");
+  const key = replyForm?.dataset.replyDraftKey;
+  if (!replyInput || !key) return;
+  replyDrafts.set(key, {
+    value: replyInput.value,
+    quote: replyForm._pendingQuote || null
+  });
+}
+
+function restoreReplyDraft(replyForm, targetType, targetId, mode = "reply") {
+  const replyInput = replyForm?.querySelector("textarea, input");
+  if (!replyInput) return null;
+  const key = getReplyDraftKey(targetType, targetId, mode);
+  replyForm.dataset.replyDraftKey = key;
+  const draft = replyDrafts.get(key);
+  if (!draft) return null;
+  replyInput.value = draft.value || "";
+  setReplyQuote(replyForm, draft.quote || null);
+  resizeReplyControl(replyInput);
+  return draft;
+}
+
 function animateReplyScrollBy(delta) {
   if (Math.abs(delta) < 2) return;
   if (replyScrollAnimationFrame) {
@@ -1874,7 +1909,12 @@ function clearReplyKeyboardAssist() {
     window.cancelAnimationFrame(replyScrollAnimationFrame);
     replyScrollAnimationFrame = 0;
   }
+  if (replyComposerFrame) {
+    window.cancelAnimationFrame(replyComposerFrame);
+    replyComposerFrame = 0;
+  }
   activeReplyControl = null;
+  activeReplyComposerKey = "";
   document.body.classList.remove("reply-field-focused");
   document.documentElement.style.setProperty("--reply-keyboard-offset", "0px");
 }
@@ -2141,8 +2181,29 @@ function setReplyQuote(replyForm, quote) {
 }
 
 function scrollReplyComposerIntoView(replyForm, replyInput) {
-  const isMobile = isMobileViewport();
-  if (isMobile) {
+  if (!replyForm || !replyInput) return;
+  if (replyComposerFrame) {
+    window.cancelAnimationFrame(replyComposerFrame);
+    replyComposerFrame = 0;
+  }
+
+  replyComposerFrame = window.requestAnimationFrame(() => {
+    replyComposerFrame = 0;
+    const viewport = getVisualViewportBounds();
+    const card = replyForm.closest(".opinion-card");
+    const targetElement = replyForm.querySelector(".reply-quote-preview:not(.hidden)") || replyForm;
+    const targetRect = targetElement.getBoundingClientRect();
+    const controlRect = replyInput.getBoundingClientRect();
+    const visibleTop = viewport.top + 76;
+    const visibleBottom = Math.min(viewport.bottom, window.innerHeight) - (isMobileViewport() ? 130 : 32);
+    const isVisible = targetRect.top >= visibleTop && controlRect.bottom <= visibleBottom;
+
+    if (!isVisible) {
+      const targetScrollY = Math.max(0, window.scrollY + targetRect.top - visibleTop);
+      const prefersReducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+      window.scrollTo({ top: targetScrollY, behavior: prefersReducedMotion ? "auto" : "smooth" });
+    }
+
     window.requestAnimationFrame(() => {
       try {
         replyInput.focus({ preventScroll: true });
@@ -2152,43 +2213,43 @@ function scrollReplyComposerIntoView(replyForm, replyInput) {
       activeReplyControl = replyInput;
       resizeReplyControl(replyInput);
       updateViewportMetrics();
-      scheduleActiveReplyControlVisibility(120);
+      scheduleActiveReplyControlVisibility(isMobileViewport() ? 0 : 70);
     });
-    return;
-  }
-
-  window.requestAnimationFrame(() => {
-    const viewport = getVisualViewportBounds();
-    const card = replyForm.closest(".opinion-card");
-    const targetElement = card || replyForm;
-    const targetRect = targetElement.getBoundingClientRect();
-    const targetTop = viewport.top + 78;
-    const targetScrollY = Math.max(0, window.scrollY + targetRect.top - targetTop);
-    const distance = Math.abs(targetScrollY - window.scrollY);
-
-    if (distance > 8) {
-      window.scrollTo({ top: targetScrollY, behavior: "smooth" });
-    }
-
-    window.setTimeout(() => {
-      try {
-        replyInput.focus({ preventScroll: true });
-      } catch {
-        replyInput.focus();
-      }
-      activeReplyControl = replyInput;
-      resizeReplyControl(replyInput);
-      scheduleActiveReplyControlVisibility();
-    }, 120);
   });
 }
 
-function quoteIntoReplyForm(card, quote) {
+function openReplyComposer({ card, targetId, targetType = "opinion", mode = "reply", quote = null }) {
+  if (!card) return;
   const replyForm = card.querySelector(".reply-form");
   const replyInput = replyForm?.querySelector("textarea, input");
   if (!replyForm || !replyInput) return;
-  setReplyQuote(replyForm, quote);
+
+  closeReplyActionMenu(false);
+  const draftKey = getReplyDraftKey(targetType, targetId, mode);
+  if (activeReplyComposerKey !== draftKey) {
+    activeReplyComposerKey = draftKey;
+    replyForm.dataset.replyDraftKey = draftKey;
+    const draft = replyDrafts.get(draftKey);
+    replyInput.value = draft?.value || "";
+    setReplyQuote(replyForm, mode === "quote" ? (quote || draft?.quote || null) : null);
+  } else if (mode === "quote") {
+    setReplyQuote(replyForm, quote);
+  }
+
+  saveReplyDraft(replyForm);
   scrollReplyComposerIntoView(replyForm, replyInput);
+}
+
+function quoteIntoReplyForm(card, quote) {
+  const normalizedQuote = normalizeQuoteRecord(quote);
+  if (!normalizedQuote) return;
+  openReplyComposer({
+    card,
+    targetId: normalizedQuote.quotedSourceId,
+    targetType: normalizedQuote.quotedSourceType,
+    mode: "quote",
+    quote: normalizedQuote
+  });
 }
 
 function getReplyActionPopover() {
@@ -2558,9 +2619,11 @@ function createOpinionCard(opinion, isDetail) {
   replyQuotePreview.querySelector(".reply-quote-remove")?.addEventListener("click", (event) => {
     event.stopPropagation();
     setReplyQuote(replyForm, null);
+    saveReplyDraft(replyForm);
     replyInput.focus();
   });
   setReplyQuote(replyForm, null);
+  restoreReplyDraft(replyForm, "opinion", opinion.id, "reply");
   const replyError = document.createElement("p");
   replyError.className = "reply-form-error hidden";
   replyError.setAttribute("role", "alert");
@@ -2568,6 +2631,13 @@ function createOpinionCard(opinion, isDetail) {
   resizeReplyControl(replyInput);
   replyForm.addEventListener("click", (event) => event.stopPropagation());
   replyForm.addEventListener("pointerdown", (event) => event.stopPropagation());
+  replyInput.addEventListener("focus", () => {
+    const quote = normalizeQuoteRecord(replyForm._pendingQuote);
+    activeReplyComposerKey = quote
+      ? getReplyDraftKey(quote.quotedSourceType, quote.quotedSourceId, "quote")
+      : getReplyDraftKey("opinion", opinion.id, "reply");
+    replyForm.dataset.replyDraftKey = activeReplyComposerKey;
+  });
   replySubmitButton?.addEventListener("click", (event) => event.stopPropagation());
   replyForm.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -2597,6 +2667,7 @@ function createOpinionCard(opinion, isDetail) {
     try {
       const updatedOpinion = await createReplyViaApi(opinion.id, reply, replyForm._pendingQuote || null);
       Object.assign(opinion, updatedOpinion);
+      replyDrafts.delete(replyForm.dataset.replyDraftKey);
       replyInput.value = "";
       setReplyQuote(replyForm, null);
       resizeReplyControl(replyInput);
