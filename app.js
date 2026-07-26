@@ -863,30 +863,37 @@ function getReplyActionPopover() {
   replyActionPopover = document.createElement("div");
   replyActionPopover.className = "reply-menu-popover hidden";
   replyActionPopover.setAttribute("role", "menu");
-  replyActionPopover.innerHTML = `
-    <button class="reply-menu-item quote-button" type="button" role="menuitem">
-      <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M7 7h10"></path><path d="M7 12h7"></path><path d="M7 17h4"></path><path d="m15 16 3 3 3-3"></path><path d="M18 19V9"></path></svg>
-      <span>Responder citando</span>
-    </button>
-    <button class="reply-menu-item report-button" type="button" role="menuitem">
-      <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 21V4"></path><path d="M5 4h12l-1.5 4L17 12H5"></path></svg>
-      <span>Reportar</span>
-    </button>
-  `;
-  replyActionPopover.querySelector(".quote-button").addEventListener("click", (event) => {
-    event.stopPropagation();
-    const state = activeReplyMenu;
-    closeReplyActionMenu(true);
-    state?.onQuote?.();
-  });
-  replyActionPopover.querySelector(".report-button").addEventListener("click", (event) => {
-    event.stopPropagation();
-    const state = activeReplyMenu;
-    closeReplyActionMenu(true);
-    state?.onReport?.();
-  });
   document.body.append(replyActionPopover);
   return replyActionPopover;
+}
+
+function getReplyMenuIcon(actionId) {
+  if (actionId === "share") {
+    return '<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.1 0l2.1-2.1a5 5 0 0 0-7.1-7.1l-1.2 1.2"></path><path d="M14 11a5 5 0 0 0-7.1 0l-2.1 2.1a5 5 0 0 0 7.1 7.1l1.2-1.2"></path></svg>';
+  }
+  if (actionId === "report") {
+    return '<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 21V4"></path><path d="M5 4h12l-1.5 4L17 12H5"></path></svg>';
+  }
+  return '<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M7 7h10"></path><path d="M7 12h7"></path><path d="M7 17h4"></path><path d="m15 16 3 3 3-3"></path><path d="M18 19V9"></path></svg>';
+}
+
+function renderReplyActionPopoverItems(actions) {
+  const popover = getReplyActionPopover();
+  popover.innerHTML = actions.items.map((item) => `
+    <button class="reply-menu-item${item.danger ? " is-danger" : ""}" type="button" role="menuitem" data-action-id="${escapeHtml(item.id)}">
+      ${getReplyMenuIcon(item.id)}
+      <span>${escapeHtml(item.label)}</span>
+    </button>
+  `).join("");
+  popover.querySelectorAll(".reply-menu-item").forEach((button) => {
+    button.addEventListener("click", (event) => {
+      event.stopPropagation();
+      const state = activeReplyMenu;
+      const action = state?.items.find((item) => item.id === button.dataset.actionId);
+      closeReplyActionMenu(true);
+      action?.run?.();
+    });
+  });
 }
 
 function positionReplyActionPopover(anchorButton) {
@@ -921,6 +928,7 @@ function openReplyActionMenu(anchorButton, actions) {
   }
   closeReplyActionMenu();
   activeReplyMenu = { button: anchorButton, ...actions };
+  renderReplyActionPopoverItems(activeReplyMenu);
   anchorButton.setAttribute("aria-expanded", "true");
   positionReplyActionPopover(anchorButton);
   window.setTimeout(() => getReplyActionPopover().querySelector(".reply-menu-item")?.focus(), 0);
@@ -2510,7 +2518,12 @@ function createReplyElement(opinion, normalizedReply, replyIndex) {
   const menuButton = item.querySelector(".reply-menu-button");
   menuButton.addEventListener("click", (event) => {
     event.stopPropagation();
-    openReplyActionMenu(menuButton, { onQuote: quoteReply, onReport: reportReply });
+    openReplyActionMenu(menuButton, {
+      items: [
+        { id: "quote", label: "Responder citando", run: quoteReply },
+        { id: "report", label: "Reportar", danger: true, run: reportReply }
+      ]
+    });
   });
 
   item.querySelector(".like-button").addEventListener("click", async (event) => {
@@ -2602,43 +2615,61 @@ function createOpinionCard(opinion, isDetail) {
   });
 
   const shareButton = card.querySelector(".share-button");
-  shareButton.addEventListener("click", async () => {
+  const quoteButton = card.querySelector(".quote-button");
+  const reportButton = card.querySelector(".report-button");
+  shareButton?.remove();
+  quoteButton?.remove();
+  reportButton?.remove();
+
+  const opinionMenuButton = document.createElement("button");
+  opinionMenuButton.className = "reply-menu-button opinion-menu-button";
+  opinionMenuButton.type = "button";
+  opinionMenuButton.setAttribute("aria-label", "Mas acciones de opinion");
+  opinionMenuButton.setAttribute("aria-haspopup", "menu");
+  opinionMenuButton.setAttribute("aria-expanded", "false");
+  opinionMenuButton.title = "Mas acciones";
+  opinionMenuButton.innerHTML = '<span aria-hidden="true">...</span>';
+  card.querySelector(".opinion-stats").append(opinionMenuButton);
+
+  const shareOpinion = async () => {
     const link = getOpinionUrl(opinion);
     try {
       await copyTextToClipboard(link);
-      shareButton.classList.add("is-confirmed");
       showToast("Link de la opinión copiado");
     } catch {
       showToast("No se pudo copiar el link");
     }
     opinion.shares += 1;
     await dataStore.updateOpinion(opinion);
-    window.setTimeout(() => {
-      shareButton.classList.remove("is-confirmed");
-    }, 1800);
-  });
+  };
 
-  const quoteButton = card.querySelector(".quote-button");
-  quoteButton.addEventListener("click", (event) => {
-    event.stopPropagation();
+  const quoteOpinion = () => {
     const quote = createQuotePayload("opinion", opinion.id, opinion.text, getSelectedQuoteText(card.querySelector(".opinion-text")));
     quoteIntoReplyForm(card, quote);
-  });
+  };
 
-  const reportButton = card.querySelector(".report-button");
-  reportButton.addEventListener("click", async () => {
+  const reportOpinion = async () => {
     const reason = await askReportReason();
     if (!reason) return;
     try {
       const result = await registerContentActionViaApi("report", "opinion", opinion.id, opinion.id, reason);
       Object.assign(opinion, result.opinion);
-      reportButton.classList.add("is-confirmed");
       showToast("Reporte enviado");
       render();
     } catch (error) {
-      if (error.code === "already_reported") reportButton.classList.add("is-confirmed");
       showToast(getApiErrorMessage(error, "No se pudo enviar el reporte."));
     }
+  };
+
+  opinionMenuButton.addEventListener("click", (event) => {
+    event.stopPropagation();
+    openReplyActionMenu(opinionMenuButton, {
+      items: [
+        { id: "share", label: "Compartir", run: shareOpinion },
+        { id: "quote", label: "Responder citando", run: quoteOpinion },
+        { id: "report", label: "Reportar", danger: true, run: reportOpinion }
+      ]
+    });
   });
 
   const thread = card.querySelector(".thread");

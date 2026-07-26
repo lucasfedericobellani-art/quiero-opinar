@@ -3094,8 +3094,8 @@ button {
   box-shadow: 0 0 0 3px rgba(255, 145, 0, 0.14);
 }
 
-.reply-menu-item.report-button:hover,
-.reply-menu-item.report-button:focus-visible {
+.reply-menu-item.is-danger:hover,
+.reply-menu-item.is-danger:focus-visible {
   color: rgba(255, 142, 122, 0.9) !important;
   background: rgba(255, 96, 74, 0.08) !important;
 }
