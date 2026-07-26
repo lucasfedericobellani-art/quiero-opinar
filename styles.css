@@ -226,6 +226,95 @@
   }
 }
 
+/* Final action/reply overrides: keep quoted replies compact on every viewport. */
+.opinion-card .reply-form > .reply-quote-preview {
+  grid-column: 1 / -1 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  min-height: 34px !important;
+  margin: 0 0 10px !important;
+  padding: 0 0 0 12px !important;
+  border: 0 !important;
+  border-left: 1px solid rgba(255, 151, 31, 0.62) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.opinion-card .reply-form > .reply-quote-preview.hidden {
+  display: none !important;
+}
+
+.opinion-card .reply-form .reply-quote-preview-text {
+  flex: 1 1 auto !important;
+  display: block !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  color: rgba(248, 236, 220, 0.72) !important;
+  font-size: 0.84rem !important;
+  font-weight: 800 !important;
+  line-height: 1.35 !important;
+}
+
+.opinion-card .reply-form .reply-quote-remove {
+  all: unset !important;
+  box-sizing: border-box !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex: 0 0 28px !important;
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 999px !important;
+  color: var(--accent-hot) !important;
+  font-size: 1.1rem !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+  cursor: pointer !important;
+}
+
+.opinion-card .reply-form .reply-quote-remove:hover,
+.opinion-card .reply-form .reply-quote-remove:focus-visible {
+  background: rgba(255, 138, 31, 0.1) !important;
+  outline: 1px solid rgba(255, 138, 31, 0.35) !important;
+}
+
+.opinion-card .reply-actions > button.reply-menu-button,
+.opinion-card .opinion-stats > button.opinion-menu-button {
+  width: 48px !important;
+  min-width: 48px !important;
+  max-width: 48px !important;
+  padding: 0 !important;
+}
+
+@media (max-width: 720px) {
+  .opinion-card .reply-form > .reply-quote-preview {
+    min-height: 32px !important;
+    margin: 0 0 10px !important;
+  }
+
+  .opinion-card .reply-form .reply-quote-preview-text {
+    font-size: 0.78rem !important;
+  }
+
+  .opinion-card .reply-actions > button.reply-menu-button,
+  .opinion-card .opinion-stats > button.opinion-menu-button {
+    width: 58px !important;
+    min-width: 58px !important;
+    max-width: 58px !important;
+    height: 42px !important;
+    min-height: 42px !important;
+    border-radius: 9px !important;
+  }
+}
+
 .opinion-card .reply-form > .reply-quote-preview {
   grid-column: 1 / -1 !important;
   display: flex !important;
@@ -4396,5 +4485,82 @@ button {
 
   .reply-quote-preview {
     margin-bottom: 10px;
+  }
+}
+/* Final action/reply overrides: keep quoted replies compact on every viewport. */
+.opinion-card .reply-form > .reply-quote-preview {
+  grid-column: 1 / -1 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  min-height: 34px !important;
+  margin: 0 0 10px !important;
+  padding: 0 0 0 12px !important;
+  border: 0 !important;
+  border-left: 1px solid rgba(255, 151, 31, 0.62) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.opinion-card .reply-form > .reply-quote-preview.hidden {
+  display: none !important;
+}
+
+.opinion-card .reply-form .reply-quote-preview-text {
+  flex: 1 1 auto !important;
+  display: block !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  color: rgba(248, 236, 220, 0.72) !important;
+  font-size: 0.84rem !important;
+  font-weight: 800 !important;
+  line-height: 1.35 !important;
+}
+
+.opinion-card .reply-form .reply-quote-remove {
+  all: unset !important;
+  box-sizing: border-box !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex: 0 0 28px !important;
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 999px !important;
+  color: var(--accent-hot) !important;
+  font-size: 1.1rem !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+  cursor: pointer !important;
+}
+
+.opinion-card .reply-actions > button.reply-menu-button,
+.opinion-card .opinion-stats > button.opinion-menu-button {
+  width: 48px !important;
+  min-width: 48px !important;
+  max-width: 48px !important;
+  padding: 0 !important;
+}
+
+@media (max-width: 720px) {
+  .opinion-card .reply-form .reply-quote-preview-text {
+    font-size: 0.78rem !important;
+  }
+
+  .opinion-card .reply-actions > button.reply-menu-button,
+  .opinion-card .opinion-stats > button.opinion-menu-button {
+    width: 58px !important;
+    min-width: 58px !important;
+    max-width: 58px !important;
+    height: 42px !important;
+    min-height: 42px !important;
+    border-radius: 9px !important;
   }
 }

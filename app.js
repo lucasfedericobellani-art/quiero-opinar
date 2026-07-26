@@ -1795,9 +1795,7 @@ function scheduleActiveReplyControlVisibility() {
   if (!activeReplyControl || !isMobileViewport()) return;
   window.clearTimeout(replyViewportTimer);
   window.requestAnimationFrame(ensureActiveReplyControlVisible);
-  window.setTimeout(ensureActiveReplyControlVisible, 90);
-  replyViewportTimer = window.setTimeout(ensureActiveReplyControlVisible, 260);
-  window.setTimeout(ensureActiveReplyControlVisible, 520);
+  replyViewportTimer = window.setTimeout(ensureActiveReplyControlVisible, 120);
 }
 
 function ensureActiveReplyControlVisible() {
@@ -1828,6 +1826,8 @@ function ensureActiveReplyControlVisible() {
     delta = contextRect.top - (topLimit + 24);
   }
 
+  if (delta > 0) delta = Math.min(delta, 120);
+  if (delta < 0) delta = Math.max(delta, -90);
   if (Math.abs(delta) < 2) return;
   window.scrollBy({ top: delta, behavior: "smooth" });
 }
@@ -2102,7 +2102,11 @@ function quoteIntoReplyForm(card, quote) {
   const replyInput = replyForm?.querySelector("textarea, input");
   if (!replyForm || !replyInput) return;
   setReplyQuote(replyForm, quote);
-  replyInput.focus();
+  try {
+    replyInput.focus({ preventScroll: true });
+  } catch {
+    replyInput.focus();
+  }
   resizeReplyControl(replyInput);
   scheduleActiveReplyControlVisibility();
 }
