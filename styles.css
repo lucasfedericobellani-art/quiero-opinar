@@ -2956,6 +2956,9 @@ button {
   justify-self: start;
 }
 
+.opinion-stats .like-button,
+.opinion-stats .dislike-button,
+.opinion-stats .opinion-menu-button,
 .reply-actions button,
 .reply-menu-button,
 .reply-item .like-button,
@@ -2974,6 +2977,9 @@ button {
   line-height: 1;
 }
 
+.opinion-stats .like-button::after,
+.opinion-stats .dislike-button::after,
+.opinion-stats .opinion-menu-button::after,
 .reply-actions button::after,
 .reply-menu-button::after {
   content: "";
@@ -3067,6 +3073,8 @@ button {
   color: rgba(255, 119, 92, 0.58);
 }
 
+.opinion-stats .like-button svg,
+.opinion-stats .dislike-button svg,
 .reply-item .like-button svg,
 .reply-item .dislike-button svg {
   width: 14px;
@@ -3262,14 +3270,14 @@ button {
 
   .opinion-stats .like-button {
     flex: 0 0 auto;
-    min-height: 40px;
-    padding: 0 10px;
+    min-height: 30px;
+    padding: 0 8px;
   }
 
   .opinion-stats .dislike-button {
     flex: 0 0 auto;
-    min-height: 40px;
-    padding: 0 10px;
+    min-height: 30px;
+    padding: 0 8px;
   }
 
   .opinion-action-button {
@@ -3810,14 +3818,14 @@ button {
   }
 
   .opinion-stats .like-button {
-    min-width: 32px;
-    min-height: 34px;
+    min-width: 30px;
+    min-height: 30px;
     padding: 0 7px;
   }
 
   .opinion-stats .dislike-button {
-    min-width: 32px;
-    min-height: 34px;
+    min-width: 30px;
+    min-height: 30px;
     padding: 0 7px;
   }
 
