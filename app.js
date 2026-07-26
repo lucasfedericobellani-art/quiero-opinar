@@ -238,7 +238,7 @@ let hasHandledInitialOpinion = false;
 let isRestoringHistory = false;
 let pendingScrollRestore = null;
 let activeReplyControl = null;
-let replyViewportTimer = 0;
+let replyViewportTimers = [];
 let dataStore = createLocalDataStore();
 
 hydrateInitialContentFromCache();
@@ -1791,11 +1791,18 @@ function resizeReplyControl(control) {
   control.style.overflowY = control.scrollHeight > maxHeight ? "auto" : "hidden";
 }
 
+function clearReplyViewportTimers() {
+  replyViewportTimers.forEach((timer) => window.clearTimeout(timer));
+  replyViewportTimers = [];
+}
+
 function scheduleActiveReplyControlVisibility() {
   if (!activeReplyControl || !isMobileViewport()) return;
-  window.clearTimeout(replyViewportTimer);
+  clearReplyViewportTimers();
   window.requestAnimationFrame(ensureActiveReplyControlVisible);
-  replyViewportTimer = window.setTimeout(ensureActiveReplyControlVisible, 120);
+  [80, 220, 420, 680].forEach((delay) => {
+    replyViewportTimers.push(window.setTimeout(ensureActiveReplyControlVisible, delay));
+  });
 }
 
 function ensureActiveReplyControlVisible() {
@@ -1826,14 +1833,16 @@ function ensureActiveReplyControlVisible() {
     delta = contextRect.top - (topLimit + 24);
   }
 
-  if (delta > 0) delta = Math.min(delta, 120);
-  if (delta < 0) delta = Math.max(delta, -90);
+  const maxDownDelta = Math.max(180, Math.min(420, viewport.height * 0.68));
+  const maxUpDelta = Math.max(100, Math.min(180, viewport.height * 0.24));
+  if (delta > 0) delta = Math.min(delta, maxDownDelta);
+  if (delta < 0) delta = Math.max(delta, -maxUpDelta);
   if (Math.abs(delta) < 2) return;
   window.scrollBy({ top: delta, behavior: "smooth" });
 }
 
 function clearReplyKeyboardAssist() {
-  window.clearTimeout(replyViewportTimer);
+  clearReplyViewportTimers();
   activeReplyControl = null;
   document.body.classList.remove("reply-field-focused");
   document.documentElement.style.setProperty("--reply-keyboard-offset", "0px");
