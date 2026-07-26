@@ -2078,7 +2078,10 @@ function ensureReplyQuotePreview(replyForm) {
   preview.className = "reply-quote-preview hidden";
   preview.setAttribute("aria-live", "polite");
   preview.innerHTML = `
-    <span class="reply-quote-preview-text"></span>
+    <span class="reply-quote-preview-copy">
+      <span class="reply-quote-preview-kicker">Respondiendo a:</span>
+      <span class="reply-quote-preview-text"></span>
+    </span>
     <button class="reply-quote-remove" type="button" aria-label="Eliminar cita">&times;</button>
   `;
   const control = replyForm.querySelector("textarea, input");
@@ -2093,8 +2096,34 @@ function setReplyQuote(replyForm, quote) {
   replyForm._pendingQuote = normalizedQuote;
   preview.classList.toggle("hidden", !normalizedQuote);
   if (label) {
-    label.textContent = normalizedQuote ? `Respondiendo a "${normalizedQuote.quotedText}"` : "";
+    label.textContent = normalizedQuote ? `"${normalizedQuote.quotedText}"` : "";
   }
+}
+
+function scrollReplyComposerIntoView(replyForm, replyInput) {
+  const isMobile = isMobileViewport();
+  window.requestAnimationFrame(() => {
+    const viewport = getVisualViewportBounds();
+    const rect = replyForm.getBoundingClientRect();
+    const targetTop = viewport.top + (isMobile ? 118 : Math.max(110, viewport.height * 0.28));
+    const targetScrollY = Math.max(0, window.scrollY + rect.top - targetTop);
+    const distance = Math.abs(targetScrollY - window.scrollY);
+
+    if (distance > 8) {
+      window.scrollTo({ top: targetScrollY, behavior: "smooth" });
+    }
+
+    window.setTimeout(() => {
+      try {
+        replyInput.focus({ preventScroll: true });
+      } catch {
+        replyInput.focus();
+      }
+      activeReplyControl = replyInput;
+      resizeReplyControl(replyInput);
+      scheduleActiveReplyControlVisibility();
+    }, isMobile ? 190 : 120);
+  });
 }
 
 function quoteIntoReplyForm(card, quote) {
@@ -2102,13 +2131,7 @@ function quoteIntoReplyForm(card, quote) {
   const replyInput = replyForm?.querySelector("textarea, input");
   if (!replyForm || !replyInput) return;
   setReplyQuote(replyForm, quote);
-  try {
-    replyInput.focus({ preventScroll: true });
-  } catch {
-    replyInput.focus();
-  }
-  resizeReplyControl(replyInput);
-  scheduleActiveReplyControlVisibility();
+  scrollReplyComposerIntoView(replyForm, replyInput);
 }
 
 function getReplyActionPopover() {
@@ -2179,6 +2202,33 @@ function positionReplyActionPopover() {
   replyActionPopover.style.width = `${width}px`;
   replyActionPopover.style.left = `${left}px`;
   replyActionPopover.style.top = `${rect.bottom + window.scrollY + 8}px`;
+}
+
+function bindActionMenuButton(button, getItems) {
+  let lastTouchActivation = 0;
+  const activate = (event) => {
+    if (event.cancelable) event.preventDefault();
+    event.stopPropagation();
+    openReplyActionMenu(button, getItems());
+  };
+
+  button.addEventListener("pointerdown", (event) => {
+    event.stopPropagation();
+  });
+
+  button.addEventListener("touchend", (event) => {
+    lastTouchActivation = Date.now();
+    activate(event);
+  }, { passive: false });
+
+  button.addEventListener("click", (event) => {
+    if (Date.now() - lastTouchActivation < 650) {
+      if (event.cancelable) event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
+    activate(event);
+  });
 }
 
 function createReplyElement(opinion, normalizedReply) {
@@ -2257,32 +2307,10 @@ function createReplyElement(opinion, normalizedReply) {
   };
 
   const replyMenuButton = item.querySelector(".reply-menu-button");
-  replyMenuButton.addEventListener("pointerdown", (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-  });
-  replyMenuButton.addEventListener("pointerup", (event) => {
-    if (event.pointerType === "mouse") return;
-    event.preventDefault();
-    event.stopPropagation();
-    replyMenuButton._ignoreNextClick = true;
-    openReplyActionMenu(event.currentTarget, [
+  bindActionMenuButton(replyMenuButton, () => [
       { label: "Responder citando", icon: "quote", action: quoteReply },
       { label: "Reportar", icon: "report", danger: true, action: reportReply }
     ]);
-  });
-  replyMenuButton.addEventListener("click", (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    if (replyMenuButton._ignoreNextClick) {
-      replyMenuButton._ignoreNextClick = false;
-      return;
-    }
-    openReplyActionMenu(event.currentTarget, [
-      { label: "Responder citando", icon: "quote", action: quoteReply },
-      { label: "Reportar", icon: "report", danger: true, action: reportReply }
-    ]);
-  });
 
   return item;
 }
@@ -2424,34 +2452,11 @@ function createOpinionCard(opinion, isDetail) {
     }
   };
 
-  opinionMenuButton.addEventListener("pointerdown", (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-  });
-  opinionMenuButton.addEventListener("pointerup", (event) => {
-    if (event.pointerType === "mouse") return;
-    event.preventDefault();
-    event.stopPropagation();
-    opinionMenuButton._ignoreNextClick = true;
-    openReplyActionMenu(opinionMenuButton, [
+  bindActionMenuButton(opinionMenuButton, () => [
       { label: "Compartir", icon: "share", action: shareOpinionFromMenu },
       { label: "Responder citando", icon: "quote", action: quoteOpinion },
       { label: "Reportar", icon: "report", danger: true, action: reportOpinionFromMenu }
     ]);
-  });
-  opinionMenuButton.addEventListener("click", (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    if (opinionMenuButton._ignoreNextClick) {
-      opinionMenuButton._ignoreNextClick = false;
-      return;
-    }
-    openReplyActionMenu(opinionMenuButton, [
-      { label: "Compartir", icon: "share", action: shareOpinionFromMenu },
-      { label: "Responder citando", icon: "quote", action: quoteOpinion },
-      { label: "Reportar", icon: "report", danger: true, action: reportOpinionFromMenu }
-    ]);
-  });
 
   const thread = card.querySelector(".thread");
   renderReplyThread(thread, opinion);
