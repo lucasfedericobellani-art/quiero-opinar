@@ -284,6 +284,8 @@ document.addEventListener("keydown", (event) => {
 
   if (event.key !== "Escape") return;
 
+  closeReplyActionMenus();
+
   if (!legalOverlay.classList.contains("hidden")) {
     closeLegalModal();
     return;
@@ -403,6 +405,7 @@ mobileMenuToggle?.addEventListener("click", () => {
 });
 
 document.addEventListener("click", (event) => {
+  if (!event.target.closest?.(".reply-action-menu")) closeReplyActionMenus();
   if (!isMobileMenuOpen) return;
   if (topNav.contains(event.target) || mobileMenuToggle?.contains(event.target)) return;
   closeMobileMenu(false);
@@ -797,10 +800,27 @@ function createQuotePayload(sourceType, sourceId, sourceText, selectedText = "")
   };
 }
 
+function shouldShowReplyQuote(opinion, reply, replyIndex) {
+  const normalizedQuote = normalizeQuoteRecord(reply.quote);
+  if (!normalizedQuote) return false;
+  if (normalizedQuote.quotedSourceType === "opinion" && normalizedQuote.quotedSourceId === opinion.id) return false;
+  const previousReply = replyIndex > 0 ? normalizeReply(opinion.replies[replyIndex - 1]) : null;
+  return !previousReply || normalizedQuote.quotedSourceId !== previousReply.id;
+}
+
+function renderQuoteContextText(quoteText) {
+  return `\u21b3 Respondiendo a \u201c${quoteText}\u201d`;
+}
+
 function renderQuoteMarkup(quote) {
   const normalizedQuote = normalizeQuoteRecord(quote);
   if (!normalizedQuote) return "";
-  return `<blockquote class="reply-quote"><p>${escapeHtml(normalizedQuote.quotedText)}</p></blockquote>`;
+  const contextText = renderQuoteContextText(normalizedQuote.quotedText);
+  return `
+    <button class="reply-quote" type="button" aria-expanded="false" data-quote-source-type="${escapeHtml(normalizedQuote.quotedSourceType)}" data-quote-source-id="${escapeHtml(normalizedQuote.quotedSourceId)}" title="${escapeHtml(normalizedQuote.quotedText)}">
+      <span>${escapeHtml(contextText)}</span>
+    </button>
+  `;
 }
 
 function getSelectedQuoteText(container) {
@@ -814,14 +834,15 @@ function setReplyQuote(replyForm, quote) {
   const normalizedQuote = normalizeQuoteRecord(quote);
   replyForm._pendingQuote = normalizedQuote;
   const preview = replyForm.querySelector(".reply-quote-preview");
-  const previewText = preview?.querySelector("p");
+  const previewText = preview?.querySelector(".reply-quote-preview-text");
   if (!preview || !previewText) return;
   if (!normalizedQuote) {
     preview.classList.add("hidden");
     previewText.textContent = "";
     return;
   }
-  previewText.textContent = normalizedQuote.quotedText;
+  previewText.textContent = renderQuoteContextText(normalizedQuote.quotedText);
+  previewText.title = normalizedQuote.quotedText;
   preview.classList.remove("hidden");
 }
 
@@ -833,6 +854,47 @@ function quoteIntoReplyForm(card, quote) {
   replyInput.focus();
   resizeReplyControl(replyInput);
   showToast("Cita agregada a la respuesta");
+}
+
+function closeReplyActionMenus(exceptMenu = null) {
+  document.querySelectorAll(".reply-action-menu[open]").forEach((menu) => {
+    if (menu === exceptMenu) return;
+    menu.removeAttribute("open");
+    menu.querySelector(".reply-menu-button")?.setAttribute("aria-expanded", "false");
+  });
+}
+
+function highlightThreadTarget(target) {
+  if (!target) return;
+  const prefersReducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+  target.scrollIntoView({ behavior: prefersReducedMotion ? "auto" : "smooth", block: "center" });
+  target.classList.add("thread-target-highlight");
+  window.setTimeout(() => {
+    target.classList.remove("thread-target-highlight");
+  }, 1500);
+}
+
+function getReplyTargetSelector(replyId) {
+  if (window.CSS?.escape) return `.reply-item[data-reply-id="${CSS.escape(replyId)}"]`;
+  return `.reply-item[data-reply-id="${String(replyId).replaceAll('"', '\\"')}"]`;
+}
+
+function handleReplyQuoteClick(event) {
+  const quoteButton = event.currentTarget;
+  const card = quoteButton.closest(".opinion-card");
+  const sourceType = quoteButton.dataset.quoteSourceType;
+  const sourceId = quoteButton.dataset.quoteSourceId;
+  const target = sourceType === "reply"
+    ? card?.querySelector(getReplyTargetSelector(sourceId))
+    : card?.querySelector(".open-opinion");
+  if (target) {
+    quoteButton.setAttribute("aria-expanded", "false");
+    quoteButton.classList.remove("is-expanded");
+    highlightThreadTarget(target);
+    return;
+  }
+  const expanded = quoteButton.classList.toggle("is-expanded");
+  quoteButton.setAttribute("aria-expanded", String(expanded));
 }
 
 function ensureQuoteSelectionButton() {
@@ -2317,18 +2379,16 @@ function renderDetail() {
   renderDiscovery(related.querySelector(".discovery-grid"));
 }
 
-function createReplyElement(opinion, normalizedReply) {
+function createReplyElement(opinion, normalizedReply, replyIndex) {
   const item = document.createElement("div");
   item.className = "reply-item";
   item.dataset.replyId = normalizedReply.id;
+  const fullReplyDate = formatFullDate(normalizedReply.createdAt);
+  const quoteMarkup = shouldShowReplyQuote(opinion, normalizedReply, replyIndex) ? renderQuoteMarkup(normalizedReply.quote) : "";
   item.innerHTML = `
-    ${renderQuoteMarkup(normalizedReply.quote)}
+    ${quoteMarkup}
     <p class="reply-content quotable-text" data-quote-source-type="reply" data-quote-source-id="${escapeHtml(normalizedReply.id)}">${escapeHtml(normalizedReply.text)}</p>
-    <span class="date-stamp reply-date">${formatDate(normalizedReply.createdAt)}</span>
     <div class="reply-actions">
-      <button class="quote-button" type="button" aria-label="Citar respuesta" title="Citar respuesta">
-        <span aria-hidden="true">&ldquo;</span>
-      </button>
       <button class="like-button${normalizedReply.liked ? " liked" : ""}" type="button" aria-label="Me gusta respuesta">
         <svg aria-hidden="true" viewBox="0 0 24 24">
           <path d="M20.8 8.6c0 5.4-8.8 10.4-8.8 10.4S3.2 14 3.2 8.6A4.7 4.7 0 0 1 12 6.2a4.7 4.7 0 0 1 8.8 2.4z"></path>
@@ -2342,17 +2402,34 @@ function createReplyElement(opinion, normalizedReply) {
         </svg>
         <span>${normalizedReply.dislikes}</span>
       </button>
-      <button class="report-button opinion-action-button" type="button" aria-label="Reportar respuesta" title="Reportar respuesta">
-        <svg aria-hidden="true" viewBox="0 0 24 24">
-          <path d="M5 21V4"></path>
-          <path d="M5 4h12l-1.5 4L17 12H5"></path>
-        </svg>
-      </button>
+      <details class="reply-action-menu">
+        <summary class="reply-menu-button" aria-label="Más acciones de respuesta" aria-expanded="false" title="Más acciones">
+          <span aria-hidden="true">...</span>
+        </summary>
+        <div class="reply-menu-popover" role="menu">
+          <button class="reply-menu-item quote-button" type="button" role="menuitem">Responder citando</button>
+          <button class="reply-menu-item report-button" type="button" role="menuitem">Reportar</button>
+        </div>
+      </details>
+      <span class="date-stamp reply-date" title="${escapeHtml(fullReplyDate)}" aria-label="${escapeHtml(fullReplyDate)}">${formatRelativeDate(normalizedReply.createdAt)}</span>
     </div>
   `;
 
+  item.querySelector(".reply-quote")?.addEventListener("click", (event) => {
+    event.stopPropagation();
+    handleReplyQuoteClick(event);
+  });
+
+  const actionMenu = item.querySelector(".reply-action-menu");
+  actionMenu?.addEventListener("toggle", () => {
+    actionMenu.querySelector(".reply-menu-button")?.setAttribute("aria-expanded", String(actionMenu.open));
+    if (actionMenu.open) closeReplyActionMenus(actionMenu);
+  });
+  actionMenu?.addEventListener("click", (event) => event.stopPropagation());
+
   item.querySelector(".quote-button").addEventListener("click", (event) => {
     event.stopPropagation();
+    closeReplyActionMenus();
     const quote = createQuotePayload("reply", normalizedReply.id, normalizedReply.text, getSelectedQuoteText(item));
     quoteIntoReplyForm(item.closest(".opinion-card"), quote);
   });
@@ -2383,6 +2460,7 @@ function createReplyElement(opinion, normalizedReply) {
 
   item.querySelector(".report-button").addEventListener("click", async (event) => {
     event.stopPropagation();
+    closeReplyActionMenus();
     const reason = await askReportReason();
     if (!reason) return;
     try {
@@ -2403,7 +2481,7 @@ function renderReplyThread(thread, opinion) {
   opinion.replies.forEach((reply, index) => {
     const normalizedReply = normalizeReply(reply);
     opinion.replies[index] = normalizedReply;
-    thread.append(createReplyElement(opinion, normalizedReply));
+    thread.append(createReplyElement(opinion, normalizedReply, index));
   });
 }
 
@@ -2987,6 +3065,32 @@ function formatDate(value) {
   });
 
   return `${datePart} ${timePart}`;
+}
+
+function formatFullDate(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleString("es-AR", {
+    day: "numeric",
+    month: "numeric",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+}
+
+function formatRelativeDate(value, now = Date.now()) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const diffMinutes = Math.max(0, Math.floor((now - date.getTime()) / 60000));
+  if (diffMinutes < 1) return "Ahora";
+  if (diffMinutes < 60) return `Hace ${diffMinutes} min`;
+  const diffHours = Math.floor(diffMinutes / 60);
+  if (diffHours < 24) return `Hace ${diffHours} h`;
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffDays === 1) return "Ayer";
+  if (diffDays < 7) return `Hace ${diffDays} d\u00edas`;
+  return formatDate(value);
 }
 
 function formatRelativeActivity(value) {

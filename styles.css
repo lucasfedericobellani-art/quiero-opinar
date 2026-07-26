@@ -2748,6 +2748,7 @@ button {
   .report-button,
   .quote-button,
   .quote-selection-button,
+  .thread-target-highlight,
   .board-arrow,
   .topic-icon {
     transition: none;
@@ -2787,52 +2788,54 @@ button {
   margin: 0;
   min-width: 0;
   max-width: 720px;
-  color: var(--feed-text-secondary);
-  font-size: clamp(0.92rem, 1vw, 1rem);
-  font-weight: 450;
-  line-height: 1.55;
+  color: rgba(248, 236, 220, 0.9);
+  font-size: clamp(0.98rem, 1.05vw, 1.06rem);
+  font-weight: 520;
+  line-height: 1.58;
   overflow-wrap: anywhere;
   word-break: break-word;
 }
 
 .reply-quote,
 .reply-quote-preview {
-  width: fit-content;
+  width: 100%;
   max-width: 100%;
   min-width: 0;
-  margin: 0 0 8px;
-  padding: 0 0 0 10px;
-  border-left: 2px solid rgba(255, 176, 74, 0.42);
+  margin: 0 0 6px;
+  padding: 0 0 0 8px;
+  border: 0;
+  border-left: 1px solid rgba(197, 128, 54, 0.34);
   border-radius: 0;
   background: transparent;
-  color: var(--feed-text-muted);
+  color: rgba(210, 188, 164, 0.56);
   box-shadow: none;
 }
 
-.reply-quote span,
-.reply-quote-preview-label {
+.reply-quote {
   display: block;
-  margin-bottom: 2px;
-  color: rgba(245, 238, 226, 0.48);
-  font-size: 0.74rem;
-  font-weight: 700;
-  text-transform: none;
-  letter-spacing: 0;
+  padding-block: 0;
+  text-align: left;
+  cursor: pointer;
 }
 
-.reply-quote p,
-.reply-quote-preview p {
-  margin: 0;
-  color: var(--feed-text-secondary);
-  font-size: 0.86rem;
-  line-height: 1.45;
-  display: -webkit-box;
-  max-width: min(620px, 100%);
+.reply-quote span,
+.reply-quote-preview-text {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
   overflow: hidden;
+  color: rgba(210, 188, 164, 0.6);
+  font-size: 0.8rem;
+  font-weight: 560;
+  line-height: 1.4;
+  letter-spacing: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   overflow-wrap: anywhere;
-  word-break: break-word;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
+}
+
+.reply-quote.is-expanded span {
+  white-space: normal;
 }
 
 .reply-label {
@@ -2845,8 +2848,8 @@ button {
   gap: 0;
   width: auto;
   max-width: 100%;
-  margin: 18px 0 0;
-  padding: 0 0 0 18px;
+  margin: 22px 0 0;
+  padding: 0 0 0 16px;
   border: 0;
   border-radius: 0;
   background: transparent;
@@ -2864,13 +2867,9 @@ button {
   top: 2px;
   bottom: 2px;
   left: 0;
-  width: 2px;
+  width: 1px;
   border-radius: 999px;
-  background: linear-gradient(
-    to bottom,
-    rgba(255, 166, 45, 0.82),
-    rgba(255, 126, 0, 0.38)
-  );
+  background: rgba(162, 104, 55, 0.34);
 }
 
 .reply-card {
@@ -2893,17 +2892,35 @@ button {
 }
 
 .reply-item.reply-card-highlight::before {
-  background: rgba(255, 176, 0, 0.86);
+  background: rgba(255, 176, 0, 0.66);
+}
+
+.thread-target-highlight {
+  animation: threadTargetGlow 1500ms ease;
+}
+
+@keyframes threadTargetGlow {
+  0%,
+  100% {
+    background: transparent;
+  }
+
+  20%,
+  72% {
+    background: rgba(255, 145, 0, 0.08);
+  }
 }
 
 .reply-date {
-  display: block;
-  margin-top: 7px;
-  color: var(--feed-text-muted);
-  font-size: 0.82rem;
+  display: inline-flex;
+  align-items: center;
+  margin-left: auto;
+  color: rgba(210, 188, 164, 0.46);
+  font-size: 0.76rem;
   line-height: 1.3;
   font-weight: 500;
   font-style: normal;
+  white-space: nowrap;
 }
 
 .reply-date::before {
@@ -2913,8 +2930,9 @@ button {
 .reply-actions {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-top: 10px;
+  gap: 10px;
+  min-width: 0;
+  margin-top: 11px;
 }
 
 .quote-selection-button {
@@ -2936,18 +2954,64 @@ button {
 }
 
 .reply-actions button,
+.reply-menu-button,
 .reply-item .like-button,
 .reply-item .dislike-button,
 .reply-item .report-button {
-  min-width: 0;
-  min-height: 0;
-  padding: 7px 10px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 10px;
   border: 1px solid rgba(255, 153, 0, 0.18);
   border-radius: 999px;
   background: transparent;
   box-shadow: none;
   color: var(--feed-text-muted);
   font-size: 0.82rem;
+}
+
+.reply-action-menu {
+  position: relative;
+}
+
+.reply-menu-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  list-style: none;
+  cursor: pointer;
+}
+
+.reply-menu-button::-webkit-details-marker {
+  display: none;
+}
+
+.reply-menu-button span {
+  transform: translateY(-2px);
+}
+
+.reply-menu-popover {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 8px);
+  z-index: 30;
+  display: grid;
+  min-width: 172px;
+  padding: 6px;
+  border: 1px solid rgba(255, 145, 0, 0.18);
+  border-radius: 8px;
+  background: rgba(12, 12, 14, 0.98);
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.34);
+}
+
+.reply-menu-item {
+  justify-content: flex-start !important;
+  width: 100%;
+  min-height: 40px !important;
+  padding: 0 10px !important;
+  border: 0 !important;
+  border-radius: 6px !important;
+  color: rgba(244, 224, 198, 0.78) !important;
+  text-align: left;
 }
 
 .reply-item .opinion-action-button {
@@ -2962,9 +3026,13 @@ button {
 
 .reply-item .like-button:hover,
 .reply-item .dislike-button:hover,
+.reply-menu-button:hover,
+.reply-menu-item:hover,
 .reply-item .report-button:hover,
 .reply-item .like-button:focus-visible,
 .reply-item .dislike-button:focus-visible,
+.reply-menu-button:focus-visible,
+.reply-menu-item:focus-visible,
 .reply-item .report-button:focus-visible {
   border-color: rgba(255, 145, 0, 0.2);
   background: transparent;
@@ -2992,7 +3060,7 @@ button {
   grid-column: 1 / -1;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  align-items: start;
+  align-items: center;
   column-gap: 8px;
   width: auto;
   margin: 0;
@@ -3012,7 +3080,8 @@ button {
 }
 
 .reply-quote-preview-label,
-.reply-quote-preview p {
+.reply-quote-preview p,
+.reply-quote-preview-text {
   grid-column: 1;
 }
 
@@ -3821,18 +3890,33 @@ button {
   }
 
   .reply-date {
-    margin-top: 6px;
-    font-size: 0.78rem;
+    margin-left: auto;
+    font-size: 0.72rem;
   }
 
   .reply-actions {
-    gap: 6px;
-    margin-top: 9px;
+    gap: 5px;
+    margin-top: 10px;
   }
 
-  .reply-actions button {
-    padding: 6px 9px;
-    font-size: 0.8rem;
+  .reply-actions button,
+  .reply-menu-button {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0 8px;
+    font-size: 0.78rem;
+  }
+
+  .reply-menu-popover {
+    position: fixed;
+    left: 16px;
+    right: 16px;
+    bottom: calc(16px + env(safe-area-inset-bottom));
+    min-width: 0;
+  }
+
+  .reply-menu-item {
+    min-height: 44px !important;
   }
 
   .feed-panel,

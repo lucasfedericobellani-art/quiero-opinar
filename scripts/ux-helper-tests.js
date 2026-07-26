@@ -47,6 +47,28 @@ function getActivityIndicatorText(value, isMobile = false) {
   return `${value}${isMobile ? "" : " personas"} opinando ahora`;
 }
 
+function formatRelativeDate(value, now) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const diffMinutes = Math.max(0, Math.floor((now - date.getTime()) / 60000));
+  if (diffMinutes < 1) return "Ahora";
+  if (diffMinutes < 60) return `Hace ${diffMinutes} min`;
+  const diffHours = Math.floor(diffMinutes / 60);
+  if (diffHours < 24) return `Hace ${diffHours} h`;
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffDays === 1) return "Ayer";
+  if (diffDays < 7) return `Hace ${diffDays} dias`;
+  return "old";
+}
+
+function shouldShowReplyQuote(opinion, reply, replyIndex) {
+  const quote = reply.quote;
+  if (!quote) return false;
+  if (quote.quotedSourceType === "opinion" && quote.quotedSourceId === opinion.id) return false;
+  const previousReply = replyIndex > 0 ? opinion.replies[replyIndex - 1] : null;
+  return !previousReply || quote.quotedSourceId !== previousReply.id;
+}
+
 function getHotTopicScore(topicStats, now, windowHours = 6) {
   const recentWindowStart = now - windowHours * 60 * 60 * 1000;
   const recentOpinionCount = topicStats.opinions.filter((opinion) => opinion.createdAt >= recentWindowStart).length;
@@ -60,6 +82,7 @@ function getHotTopicScore(topicStats, now, windowHours = 6) {
 }
 
 function run() {
+  const now = Date.now();
   assert.strictEqual(getDisplayedActiveUsers(0, 13), 13, "activity never drops below 13");
   assert.strictEqual(getDisplayedActiveUsers(1, 13), 13, "low activity remains stable at 13");
   assert.strictEqual(getDisplayedActiveUsers(13, 13), 16, "activity above floor rises smoothly");
@@ -68,8 +91,10 @@ function run() {
   assert.strictEqual(getActivityIndicatorText(13), "13 personas opinando ahora", "desktop activity wording is exact");
   assert.strictEqual(getActivityIndicatorText(13, true), "13 opinando ahora", "mobile activity wording is compact");
   assert(!getActivityIndicatorText(13).includes("participando"), "activity wording never says participando");
+  assert.strictEqual(formatRelativeDate(now - 30 * 1000, now), "Ahora", "relative date supports now");
+  assert.strictEqual(formatRelativeDate(now - 2 * 60 * 1000, now), "Hace 2 min", "relative date supports minutes");
+  assert.strictEqual(formatRelativeDate(now - 26 * 60 * 60 * 1000, now), "Ayer", "relative date supports yesterday");
 
-  const now = Date.now();
   const hot = getHotTopicScore({
     opinions: [
       { createdAt: now - 2000, replies: [{ createdAt: now - 1000 }, { createdAt: now - 3000 }] },
@@ -98,6 +123,15 @@ function run() {
   }, "quote button supports short replies");
   assert.strictEqual(createQuotePayload("reply", "r1", "hjola", "hjo"), null, "short manual selections are still rejected");
   assert.strictEqual(normalizeQuoteText(`  ${"a".repeat(400)}  `).length, QUOTE_MAX_LENGTH, "quote is truncated");
+  const quotedOpinion = { id: "op1", replies: [] };
+  quotedOpinion.replies = [
+    { id: "r1", quote: { quotedSourceType: "opinion", quotedSourceId: "op1" } },
+    { id: "r2", quote: { quotedSourceType: "reply", quotedSourceId: "r1" } },
+    { id: "r3", quote: { quotedSourceType: "reply", quotedSourceId: "r1" } }
+  ];
+  assert.strictEqual(shouldShowReplyQuote(quotedOpinion, quotedOpinion.replies[0], 0), false, "direct opinion quote is visually redundant");
+  assert.strictEqual(shouldShowReplyQuote(quotedOpinion, quotedOpinion.replies[1], 1), false, "immediate previous reply quote is visually redundant");
+  assert.strictEqual(shouldShowReplyQuote(quotedOpinion, quotedOpinion.replies[2], 2), true, "older reply quote is shown for context");
 
   console.log("ux helper tests ok");
 }
