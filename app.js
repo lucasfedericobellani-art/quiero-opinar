@@ -1839,31 +1839,28 @@ function ensureActiveReplyControlVisible() {
   if (!form) return;
 
   const viewport = getVisualViewportBounds();
-  const rect = form.getBoundingClientRect();
-  const card = form.closest(".opinion-card");
-  const contextRect = card?.getBoundingClientRect() || rect;
+  const controlRect = activeReplyControl.getBoundingClientRect();
+  const anchor = form.querySelector(".reply-quote-preview:not(.hidden)") || activeReplyControl;
+  const anchorRect = anchor.getBoundingClientRect();
   const replyOffset = getEffectiveReplyKeyboardOffset(
     parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--keyboard-offset")) || 0
   );
   const visibleBottom = Math.min(viewport.bottom, window.innerHeight - replyOffset);
-  const topLimit = viewport.top + 82;
+  const topLimit = viewport.top + 88;
   const bottomLimit = Math.max(topLimit + 160, visibleBottom - 28);
   let delta = 0;
 
-  if (rect.bottom > bottomLimit) {
-    delta = rect.bottom - bottomLimit;
-  } else if (rect.top < topLimit) {
-    delta = rect.top - topLimit;
+  if (controlRect.bottom > bottomLimit) {
+    delta = controlRect.bottom - bottomLimit;
   }
 
-  const contextTopAfterScroll = contextRect.top - delta;
-  if (contextTopAfterScroll > topLimit + 24 && rect.bottom <= bottomLimit) {
-    delta = contextRect.top - (topLimit + 24);
+  if (anchorRect.top - delta < topLimit) {
+    delta = anchorRect.top - topLimit;
+  } else if (!delta && anchorRect.top > bottomLimit) {
+    delta = anchorRect.top - topLimit;
   }
 
-  const maxDownDelta = Math.max(180, Math.min(420, viewport.height * 0.68));
   const maxUpDelta = Math.max(100, Math.min(180, viewport.height * 0.24));
-  if (delta > 0) delta = Math.min(delta, maxDownDelta);
   if (delta < 0) delta = Math.max(delta, -maxUpDelta);
   animateReplyScrollBy(delta);
 }
@@ -2152,7 +2149,7 @@ function scrollReplyComposerIntoView(replyForm, replyInput) {
       activeReplyControl = replyInput;
       resizeReplyControl(replyInput);
       updateViewportMetrics();
-      scheduleActiveReplyControlVisibility(90);
+      scheduleActiveReplyControlVisibility(120);
     });
     return;
   }
