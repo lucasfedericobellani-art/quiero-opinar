@@ -32,6 +32,8 @@ const hotTopicWindowHours = 6;
 const hotTopicMinScore = 4;
 const quoteMinLength = 8;
 const quoteMaxLength = 280;
+let activeReplyMenu = null;
+let replyActionPopover = null;
 
 const topicRules = [
   { id: "formula-1", words: ["formula 1", "f1", "ferrari", "red bull", "mercedes", "mclaren", "verstappen", "hamilton", "leclerc", "colapinto", "piloto", "carrera", "gran premio", "pit stop"] },
@@ -284,7 +286,7 @@ document.addEventListener("keydown", (event) => {
 
   if (event.key !== "Escape") return;
 
-  closeReplyActionMenus();
+  closeReplyActionMenu(true);
 
   if (!legalOverlay.classList.contains("hidden")) {
     closeLegalModal();
@@ -405,7 +407,7 @@ mobileMenuToggle?.addEventListener("click", () => {
 });
 
 document.addEventListener("click", (event) => {
-  if (!event.target.closest?.(".reply-action-menu")) closeReplyActionMenus();
+  if (!event.target.closest?.(".reply-menu-button") && !event.target.closest?.(".reply-menu-popover")) closeReplyActionMenu();
   if (!isMobileMenuOpen) return;
   if (topNav.contains(event.target) || mobileMenuToggle?.contains(event.target)) return;
   closeMobileMenu(false);
@@ -425,8 +427,12 @@ if (mobileViewportQuery.addEventListener) {
 
 window.addEventListener("popstate", (event) => {
   clearReplyKeyboardAssist();
+  closeReplyActionMenu();
   restoreViewFromHistory(event.state);
 });
+
+window.addEventListener("scroll", repositionReplyActionMenu, { passive: true });
+window.addEventListener("resize", repositionReplyActionMenu);
 
 document.addEventListener("focusin", (event) => {
   const control = event.target.closest?.(".reply-form input, .reply-form textarea");
@@ -852,12 +858,85 @@ function quoteIntoReplyForm(card, quote) {
   showToast("Cita agregada a la respuesta");
 }
 
-function closeReplyActionMenus(exceptMenu = null) {
-  document.querySelectorAll(".reply-action-menu[open]").forEach((menu) => {
-    if (menu === exceptMenu) return;
-    menu.removeAttribute("open");
-    menu.querySelector(".reply-menu-button")?.setAttribute("aria-expanded", "false");
+function getReplyActionPopover() {
+  if (replyActionPopover) return replyActionPopover;
+  replyActionPopover = document.createElement("div");
+  replyActionPopover.className = "reply-menu-popover hidden";
+  replyActionPopover.setAttribute("role", "menu");
+  replyActionPopover.innerHTML = `
+    <button class="reply-menu-item quote-button" type="button" role="menuitem">
+      <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M7 7h10"></path><path d="M7 12h7"></path><path d="M7 17h4"></path><path d="m15 16 3 3 3-3"></path><path d="M18 19V9"></path></svg>
+      <span>Responder citando</span>
+    </button>
+    <button class="reply-menu-item report-button" type="button" role="menuitem">
+      <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 21V4"></path><path d="M5 4h12l-1.5 4L17 12H5"></path></svg>
+      <span>Reportar</span>
+    </button>
+  `;
+  replyActionPopover.querySelector(".quote-button").addEventListener("click", (event) => {
+    event.stopPropagation();
+    const state = activeReplyMenu;
+    closeReplyActionMenu(true);
+    state?.onQuote?.();
   });
+  replyActionPopover.querySelector(".report-button").addEventListener("click", (event) => {
+    event.stopPropagation();
+    const state = activeReplyMenu;
+    closeReplyActionMenu(true);
+    state?.onReport?.();
+  });
+  document.body.append(replyActionPopover);
+  return replyActionPopover;
+}
+
+function positionReplyActionPopover(anchorButton) {
+  const popover = getReplyActionPopover();
+  const padding = 14;
+  const offset = 8;
+  popover.classList.remove("hidden");
+  popover.style.visibility = "hidden";
+  popover.style.left = "0px";
+  popover.style.top = "0px";
+
+  const anchorRect = anchorButton.getBoundingClientRect();
+  const popoverRect = popover.getBoundingClientRect();
+  const spaceBelow = window.innerHeight - anchorRect.bottom - padding;
+  const spaceAbove = anchorRect.top - padding;
+  const opensUp = spaceBelow < popoverRect.height + offset && spaceAbove > spaceBelow;
+  const rawLeft = anchorRect.right - popoverRect.width;
+  const left = Math.min(Math.max(rawLeft, padding), window.innerWidth - popoverRect.width - padding);
+  const rawTop = opensUp ? anchorRect.top - popoverRect.height - offset : anchorRect.bottom + offset;
+  const top = Math.min(Math.max(rawTop, padding), window.innerHeight - popoverRect.height - padding);
+
+  popover.dataset.placement = opensUp ? "top-end" : "bottom-end";
+  popover.style.left = `${left + window.scrollX}px`;
+  popover.style.top = `${top + window.scrollY}px`;
+  popover.style.visibility = "";
+}
+
+function openReplyActionMenu(anchorButton, actions) {
+  if (activeReplyMenu?.button === anchorButton) {
+    closeReplyActionMenu(true);
+    return;
+  }
+  closeReplyActionMenu();
+  activeReplyMenu = { button: anchorButton, ...actions };
+  anchorButton.setAttribute("aria-expanded", "true");
+  positionReplyActionPopover(anchorButton);
+  window.setTimeout(() => getReplyActionPopover().querySelector(".reply-menu-item")?.focus(), 0);
+}
+
+function closeReplyActionMenu(restoreFocus = false) {
+  const previousButton = activeReplyMenu?.button;
+  if (previousButton) previousButton.setAttribute("aria-expanded", "false");
+  activeReplyMenu = null;
+  if (replyActionPopover) replyActionPopover.classList.add("hidden");
+  if (restoreFocus) previousButton?.focus();
+}
+
+function repositionReplyActionMenu() {
+  if (!activeReplyMenu?.button || !replyActionPopover || replyActionPopover.classList.contains("hidden")) return;
+  positionReplyActionPopover(activeReplyMenu.button);
 }
 
 function highlightThreadTarget(target) {
@@ -2398,15 +2477,9 @@ function createReplyElement(opinion, normalizedReply, replyIndex) {
         </svg>
         <span>${normalizedReply.dislikes}</span>
       </button>
-      <details class="reply-action-menu">
-        <summary class="reply-menu-button" aria-label="Más acciones de respuesta" aria-expanded="false" title="Más acciones">
-          <span aria-hidden="true">...</span>
-        </summary>
-        <div class="reply-menu-popover" role="menu">
-          <button class="reply-menu-item quote-button" type="button" role="menuitem">Responder citando</button>
-          <button class="reply-menu-item report-button" type="button" role="menuitem">Reportar</button>
-        </div>
-      </details>
+      <button class="reply-menu-button" type="button" aria-label="Más acciones de respuesta" aria-haspopup="menu" aria-expanded="false" title="Más acciones">
+        <span aria-hidden="true">...</span>
+      </button>
       <span class="date-stamp reply-date" title="${escapeHtml(fullReplyDate)}" aria-label="${escapeHtml(fullReplyDate)}">${formatRelativeDate(normalizedReply.createdAt)}</span>
     </div>
   `;
@@ -2416,18 +2489,28 @@ function createReplyElement(opinion, normalizedReply, replyIndex) {
     handleReplyQuoteClick(event);
   });
 
-  const actionMenu = item.querySelector(".reply-action-menu");
-  actionMenu?.addEventListener("toggle", () => {
-    actionMenu.querySelector(".reply-menu-button")?.setAttribute("aria-expanded", String(actionMenu.open));
-    if (actionMenu.open) closeReplyActionMenus(actionMenu);
-  });
-  actionMenu?.addEventListener("click", (event) => event.stopPropagation());
-
-  item.querySelector(".quote-button").addEventListener("click", (event) => {
-    event.stopPropagation();
-    closeReplyActionMenus();
+  const quoteReply = () => {
     const quote = createQuotePayload("reply", normalizedReply.id, normalizedReply.text, getSelectedQuoteText(item));
     quoteIntoReplyForm(item.closest(".opinion-card"), quote);
+  };
+
+  const reportReply = async () => {
+    const reason = await askReportReason();
+    if (!reason) return;
+    try {
+      const result = await registerContentActionViaApi("report", "reply", normalizedReply.id, opinion.id, reason);
+      Object.assign(opinion, result.opinion);
+      render();
+      showToast("Reporte enviado");
+    } catch (error) {
+      showToast(getApiErrorMessage(error, "No se pudo enviar el reporte."));
+    }
+  };
+
+  const menuButton = item.querySelector(".reply-menu-button");
+  menuButton.addEventListener("click", (event) => {
+    event.stopPropagation();
+    openReplyActionMenu(menuButton, { onQuote: quoteReply, onReport: reportReply });
   });
 
   item.querySelector(".like-button").addEventListener("click", async (event) => {
@@ -2451,21 +2534,6 @@ function createReplyElement(opinion, normalizedReply, replyIndex) {
       showToast(result.active ? "No me gusta guardado" : "No me gusta quitado");
     } catch (error) {
       showToast(getApiErrorMessage(error, "No se pudo guardar el no me gusta."));
-    }
-  });
-
-  item.querySelector(".report-button").addEventListener("click", async (event) => {
-    event.stopPropagation();
-    closeReplyActionMenus();
-    const reason = await askReportReason();
-    if (!reason) return;
-    try {
-      const result = await registerContentActionViaApi("report", "reply", normalizedReply.id, opinion.id, reason);
-      Object.assign(opinion, result.opinion);
-      render();
-      showToast("Reporte enviado");
-    } catch (error) {
-      showToast(getApiErrorMessage(error, "No se pudo enviar el reporte."));
     }
   });
 
