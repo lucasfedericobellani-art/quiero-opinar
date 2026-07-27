@@ -1486,6 +1486,12 @@ function isMobileViewport() {
   return mobileViewportQuery.matches;
 }
 
+function shouldUseImmediateReplyFocus() {
+  return isMobileViewport()
+    || Boolean(window.matchMedia?.("(pointer: coarse)")?.matches)
+    || (navigator.maxTouchPoints || 0) > 0;
+}
+
 function updateMainComposerVisibility() {
   if (!composerPanel) return;
 
@@ -1826,7 +1832,7 @@ function clearReplyViewportTimers() {
 
 function dismissActiveReplyControlFromUserScroll(target, options = {}) {
   if (!activeReplyControl) return;
-  if (options.mobileOnly && !isMobileViewport()) return;
+  if (options.mobileOnly && !shouldUseImmediateReplyFocus()) return;
   if (target?.closest?.(".reply-menu-popover, .reply-menu-button, .action-menu-button")) return;
   if (!options.immediate && Date.now() - lastReplyFocusAt < 180) return;
 
@@ -2216,7 +2222,7 @@ function setReplyQuote(replyForm, quote) {
 
 function focusReplyInput(replyInput, visibilityDelay = 70) {
   if (!replyInput) return;
-  const isMobile = isMobileViewport();
+  const isMobile = shouldUseImmediateReplyFocus();
 
   if (isMobile) {
     try {
@@ -2255,7 +2261,7 @@ function scrollReplyComposerIntoView(replyForm, replyInput) {
     replyComposerFrame = 0;
   }
 
-  const isMobile = isMobileViewport();
+  const isMobile = shouldUseImmediateReplyFocus();
   if (isMobile) {
     focusReplyInput(replyInput, 0);
     return;
@@ -2362,18 +2368,29 @@ function openReplyActionMenu(button, items) {
   `).join("");
   popover.querySelectorAll(".reply-menu-item").forEach((itemButton) => {
     let hasSelected = false;
+    const getItem = () => activeReplyMenu?.items[Number(itemButton.dataset.index)];
+    const preFocusReplyTarget = (event) => {
+      const replyInput = getItem()?.focusTarget?.();
+      if (!replyInput || !shouldUseImmediateReplyFocus()) return;
+      if (event.cancelable) event.preventDefault();
+      event.stopPropagation();
+      focusReplyInput(replyInput, 160);
+    };
     const selectItem = (event) => {
       if (hasSelected) {
+        if (event.cancelable) event.preventDefault();
         event.stopPropagation();
         return;
       }
       hasSelected = true;
       event.stopPropagation();
-      const item = activeReplyMenu?.items[Number(itemButton.dataset.index)];
+      const item = getItem();
       closeReplyActionMenu(false);
       item?.action();
     };
 
+    itemButton.addEventListener("pointerdown", preFocusReplyTarget);
+    itemButton.addEventListener("touchstart", preFocusReplyTarget, { passive: false });
     itemButton.addEventListener("pointerup", selectItem);
     itemButton.addEventListener("touchend", selectItem, { passive: false });
     itemButton.addEventListener("click", selectItem);
@@ -2541,7 +2558,12 @@ function createReplyElement(opinion, normalizedReply) {
   const replyMenuButton = item.querySelector(".reply-menu-button");
   syncActionMenuButtonSize(replyMenuButton, [replyLikeButton, replyDislikeButton]);
   bindActionMenuButton(replyMenuButton, () => [
-      { label: "Responder citando", icon: "quote", action: quoteReply },
+      {
+        label: "Responder citando",
+        icon: "quote",
+        action: quoteReply,
+        focusTarget: () => item.closest(".opinion-card")?.querySelector(".reply-form textarea, .reply-form input")
+      },
       { label: "Reportar", icon: "report", danger: true, action: reportReply }
     ]);
 
@@ -2688,7 +2710,12 @@ function createOpinionCard(opinion, isDetail) {
 
   bindActionMenuButton(opinionMenuButton, () => [
       { label: "Compartir", icon: "share", action: shareOpinionFromMenu },
-      { label: "Responder citando", icon: "quote", action: quoteOpinion },
+      {
+        label: "Responder citando",
+        icon: "quote",
+        action: quoteOpinion,
+        focusTarget: () => card.querySelector(".reply-form textarea, .reply-form input")
+      },
       { label: "Reportar", icon: "report", danger: true, action: reportOpinionFromMenu }
     ]);
 
