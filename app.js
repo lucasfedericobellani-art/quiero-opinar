@@ -2194,14 +2194,21 @@ function scrollReplyComposerIntoView(replyForm, replyInput) {
     const targetElement = replyForm.querySelector(".reply-quote-preview:not(.hidden)") || replyForm;
     const targetRect = targetElement.getBoundingClientRect();
     const controlRect = replyInput.getBoundingClientRect();
+    const formRect = replyForm.getBoundingClientRect();
+    const floatingTrigger = isMobile ? null : document.querySelector(".floating-opinion-trigger.is-visible");
+    const floatingRect = floatingTrigger?.getBoundingClientRect();
+    const desktopBottomClearance = floatingRect?.height
+      ? Math.min(150, Math.max(28, window.innerHeight - floatingRect.top + 14))
+      : 28;
+    const bottomRect = isMobile ? controlRect : formRect;
     const visibleTop = viewport.top + 76;
-    const visibleBottom = Math.min(viewport.bottom, window.innerHeight) - (isMobile ? 130 : 28);
-    const isVisible = targetRect.top >= visibleTop && controlRect.bottom <= visibleBottom;
+    const visibleBottom = Math.min(viewport.bottom, window.innerHeight) - (isMobile ? 130 : desktopBottomClearance);
+    const isVisible = targetRect.top >= visibleTop && bottomRect.bottom <= visibleBottom;
 
     if (!isVisible) {
       const desktopDelta = targetRect.top < visibleTop
         ? targetRect.top - visibleTop
-        : controlRect.bottom - visibleBottom;
+        : bottomRect.bottom - visibleBottom;
       const targetScrollY = Math.max(0, window.scrollY + (isMobile ? targetRect.top - visibleTop : desktopDelta));
       const prefersReducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
       window.scrollTo({ top: targetScrollY, behavior: prefersReducedMotion ? "auto" : "smooth" });
