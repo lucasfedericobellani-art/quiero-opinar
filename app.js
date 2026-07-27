@@ -1908,6 +1908,14 @@ function scheduleActiveReplyControlVisibility(delay = 70) {
   replyViewportTimers.push(window.setTimeout(ensureActiveReplyControlVisible, delay));
 }
 
+function scheduleReplyControlVisibilityChecks(delays = [70]) {
+  if (!activeReplyControl || !isMobileViewport()) return;
+  clearReplyViewportTimers();
+  delays.forEach((delay) => {
+    replyViewportTimers.push(window.setTimeout(ensureActiveReplyControlVisible, delay));
+  });
+}
+
 function ensureActiveReplyControlVisible() {
   if (!activeReplyControl || !isMobileViewport()) return;
   const form = activeReplyControl.closest(".reply-form");
@@ -1923,7 +1931,8 @@ function ensureActiveReplyControlVisible() {
     parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--keyboard-offset")) || 0
   );
   const visibleBottom = Math.min(viewport.bottom, window.innerHeight - replyOffset);
-  const topLimit = viewport.top + 88;
+  const hasQuotePreview = anchor !== activeReplyControl;
+  const topLimit = viewport.top + (hasQuotePreview ? 58 : 88);
   const bottomLimit = Math.max(topLimit + 170, visibleBottom - 22);
   const contentBottom = Math.max(controlRect.bottom, endRect.bottom);
   let delta = 0;
@@ -2218,6 +2227,9 @@ function setReplyQuote(replyForm, quote) {
   if (label) {
     label.textContent = normalizedQuote ? `"${normalizedQuote.quotedText}"` : "";
   }
+  if (normalizedQuote && replyForm.contains(activeReplyControl)) {
+    scheduleReplyControlVisibilityChecks([0, 90, 220, 420, 700]);
+  }
 }
 
 function focusReplyInput(replyInput, visibilityDelay = 70) {
@@ -2264,6 +2276,7 @@ function scrollReplyComposerIntoView(replyForm, replyInput) {
   const isMobile = shouldUseImmediateReplyFocus();
   if (isMobile) {
     focusReplyInput(replyInput, 0);
+    scheduleReplyControlVisibilityChecks([0, 90, 220, 420, 700]);
     return;
   }
 
