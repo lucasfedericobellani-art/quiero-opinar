@@ -2190,16 +2190,19 @@ function scrollReplyComposerIntoView(replyForm, replyInput) {
   replyComposerFrame = window.requestAnimationFrame(() => {
     replyComposerFrame = 0;
     const viewport = getVisualViewportBounds();
-    const card = replyForm.closest(".opinion-card");
+    const isMobile = isMobileViewport();
     const targetElement = replyForm.querySelector(".reply-quote-preview:not(.hidden)") || replyForm;
     const targetRect = targetElement.getBoundingClientRect();
     const controlRect = replyInput.getBoundingClientRect();
     const visibleTop = viewport.top + 76;
-    const visibleBottom = Math.min(viewport.bottom, window.innerHeight) - (isMobileViewport() ? 130 : 32);
+    const visibleBottom = Math.min(viewport.bottom, window.innerHeight) - (isMobile ? 130 : 28);
     const isVisible = targetRect.top >= visibleTop && controlRect.bottom <= visibleBottom;
 
     if (!isVisible) {
-      const targetScrollY = Math.max(0, window.scrollY + targetRect.top - visibleTop);
+      const desktopDelta = targetRect.top < visibleTop
+        ? targetRect.top - visibleTop
+        : controlRect.bottom - visibleBottom;
+      const targetScrollY = Math.max(0, window.scrollY + (isMobile ? targetRect.top - visibleTop : desktopDelta));
       const prefersReducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
       window.scrollTo({ top: targetScrollY, behavior: prefersReducedMotion ? "auto" : "smooth" });
     }
@@ -2213,7 +2216,7 @@ function scrollReplyComposerIntoView(replyForm, replyInput) {
       activeReplyControl = replyInput;
       resizeReplyControl(replyInput);
       updateViewportMetrics();
-      scheduleActiveReplyControlVisibility(isMobileViewport() ? 0 : 70);
+      scheduleActiveReplyControlVisibility(isMobile ? 0 : 70);
     });
   });
 }
