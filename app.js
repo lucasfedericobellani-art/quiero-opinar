@@ -412,6 +412,10 @@ document.addEventListener("wheel", (event) => {
   dismissActiveReplyControlFromUserScroll(event.target);
 }, { passive: true });
 
+document.addEventListener("touchstart", (event) => {
+  dismissActiveReplyControlFromUserScroll(event.target, { immediate: true, mobileOnly: true });
+}, { passive: true, capture: true });
+
 document.addEventListener("touchmove", (event) => {
   dismissActiveReplyControlFromUserScroll(event.target);
 }, { passive: true });
@@ -1820,9 +1824,10 @@ function clearReplyViewportTimers() {
   replyViewportTimers = [];
 }
 
-function dismissActiveReplyControlFromUserScroll(target) {
+function dismissActiveReplyControlFromUserScroll(target, options = {}) {
   if (!activeReplyControl) return;
-  if (Date.now() - lastReplyFocusAt < 180) return;
+  if (options.mobileOnly && !isMobileViewport()) return;
+  if (!options.immediate && Date.now() - lastReplyFocusAt < 180) return;
 
   const activeForm = activeReplyControl.closest(".reply-form");
   const eventForm = target?.closest?.(".reply-form");
