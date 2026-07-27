@@ -2213,6 +2213,30 @@ function setReplyQuote(replyForm, quote) {
   }
 }
 
+function focusReplyInput(replyInput, visibilityDelay = 70) {
+  if (!replyInput) return;
+  try {
+    replyInput.focus({ preventScroll: true });
+  } catch {
+    replyInput.focus();
+  }
+
+  if (document.activeElement !== replyInput) {
+    try {
+      replyInput.focus();
+    } catch {
+      // Some embedded browsers reject programmatic focus outside a trusted touch event.
+    }
+  }
+
+  activeReplyControl = replyInput;
+  lastReplyFocusAt = Date.now();
+  document.body.classList.add("reply-field-focused");
+  resizeReplyControl(replyInput);
+  updateViewportMetrics();
+  scheduleActiveReplyControlVisibility(visibilityDelay);
+}
+
 function scrollReplyComposerIntoView(replyForm, replyInput) {
   if (!replyForm || !replyInput) return;
   if (replyComposerFrame) {
@@ -2222,15 +2246,7 @@ function scrollReplyComposerIntoView(replyForm, replyInput) {
 
   const isMobile = isMobileViewport();
   if (isMobile) {
-    try {
-      replyInput.focus({ preventScroll: true });
-    } catch {
-      replyInput.focus();
-    }
-    activeReplyControl = replyInput;
-    resizeReplyControl(replyInput);
-    updateViewportMetrics();
-    scheduleActiveReplyControlVisibility(0);
+    focusReplyInput(replyInput, 0);
     return;
   }
 
@@ -2259,15 +2275,7 @@ function scrollReplyComposerIntoView(replyForm, replyInput) {
     }
 
     window.requestAnimationFrame(() => {
-      try {
-        replyInput.focus({ preventScroll: true });
-      } catch {
-        replyInput.focus();
-      }
-      activeReplyControl = replyInput;
-      resizeReplyControl(replyInput);
-      updateViewportMetrics();
-      scheduleActiveReplyControlVisibility(70);
+      focusReplyInput(replyInput, 70);
     });
   });
 }
@@ -2342,12 +2350,22 @@ function openReplyActionMenu(button, items) {
     </button>
   `).join("");
   popover.querySelectorAll(".reply-menu-item").forEach((itemButton) => {
-    itemButton.addEventListener("click", (event) => {
+    let hasSelected = false;
+    const selectItem = (event) => {
+      if (hasSelected) {
+        event.stopPropagation();
+        return;
+      }
+      hasSelected = true;
       event.stopPropagation();
       const item = activeReplyMenu?.items[Number(itemButton.dataset.index)];
       closeReplyActionMenu(false);
       item?.action();
-    });
+    };
+
+    itemButton.addEventListener("pointerup", selectItem);
+    itemButton.addEventListener("touchend", selectItem, { passive: false });
+    itemButton.addEventListener("click", selectItem);
   });
   positionReplyActionPopover();
   popover.classList.add("is-open");
