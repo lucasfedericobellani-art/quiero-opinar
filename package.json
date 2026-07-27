@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "vercel dev",
     "start": "vercel dev",
-    "test:quote-flow": "node scripts/quote-flow-regression.test.js"
+    "test:quote-flow": "node scripts/quote-flow-regression.test.js",
+    "test:load-performance": "node scripts/load-performance-regression.test.js"
   },
   "dependencies": {
     "firebase": "^10.14.1",

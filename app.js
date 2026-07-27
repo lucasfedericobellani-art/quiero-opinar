@@ -60,6 +60,8 @@ const routePaths = {
 const trendingWindowHours = 6;
 const trendingRefreshHours = 12;
 const trendingTopicLimit = 5;
+const initialOpinionLoadLimit = 50;
+const opinionPageLoadSize = 30;
 const maxOpinionLength = 5000;
 const maxTopicLength = 80;
 const quoteMaxLength = 280;
@@ -245,6 +247,11 @@ let activeReplyComposerKey = "";
 let lastReplyFocusAt = 0;
 const replyDrafts = new Map();
 let activeReplyComposerState = createReplyComposerState();
+const supplementalOpinionIds = new Set();
+let canLoadMoreOpinions = false;
+let isLoadingMoreOpinions = false;
+let isLoadingInitialRouteOpinion = false;
+let isLoadingSearchOpinion = false;
 let dataStore = createLocalDataStore();
 
 hydrateInitialContentFromCache();
@@ -653,6 +660,26 @@ function getVisibleOpinions() {
   return opinions.filter((opinion) => !opinion.hidden);
 }
 
+function sortOpinionsByCreatedAt(nextOpinions) {
+  return nextOpinions.slice().sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+}
+
+function mergeOpinionLists(primaryOpinions, secondaryOpinions = []) {
+  const byId = new Map();
+  [...primaryOpinions, ...secondaryOpinions].forEach((opinion) => {
+    const normalizedOpinion = normalizeOpinion(opinion);
+    if (!normalizedOpinion.id || byId.has(normalizedOpinion.id)) return;
+    byId.set(normalizedOpinion.id, normalizedOpinion);
+  });
+  return sortOpinionsByCreatedAt(Array.from(byId.values()));
+}
+
+function rememberSupplementalOpinions(nextOpinions) {
+  nextOpinions.forEach((opinion) => {
+    if (opinion?.id) supplementalOpinionIds.add(opinion.id);
+  });
+}
+
 function getOpinionById(opinionId) {
   return opinions.find((item) => item.id === opinionId);
 }
@@ -960,12 +987,34 @@ function syncSearchInputs(value) {
   });
 }
 
-function submitSearch(value, sourceInput) {
+async function submitSearch(value, sourceInput) {
   searchQuery = value.trim();
   syncSearchInputs(searchQuery);
   sourceInput?.blur();
-  renderSearchResults();
   navigateToView("search");
+  renderSearchResults();
+
+  const routeLookupCandidate = getSearchRouteLookupCandidate(searchQuery);
+  if (!routeLookupCandidate || getOpinionByRouteId(routeLookupCandidate) || !dataStore.getOpinionByRouteId) return;
+
+  isLoadingSearchOpinion = true;
+  renderSearchResults();
+  try {
+    await dataStore.getOpinionByRouteId(routeLookupCandidate);
+  } catch (error) {
+    console.warn("No se pudo cargar la opinion buscada.", error);
+  } finally {
+    isLoadingSearchOpinion = false;
+    renderSearchResults();
+  }
+}
+
+function getSearchRouteLookupCandidate(value) {
+  const rawValue = String(value || "").trim();
+  const normalizedValue = normalizeText(rawValue).replace(/^opinion\s*#?\s*/, "").trim();
+  const publicNumber = normalizedValue.match(/^#?(\d+)$/)?.[1] || "";
+  if (publicNumber) return publicNumber;
+  return /^opinion-\d+-\d+$/i.test(rawValue) ? rawValue : "";
 }
 
 function containsBlockedLink(value) {
@@ -2095,6 +2144,7 @@ function renderFeed() {
     empty.className = "opinion-card";
     empty.textContent = "Todavía no hay opiniones en este tema. Podés abrir el primer hilo.";
     feedList.append(empty);
+    appendLoadMoreOpinionsButton(feedList);
     renderDiscovery();
     return;
   }
@@ -2102,7 +2152,37 @@ function renderFeed() {
   filteredOpinions.forEach((opinion) => {
     feedList.append(createOpinionCard(opinion, false));
   });
+  appendLoadMoreOpinionsButton(feedList);
   renderDiscovery();
+}
+
+function appendLoadMoreOpinionsButton(container) {
+  if (!canLoadMoreOpinions || !dataStore.loadMoreOpinions) return;
+  const row = document.createElement("div");
+  row.className = "load-more-row";
+  const button = document.createElement("button");
+  button.className = "ghost-button load-more-button";
+  button.type = "button";
+  button.disabled = isLoadingMoreOpinions;
+  button.textContent = isLoadingMoreOpinions ? "Cargando..." : "Cargar más";
+  button.addEventListener("click", loadMoreOpinions);
+  row.append(button);
+  container.append(row);
+}
+
+async function loadMoreOpinions() {
+  if (isLoadingMoreOpinions || !canLoadMoreOpinions || !dataStore.loadMoreOpinions) return;
+  isLoadingMoreOpinions = true;
+  render();
+  try {
+    const loadedCount = await dataStore.loadMoreOpinions();
+    if (!loadedCount) showToast("No hay más opiniones para cargar");
+  } catch (error) {
+    showToast("No pudimos cargar más opiniones. Intentá nuevamente.");
+  } finally {
+    isLoadingMoreOpinions = false;
+    render();
+  }
 }
 
 function renderFeedSkeletons() {
@@ -2161,7 +2241,9 @@ function renderSearchResults() {
   if (!results.length) {
     const empty = document.createElement("p");
     empty.className = "opinion-card";
-    empty.textContent = "No se encontraron opiniones relacionadas con esa búsqueda.";
+    empty.textContent = isLoadingSearchOpinion
+      ? "Buscando opinion..."
+      : "No se encontraron opiniones relacionadas con esa búsqueda.";
     searchResultsList.append(empty);
     return;
   }
@@ -2192,12 +2274,14 @@ function renderTopicDetail() {
     empty.className = "opinion-card";
     empty.textContent = "Todavía no hay opiniones en este tema.";
     topicDetailList.append(empty);
+    appendLoadMoreOpinionsButton(topicDetailList);
     return;
   }
 
   topicOpinions.forEach((opinion) => {
     topicDetailList.append(createOpinionCard(opinion, false));
   });
+  appendLoadMoreOpinionsButton(topicDetailList);
 }
 
 function renderDetail() {
@@ -3119,6 +3203,12 @@ function createLocalDataStore() {
     },
     async updateOpinion(opinion) {
       saveOpinions(opinions);
+    },
+    async loadMoreOpinions() {
+      return 0;
+    },
+    async getOpinionByRouteId(routeId) {
+      return getOpinionByRouteId(routeId);
     }
   };
 }
@@ -3141,10 +3231,14 @@ async function createFirebaseDataStore() {
     getFirestore,
     collection,
     doc,
+    getDoc,
     getDocs,
+    limit: limitQuery,
     onSnapshot,
     orderBy,
     query,
+    startAfter,
+    where,
     setDoc
   } = firestore;
 
@@ -3178,12 +3272,48 @@ async function createFirebaseDataStore() {
     if (remoteTopics.length) topics = mergeTopics(remoteTopics);
   }
 
+  function normalizeOpinionSnapshot(snapshot) {
+    return normalizeOpinion({ id: snapshot.id, ...snapshot.data() });
+  }
+
+  async function fetchOpinionByRouteId(routeId) {
+    const normalizedRouteId = String(routeId || "").trim();
+    if (!normalizedRouteId) return null;
+
+    const directSnapshot = await getDoc(doc(db, "opinions", normalizedRouteId));
+    if (directSnapshot.exists()) return normalizeOpinionSnapshot(directSnapshot);
+
+    if (/^\d+$/.test(normalizedRouteId)) {
+      const publicNumberSnapshot = await getDocs(query(
+        collection(db, "opinions"),
+        where("publicNumber", "==", Number(normalizedRouteId)),
+        limitQuery(1)
+      ));
+      const match = publicNumberSnapshot.docs[0];
+      if (match) return normalizeOpinionSnapshot(match);
+    }
+
+    return null;
+  }
+
+  let lastVisibleOpinionSnapshot = null;
+
   return {
     name: "firebase",
     async subscribe(onChange) {
       await loadTopicsFromFirestore();
-      return onSnapshot(query(collection(db, "opinions"), orderBy("createdAt", "desc")), (snapshot) => {
-        opinions = snapshot.docs.map((item) => normalizeOpinion({ id: item.id, ...item.data() }));
+      return onSnapshot(query(
+        collection(db, "opinions"),
+        orderBy("createdAt", "desc"),
+        limitQuery(initialOpinionLoadLimit)
+      ), (snapshot) => {
+        const supplementalOpinions = opinions.filter((opinion) => supplementalOpinionIds.has(opinion.id));
+        const remoteOpinions = snapshot.docs.map(normalizeOpinionSnapshot);
+        if (!supplementalOpinions.length || !lastVisibleOpinionSnapshot) {
+          lastVisibleOpinionSnapshot = snapshot.docs[snapshot.docs.length - 1] || null;
+          canLoadMoreOpinions = Boolean(lastVisibleOpinionSnapshot && snapshot.docs.length === initialOpinionLoadLimit);
+        }
+        opinions = mergeOpinionLists(remoteOpinions, supplementalOpinions);
         hasLoadedOpinions = true;
         cacheRemoteContent(opinions);
         onChange(opinions);
@@ -3197,6 +3327,35 @@ async function createFirebaseDataStore() {
     },
     async updateOpinion(opinion) {
       return Promise.resolve(opinion);
+    },
+    async loadMoreOpinions() {
+      if (!lastVisibleOpinionSnapshot) {
+        canLoadMoreOpinions = false;
+        return 0;
+      }
+
+      const snapshot = await getDocs(query(
+        collection(db, "opinions"),
+        orderBy("createdAt", "desc"),
+        startAfter(lastVisibleOpinionSnapshot),
+        limitQuery(opinionPageLoadSize)
+      ));
+      const nextOpinions = snapshot.docs.map(normalizeOpinionSnapshot);
+      rememberSupplementalOpinions(nextOpinions);
+      opinions = mergeOpinionLists(opinions, nextOpinions);
+      lastVisibleOpinionSnapshot = snapshot.docs[snapshot.docs.length - 1] || lastVisibleOpinionSnapshot;
+      canLoadMoreOpinions = snapshot.docs.length === opinionPageLoadSize;
+      cacheRemoteContent(opinions);
+      return nextOpinions.length;
+    },
+    async getOpinionByRouteId(routeId) {
+      const opinion = await fetchOpinionByRouteId(routeId);
+      if (opinion) {
+        rememberSupplementalOpinions([opinion]);
+        opinions = mergeOpinionLists([opinion], opinions);
+        cacheRemoteContent(opinions);
+      }
+      return opinion;
     }
   };
 }
@@ -3364,11 +3523,11 @@ function render() {
   renderTopicDetail();
   renderDetail();
   renderSearchResults();
-  openInitialOpinionFromUrl();
+  void openInitialOpinionFromUrl();
 }
 
-function openInitialOpinionFromUrl() {
-  if (hasHandledInitialOpinion || !hasLoadedOpinions) return;
+async function openInitialOpinionFromUrl() {
+  if (hasHandledInitialOpinion || isLoadingInitialRouteOpinion || !hasLoadedOpinions) return;
   const routeOpinionId = selectedOpinionId || getOpinionIdFromLocation();
   if (!routeOpinionId) {
     hasHandledInitialOpinion = true;
@@ -3379,6 +3538,24 @@ function openInitialOpinionFromUrl() {
     hasHandledInitialOpinion = true;
     openOpinion(opinion.id, { replaceHistory: true, directEntry: true });
     return;
+  }
+
+  if (dataStore.getOpinionByRouteId) {
+    isLoadingInitialRouteOpinion = true;
+    try {
+      const remoteOpinion = await dataStore.getOpinionByRouteId(routeOpinionId);
+      if (remoteOpinion && !remoteOpinion.hidden) {
+        hasHandledInitialOpinion = true;
+        selectedOpinionId = remoteOpinion.id;
+        render();
+        openOpinion(remoteOpinion.id, { replaceHistory: true, directEntry: true });
+        return;
+      }
+    } catch (error) {
+      console.warn("No se pudo cargar la opinion solicitada.", error);
+    } finally {
+      isLoadingInitialRouteOpinion = false;
+    }
   }
 
   hasHandledInitialOpinion = true;

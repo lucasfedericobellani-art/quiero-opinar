@@ -2278,6 +2278,23 @@ body.reply-field-focused .floating-opinion-trigger {
   font-weight: 700;
 }
 
+.load-more-row {
+  display: flex;
+  justify-content: center;
+  margin: 8px 0 2px;
+}
+
+.load-more-button {
+  min-width: 136px;
+  margin-bottom: 0;
+  cursor: pointer;
+}
+
+.load-more-button:disabled {
+  cursor: wait;
+  opacity: 0.68;
+}
+
 .topic-title-row {
   display: flex;
   align-items: center;
