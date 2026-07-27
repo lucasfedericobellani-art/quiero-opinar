@@ -1218,6 +1218,13 @@ button {
   transform: translateY(0) scale(1);
 }
 
+body.reply-field-focused .floating-opinion-trigger {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(14px) scale(0.94);
+}
+
 .floating-opinion-trigger:hover,
 .floating-opinion-trigger.is-open {
   border-color: rgba(255, 238, 190, 0.78);

@@ -2187,29 +2187,40 @@ function scrollReplyComposerIntoView(replyForm, replyInput) {
     replyComposerFrame = 0;
   }
 
+  const isMobile = isMobileViewport();
+  if (isMobile) {
+    try {
+      replyInput.focus({ preventScroll: true });
+    } catch {
+      replyInput.focus();
+    }
+    activeReplyControl = replyInput;
+    resizeReplyControl(replyInput);
+    updateViewportMetrics();
+    scheduleActiveReplyControlVisibility(0);
+    return;
+  }
+
   replyComposerFrame = window.requestAnimationFrame(() => {
     replyComposerFrame = 0;
     const viewport = getVisualViewportBounds();
-    const isMobile = isMobileViewport();
     const targetElement = replyForm.querySelector(".reply-quote-preview:not(.hidden)") || replyForm;
     const targetRect = targetElement.getBoundingClientRect();
-    const controlRect = replyInput.getBoundingClientRect();
     const formRect = replyForm.getBoundingClientRect();
-    const floatingTrigger = isMobile ? null : document.querySelector(".floating-opinion-trigger.is-visible");
+    const floatingTrigger = document.querySelector(".floating-opinion-trigger.is-visible");
     const floatingRect = floatingTrigger?.getBoundingClientRect();
     const desktopBottomClearance = floatingRect?.height
       ? Math.min(150, Math.max(28, window.innerHeight - floatingRect.top + 14))
       : 28;
-    const bottomRect = isMobile ? controlRect : formRect;
     const visibleTop = viewport.top + 76;
-    const visibleBottom = Math.min(viewport.bottom, window.innerHeight) - (isMobile ? 130 : desktopBottomClearance);
-    const isVisible = targetRect.top >= visibleTop && bottomRect.bottom <= visibleBottom;
+    const visibleBottom = Math.min(viewport.bottom, window.innerHeight) - desktopBottomClearance;
+    const isVisible = targetRect.top >= visibleTop && formRect.bottom <= visibleBottom;
 
     if (!isVisible) {
       const desktopDelta = targetRect.top < visibleTop
         ? targetRect.top - visibleTop
-        : bottomRect.bottom - visibleBottom;
-      const targetScrollY = Math.max(0, window.scrollY + (isMobile ? targetRect.top - visibleTop : desktopDelta));
+        : formRect.bottom - visibleBottom;
+      const targetScrollY = Math.max(0, window.scrollY + desktopDelta);
       const prefersReducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
       window.scrollTo({ top: targetScrollY, behavior: prefersReducedMotion ? "auto" : "smooth" });
     }
@@ -2223,7 +2234,7 @@ function scrollReplyComposerIntoView(replyForm, replyInput) {
       activeReplyControl = replyInput;
       resizeReplyControl(replyInput);
       updateViewportMetrics();
-      scheduleActiveReplyControlVisibility(isMobile ? 0 : 70);
+      scheduleActiveReplyControlVisibility(70);
     });
   });
 }
