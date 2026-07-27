@@ -2363,7 +2363,6 @@ function openReplyActionMenu(button, items) {
   popover.querySelectorAll(".reply-menu-item").forEach((itemButton) => {
     let hasSelected = false;
     const selectItem = (event) => {
-      if (event.type === "pointerup" && event.pointerType === "touch") return;
       if (hasSelected) {
         event.stopPropagation();
         return;
