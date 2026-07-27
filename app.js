@@ -1827,6 +1827,7 @@ function clearReplyViewportTimers() {
 function dismissActiveReplyControlFromUserScroll(target, options = {}) {
   if (!activeReplyControl) return;
   if (options.mobileOnly && !isMobileViewport()) return;
+  if (target?.closest?.(".reply-menu-popover, .reply-menu-button, .action-menu-button")) return;
   if (!options.immediate && Date.now() - lastReplyFocusAt < 180) return;
 
   const activeForm = activeReplyControl.closest(".reply-form");
@@ -2215,10 +2216,20 @@ function setReplyQuote(replyForm, quote) {
 
 function focusReplyInput(replyInput, visibilityDelay = 70) {
   if (!replyInput) return;
-  try {
-    replyInput.focus({ preventScroll: true });
-  } catch {
-    replyInput.focus();
+  const isMobile = isMobileViewport();
+
+  if (isMobile) {
+    try {
+      replyInput.focus();
+    } catch {
+      // Some embedded browsers reject programmatic focus outside a trusted touch event.
+    }
+  } else {
+    try {
+      replyInput.focus({ preventScroll: true });
+    } catch {
+      replyInput.focus();
+    }
   }
 
   if (document.activeElement !== replyInput) {
@@ -2352,6 +2363,7 @@ function openReplyActionMenu(button, items) {
   popover.querySelectorAll(".reply-menu-item").forEach((itemButton) => {
     let hasSelected = false;
     const selectItem = (event) => {
+      if (event.type === "pointerup" && event.pointerType === "touch") return;
       if (hasSelected) {
         event.stopPropagation();
         return;
