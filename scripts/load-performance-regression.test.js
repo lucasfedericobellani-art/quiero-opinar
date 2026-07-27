@@ -11,7 +11,7 @@ function assertIncludes(source, needle, label) {
   }
 }
 
-assertIncludes(app, "const initialOpinionLoadLimit = 50;", "initial Firestore load limit");
+assertIncludes(app, "const initialOpinionLoadLimit = 35;", "initial Firestore load limit");
 assertIncludes(app, "const opinionPageLoadSize = 30;", "paged Firestore load size");
 assertIncludes(app, "limitQuery(initialOpinionLoadLimit)", "limited realtime subscription");
 assertIncludes(app, "startAfter(lastVisibleOpinionSnapshot)", "Firestore pagination cursor");
@@ -23,7 +23,7 @@ assertIncludes(app, "void openInitialOpinionFromUrl();", "async route opinion bo
 assertIncludes(app, "async function submitSearch(value, sourceInput)", "async search submit");
 assertIncludes(app, "getSearchRouteLookupCandidate(searchQuery)", "search exact-number lookup");
 assertIncludes(app, "Buscando opinion...", "search loading state");
-assertIncludes(index, "app.js?v=20260727-load-performance", "app cache bust");
-assertIncludes(index, "styles.css?v=20260727-load-performance", "style cache bust");
+assertIncludes(index, "app.js?v=20260727-load-performance-35", "app cache bust");
+assertIncludes(index, "styles.css?v=20260727-load-performance-35", "style cache bust");
 
 console.log("load-performance regression checks passed");
