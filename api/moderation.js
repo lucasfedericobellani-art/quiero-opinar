@@ -133,9 +133,9 @@ function sourceContainsQuote(sourceText, quoteText) {
 function validateReplyQuote(bodyQuote, opinion) {
   if (!bodyQuote) return null;
   if (typeof bodyQuote !== "object") throw new Error("invalid_quote");
-  const quotedText = normalizeQuoteText(bodyQuote.quotedText);
-  const quotedSourceId = String(bodyQuote.quotedSourceId || "").trim();
-  const quotedSourceType = normalizeQuoteSourceType(bodyQuote.quotedSourceType);
+  const quotedText = normalizeQuoteText(bodyQuote.quotedText || bodyQuote.quotedTextSnapshot);
+  const quotedSourceId = String(bodyQuote.quotedSourceId || bodyQuote.quotedContentId || "").trim();
+  const quotedSourceType = normalizeQuoteSourceType(bodyQuote.quotedSourceType || bodyQuote.quotedContentType);
   if (!quotedText || !quotedSourceId) throw new Error("invalid_quote");
 
   if (quotedSourceType === "opinion") {
@@ -145,7 +145,14 @@ function validateReplyQuote(bodyQuote, opinion) {
     if (!sourceReply || !sourceContainsQuote(sourceReply.text, quotedText)) throw new Error("invalid_quote");
   }
 
-  return { quotedText, quotedSourceId, quotedSourceType };
+  return {
+    quotedText,
+    quotedSourceId,
+    quotedSourceType,
+    quotedContentId: quotedSourceId,
+    quotedContentType: quotedSourceType,
+    quotedTextSnapshot: quotedText
+  };
 }
 
 function normalizeModerationStatus(value, hidden = false) {
@@ -187,6 +194,16 @@ function normalizeDateValue(value) {
 }
 
 function sanitizeReply(reply) {
+  const quote = reply?.quote && typeof reply.quote === "object" ? {
+    quotedText: normalizeQuoteText(reply.quote.quotedText || reply.quote.quotedTextSnapshot),
+    quotedSourceId: String(reply.quote.quotedSourceId || reply.quote.quotedContentId || ""),
+    quotedSourceType: normalizeQuoteSourceType(reply.quote.quotedSourceType || reply.quote.quotedContentType)
+  } : null;
+  if (quote) {
+    quote.quotedContentId = quote.quotedSourceId;
+    quote.quotedContentType = quote.quotedSourceType;
+    quote.quotedTextSnapshot = quote.quotedText;
+  }
   return {
     id: reply?.id || createId("reply"),
     author: reply?.author || "Opinion",
@@ -196,11 +213,10 @@ function sanitizeReply(reply) {
     reports: Number(reply?.reports || 0),
     reportReasons: Array.isArray(reply?.reportReasons) ? reply.reportReasons : [],
     moderationStatus: normalizeModerationStatus(reply?.moderationStatus),
-    quote: reply?.quote && typeof reply.quote === "object" ? {
-      quotedText: normalizeQuoteText(reply.quote.quotedText),
-      quotedSourceId: String(reply.quote.quotedSourceId || ""),
-      quotedSourceType: normalizeQuoteSourceType(reply.quote.quotedSourceType)
-    } : null,
+    quote,
+    quotedContentId: quote?.quotedContentId || null,
+    quotedContentType: quote?.quotedContentType || null,
+    quotedTextSnapshot: quote?.quotedTextSnapshot || null,
     createdAt: normalizeDateValue(reply?.createdAt)
   };
 }
@@ -467,6 +483,9 @@ async function createReply(ctx, body, ipHash, response) {
     author: "Opinion",
     text,
     quote,
+    quotedContentId: quote?.quotedContentId || null,
+    quotedContentType: quote?.quotedContentType || null,
+    quotedTextSnapshot: quote?.quotedTextSnapshot || null,
     likes: 0,
     dislikes: 0,
     reports: 0,

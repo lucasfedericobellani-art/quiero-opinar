@@ -244,6 +244,7 @@ let replyComposerFrame = 0;
 let activeReplyComposerKey = "";
 let lastReplyFocusAt = 0;
 const replyDrafts = new Map();
+let activeReplyComposerState = createReplyComposerState();
 let dataStore = createLocalDataStore();
 
 hydrateInitialContentFromCache();
@@ -1872,6 +1873,40 @@ function restoreReplyDraft(replyForm, targetType, targetId, mode = "reply") {
   return draft;
 }
 
+function createReplyComposerState(overrides = {}) {
+  const quote = normalizeQuoteRecord(overrides.quote);
+  const parentId = String(overrides.parentId || "").trim();
+  const parentType = overrides.parentType === "reply" ? "reply" : (parentId ? "opinion" : null);
+  return {
+    isOpen: Boolean(overrides.isOpen && parentId),
+    parentId: parentId || null,
+    parentType,
+    quote
+  };
+}
+
+function getReplyComposerDraftKey(state) {
+  const quote = normalizeQuoteRecord(state?.quote);
+  if (quote) return getReplyDraftKey(quote.quotedSourceType, quote.quotedSourceId, "quote");
+  return getReplyDraftKey(state?.parentType || "opinion", state?.parentId || "", "reply");
+}
+
+function setActiveReplyComposerState(nextState) {
+  activeReplyComposerState = createReplyComposerState(nextState);
+  activeReplyComposerKey = activeReplyComposerState.isOpen ? getReplyComposerDraftKey(activeReplyComposerState) : "";
+  return activeReplyComposerState;
+}
+
+function applyReplyComposerState(replyForm, state) {
+  if (!replyForm || !state?.isOpen) return;
+  replyForm._composerState = state;
+  replyForm._pendingQuote = state.quote;
+  replyForm.dataset.replyParentId = state.parentId || "";
+  replyForm.dataset.replyParentType = state.parentType || "";
+  replyForm.dataset.replyDraftKey = getReplyComposerDraftKey(state);
+  setReplyQuote(replyForm, state.quote);
+}
+
 function animateReplyScrollBy(delta) {
   if (Math.abs(delta) < 2) return;
   if (replyScrollAnimationFrame) {
@@ -2223,6 +2258,12 @@ function setReplyQuote(replyForm, quote) {
   const preview = ensureReplyQuotePreview(replyForm);
   const label = preview.querySelector(".reply-quote-preview-text");
   replyForm._pendingQuote = normalizedQuote;
+  if (replyForm._composerState) {
+    replyForm._composerState = createReplyComposerState({
+      ...replyForm._composerState,
+      quote: normalizedQuote
+    });
+  }
   preview.classList.toggle("hidden", !normalizedQuote);
   if (label) {
     label.textContent = normalizedQuote ? `"${normalizedQuote.quotedText}"` : "";
@@ -2317,16 +2358,20 @@ function openReplyComposer({ card, targetId, targetType = "opinion", mode = "rep
   if (!replyForm || !replyInput) return;
 
   closeReplyActionMenu(false);
-  const draftKey = getReplyDraftKey(targetType, targetId, mode);
-  if (activeReplyComposerKey !== draftKey) {
-    activeReplyComposerKey = draftKey;
-    replyForm.dataset.replyDraftKey = draftKey;
-    const draft = replyDrafts.get(draftKey);
-    replyInput.value = draft?.value || "";
-    setReplyQuote(replyForm, mode === "quote" ? (quote || draft?.quote || null) : null);
-  } else if (mode === "quote") {
-    setReplyQuote(replyForm, quote);
-  }
+  const parentId = String(card.dataset.opinionId || targetId || "").trim();
+  const state = setActiveReplyComposerState({
+    isOpen: true,
+    parentId,
+    parentType: targetType,
+    quote: mode === "quote" ? quote : null
+  });
+  const draftKey = getReplyComposerDraftKey(state);
+  const draft = replyDrafts.get(draftKey);
+  replyInput.value = draft?.value || "";
+  applyReplyComposerState(replyForm, {
+    ...state,
+    quote: state.quote || draft?.quote || null
+  });
 
   saveReplyDraft(replyForm);
   scrollReplyComposerIntoView(replyForm, replyInput);
@@ -2337,8 +2382,8 @@ function quoteIntoReplyForm(card, quote) {
   if (!normalizedQuote) return;
   openReplyComposer({
     card,
-    targetId: normalizedQuote.quotedSourceId,
-    targetType: normalizedQuote.quotedSourceType,
+    targetId: card?.dataset.opinionId || normalizedQuote.quotedSourceId,
+    targetType: "opinion",
     mode: "quote",
     quote: normalizedQuote
   });
@@ -2382,13 +2427,6 @@ function openReplyActionMenu(button, items) {
   popover.querySelectorAll(".reply-menu-item").forEach((itemButton) => {
     let hasSelected = false;
     const getItem = () => activeReplyMenu?.items[Number(itemButton.dataset.index)];
-    const preFocusReplyTarget = (event) => {
-      const replyInput = getItem()?.focusTarget?.();
-      if (!replyInput || !shouldUseImmediateReplyFocus()) return;
-      if (event.cancelable) event.preventDefault();
-      event.stopPropagation();
-      focusReplyInput(replyInput, 160);
-    };
     const selectItem = (event) => {
       if (hasSelected) {
         if (event.cancelable) event.preventDefault();
@@ -2402,8 +2440,8 @@ function openReplyActionMenu(button, items) {
       item?.action();
     };
 
-    itemButton.addEventListener("pointerdown", preFocusReplyTarget);
-    itemButton.addEventListener("touchstart", preFocusReplyTarget, { passive: false });
+    itemButton.addEventListener("pointerdown", (event) => event.stopPropagation());
+    itemButton.addEventListener("touchstart", (event) => event.stopPropagation(), { passive: true });
     itemButton.addEventListener("pointerup", selectItem);
     itemButton.addEventListener("touchend", selectItem, { passive: false });
     itemButton.addEventListener("click", selectItem);
@@ -2594,6 +2632,7 @@ function renderReplyThread(thread, opinion) {
 
 function createOpinionCard(opinion, isDetail) {
   const card = opinionTemplate.content.firstElementChild.cloneNode(true);
+  card.dataset.opinionId = opinion.id;
   card.querySelector(".author").textContent = `#${getOpinionNumber(opinion)}`;
   card.querySelector(".topic").textContent = getTopicName(opinion.topic);
   card.querySelector(".date-stamp").textContent = formatDate(opinion.createdAt);
@@ -2742,6 +2781,13 @@ function createOpinionCard(opinion, isDetail) {
   replyQuotePreview.querySelector(".reply-quote-remove")?.addEventListener("click", (event) => {
     event.stopPropagation();
     setReplyQuote(replyForm, null);
+    setActiveReplyComposerState({
+      isOpen: true,
+      parentId: opinion.id,
+      parentType: "opinion",
+      quote: null
+    });
+    applyReplyComposerState(replyForm, activeReplyComposerState);
     saveReplyDraft(replyForm);
     replyInput.focus();
   });
@@ -2756,10 +2802,13 @@ function createOpinionCard(opinion, isDetail) {
   replyForm.addEventListener("pointerdown", (event) => event.stopPropagation());
   replyInput.addEventListener("focus", () => {
     const quote = normalizeQuoteRecord(replyForm._pendingQuote);
-    activeReplyComposerKey = quote
-      ? getReplyDraftKey(quote.quotedSourceType, quote.quotedSourceId, "quote")
-      : getReplyDraftKey("opinion", opinion.id, "reply");
-    replyForm.dataset.replyDraftKey = activeReplyComposerKey;
+    const state = setActiveReplyComposerState({
+      isOpen: true,
+      parentId: opinion.id,
+      parentType: "opinion",
+      quote
+    });
+    applyReplyComposerState(replyForm, state);
   });
   replySubmitButton?.addEventListener("click", (event) => event.stopPropagation());
   replyForm.addEventListener("submit", async (event) => {
@@ -2788,11 +2837,20 @@ function createOpinionCard(opinion, isDetail) {
     }
 
     try {
-      const updatedOpinion = await createReplyViaApi(opinion.id, reply, replyForm._pendingQuote || null);
+      const composerState = createReplyComposerState(replyForm._composerState || {
+        isOpen: true,
+        parentId: opinion.id,
+        parentType: "opinion",
+        quote: replyForm._pendingQuote || null
+      });
+      const quote = normalizeQuoteRecord(composerState.quote);
+      const updatedOpinion = await createReplyViaApi(opinion.id, reply, quote);
       Object.assign(opinion, updatedOpinion);
       replyDrafts.delete(replyForm.dataset.replyDraftKey);
       replyInput.value = "";
       setReplyQuote(replyForm, null);
+      setActiveReplyComposerState();
+      replyForm._composerState = createReplyComposerState();
       resizeReplyControl(replyInput);
       replyInput.blur();
       clearReplyKeyboardAssist();
@@ -2918,11 +2976,19 @@ function getTopicAccentClass(topic) {
 
 function normalizeReply(reply) {
   if (typeof reply !== "string") {
+    const quote = normalizeQuoteRecord(reply.quote || {
+      quotedContentId: reply.quotedContentId,
+      quotedContentType: reply.quotedContentType,
+      quotedTextSnapshot: reply.quotedTextSnapshot
+    });
     return {
       id: reply.id || createId(),
       author: reply.author || "Opinion",
       text: reply.text || "",
-      quote: normalizeQuoteRecord(reply.quote),
+      quote,
+      quotedContentId: quote?.quotedContentId || null,
+      quotedContentType: quote?.quotedContentType || null,
+      quotedTextSnapshot: quote?.quotedTextSnapshot || null,
       likes: Number(reply.likes || 0),
       dislikes: Number(reply.dislikes || 0),
       reports: Number(reply.reports || 0),
@@ -2942,11 +3008,18 @@ function normalizeQuoteText(value) {
 
 function normalizeQuoteRecord(quote) {
   if (!quote || typeof quote !== "object") return null;
-  const quotedText = normalizeQuoteText(quote.quotedText);
-  const quotedSourceId = String(quote.quotedSourceId || "").trim();
-  const quotedSourceType = quote.quotedSourceType === "reply" ? "reply" : "opinion";
+  const quotedText = normalizeQuoteText(quote.quotedText || quote.quotedTextSnapshot);
+  const quotedSourceId = String(quote.quotedSourceId || quote.quotedContentId || "").trim();
+  const quotedSourceType = (quote.quotedSourceType || quote.quotedContentType) === "reply" ? "reply" : "opinion";
   if (!quotedText || !quotedSourceId) return null;
-  return { quotedText, quotedSourceId, quotedSourceType };
+  return {
+    quotedText,
+    quotedSourceId,
+    quotedSourceType,
+    quotedContentId: quotedSourceId,
+    quotedContentType: quotedSourceType,
+    quotedTextSnapshot: quotedText
+  };
 }
 
 function createQuotePayload(sourceType, sourceId, text) {
@@ -2956,7 +3029,10 @@ function createQuotePayload(sourceType, sourceId, text) {
   return {
     quotedText,
     quotedSourceId,
-    quotedSourceType: sourceType === "reply" ? "reply" : "opinion"
+    quotedSourceType: sourceType === "reply" ? "reply" : "opinion",
+    quotedContentId: quotedSourceId,
+    quotedContentType: sourceType === "reply" ? "reply" : "opinion",
+    quotedTextSnapshot: quotedText
   };
 }
 
@@ -3206,18 +3282,24 @@ function sanitizeOpinionForRemote(opinion) {
     likes: opinion.likes,
     dislikes: opinion.dislikes,
     createdAt: opinion.createdAt,
-    replies: opinion.replies.map((reply) => ({
-      id: reply.id,
-      author: reply.author,
-      text: reply.text,
-      quote: normalizeQuoteRecord(reply.quote),
-      likes: reply.likes,
-      dislikes: Number(reply.dislikes || 0),
-      reports: Number(reply.reports || 0),
-      reportReasons: Array.isArray(reply.reportReasons) ? reply.reportReasons : [],
-      moderationStatus: reply.moderationStatus || "approved",
-      createdAt: reply.createdAt
-    })),
+    replies: opinion.replies.map((reply) => {
+      const quote = normalizeQuoteRecord(reply.quote);
+      return {
+        id: reply.id,
+        author: reply.author,
+        text: reply.text,
+        quote,
+        quotedContentId: quote?.quotedContentId || null,
+        quotedContentType: quote?.quotedContentType || null,
+        quotedTextSnapshot: quote?.quotedTextSnapshot || null,
+        likes: reply.likes,
+        dislikes: Number(reply.dislikes || 0),
+        reports: Number(reply.reports || 0),
+        reportReasons: Array.isArray(reply.reportReasons) ? reply.reportReasons : [],
+        moderationStatus: reply.moderationStatus || "approved",
+        createdAt: reply.createdAt
+      };
+    }),
     hidden: Boolean(opinion.hidden),
     moderationStatus: opinion.moderationStatus || (opinion.hidden ? "hidden" : "approved"),
     moderationReason: opinion.moderationReason || "",

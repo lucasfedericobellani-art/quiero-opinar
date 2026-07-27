@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "vercel dev",
-    "start": "vercel dev"
+    "start": "vercel dev",
+    "test:quote-flow": "node scripts/quote-flow-regression.test.js"
   },
   "dependencies": {
     "firebase": "^10.14.1",
