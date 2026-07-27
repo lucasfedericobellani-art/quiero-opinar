@@ -242,6 +242,7 @@ let replyViewportTimers = [];
 let replyScrollAnimationFrame = 0;
 let replyComposerFrame = 0;
 let activeReplyComposerKey = "";
+let lastReplyFocusAt = 0;
 const replyDrafts = new Map();
 let dataStore = createLocalDataStore();
 
@@ -382,6 +383,7 @@ document.addEventListener("focusin", (event) => {
   const control = event.target.closest?.(".reply-form input, .reply-form textarea");
   if (!control) return;
   activeReplyControl = control;
+  lastReplyFocusAt = Date.now();
   document.body.classList.add("reply-field-focused");
   resizeReplyControl(control);
   updateViewportMetrics();
@@ -404,6 +406,19 @@ document.addEventListener("input", (event) => {
   if (event.target !== activeReplyControl) return;
   resizeReplyControl(event.target);
   scheduleActiveReplyControlVisibility();
+});
+
+document.addEventListener("wheel", (event) => {
+  dismissActiveReplyControlFromUserScroll(event.target);
+}, { passive: true });
+
+document.addEventListener("touchmove", (event) => {
+  dismissActiveReplyControlFromUserScroll(event.target);
+}, { passive: true });
+
+document.addEventListener("keydown", (event) => {
+  if (!["ArrowDown", "ArrowUp", "PageDown", "PageUp", "Home", "End", " "].includes(event.key)) return;
+  dismissActiveReplyControlFromUserScroll(event.target);
 });
 
 floatingOpinionTrigger.addEventListener("click", () => {
@@ -1803,6 +1818,19 @@ function resizeReplyControl(control) {
 function clearReplyViewportTimers() {
   replyViewportTimers.forEach((timer) => window.clearTimeout(timer));
   replyViewportTimers = [];
+}
+
+function dismissActiveReplyControlFromUserScroll(target) {
+  if (!activeReplyControl) return;
+  if (Date.now() - lastReplyFocusAt < 180) return;
+
+  const activeForm = activeReplyControl.closest(".reply-form");
+  const eventForm = target?.closest?.(".reply-form");
+  if (activeForm && eventForm === activeForm) return;
+
+  saveReplyDraft(activeForm);
+  activeReplyControl.blur();
+  clearReplyKeyboardAssist();
 }
 
 function getReplyDraftKey(targetType, targetId, mode = "reply") {
