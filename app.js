@@ -3630,6 +3630,16 @@ function isIosBrowser() {
   return /iphone|ipad|ipod/i.test(window.navigator.userAgent || "");
 }
 
+function isSamsungInternetBrowser() {
+  return /samsungbrowser/i.test(window.navigator.userAgent || "");
+}
+
+function isKnownLimitedInstallBrowser() {
+  const userAgent = window.navigator.userAgent || "";
+  return isSamsungInternetBrowser() ||
+    /FBAN|FBAV|Instagram|Line|Twitter|WhatsApp|wv\)/i.test(userAgent);
+}
+
 async function isPwaLikelyInstalled() {
   if (isPwaStandalone()) return true;
   if (typeof window.navigator.getInstalledRelatedApps !== "function") return false;
@@ -3686,6 +3696,14 @@ function setupPwaInstallTracking() {
     trackAnalyticsEvent("pwa_install_prompt_clicked", {
       prompt_source: source
     });
+    if (isKnownLimitedInstallBrowser()) {
+      trackAnalyticsEvent("pwa_install_prompt_limited_browser", {
+        prompt_source: source,
+        user_agent_hint: isSamsungInternetBrowser() ? "samsung_internet" : "embedded_browser"
+      });
+      showToast("Para instalar sin alertas, abrila desde Google Chrome normal y toca Descargar App.");
+      return;
+    }
     if (!deferredPwaInstallPrompt) {
       showToast("Preparando instalacion...");
       await waitForPwaInstallPrompt();
