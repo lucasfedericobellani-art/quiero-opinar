@@ -3674,9 +3674,12 @@ function setupPwaInstallTracking() {
   };
 
   pwaInstallButton?.addEventListener("click", () => startInstallPrompt("footer_button"));
+  if (mobileViewportQuery.matches && !isPwaStandalone()) {
+    pwaInstallButton?.classList.remove("hidden");
+  }
   mobileViewportQuery.addEventListener("change", () => {
     if (!mobileViewportQuery.matches) pwaInstallButton?.classList.add("hidden");
-    if (mobileViewportQuery.matches && deferredPwaInstallPrompt && !isPwaStandalone()) {
+    if (mobileViewportQuery.matches && !isPwaStandalone()) {
       pwaInstallButton?.classList.remove("hidden");
     }
   });

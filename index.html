@@ -377,16 +377,25 @@
         <button type="button" class="footer-link legal-trigger">Términos y Condiciones</button>
         <button type="button" class="footer-link legal-trigger">Política de Privacidad</button>
         <button type="button" class="footer-link legal-trigger">Reglas de Comunidad</button>
-        <button type="button" class="footer-link pwa-install-button hidden" id="pwaInstallButton">Instalar app</button>
         <a class="footer-link" id="contactFooterButton" href="/contacto">Contacto</a>
-        <a class="footer-link footer-social-link" href="https://www.instagram.com/quieroopinararg/" target="_blank" rel="noopener noreferrer" aria-label="Instagram de Quiero Opinar">
-          <svg aria-hidden="true" viewBox="0 0 24 24">
-            <rect x="3" y="3" width="18" height="18" rx="5"></rect>
-            <circle cx="12" cy="12" r="4"></circle>
-            <circle cx="17.5" cy="6.5" r="1"></circle>
-          </svg>
-          <span>Instagram</span>
-        </a>
+        <span class="footer-app-links">
+          <button type="button" class="footer-link footer-icon-link pwa-install-button hidden" id="pwaInstallButton">
+            <svg aria-hidden="true" viewBox="0 0 24 24">
+              <path d="M12 3v12"></path>
+              <path d="m7 10 5 5 5-5"></path>
+              <path d="M5 21h14"></path>
+            </svg>
+            <span>Descargar App</span>
+          </button>
+          <a class="footer-link footer-icon-link footer-social-link" href="https://www.instagram.com/quieroopinararg/" target="_blank" rel="noopener noreferrer" aria-label="Instagram de Quiero Opinar">
+            <svg aria-hidden="true" viewBox="0 0 24 24">
+              <rect x="3" y="3" width="18" height="18" rx="5"></rect>
+              <circle cx="12" cy="12" r="4"></circle>
+              <circle cx="17.5" cy="6.5" r="1"></circle>
+            </svg>
+            <span>Instagram</span>
+          </a>
+        </span>
       </nav>
       <p class="footer-warning">
         No se permite publicar amenazas, incitación a la violencia, doxxing, spam ni contenido ilegal.
@@ -465,6 +474,6 @@
 
     <script src="site-config.js"></script>
     <script src="firebase-config.js"></script>
-    <script src="app.js?v=20260729-pwa-joined-name"></script>
+    <script src="app.js?v=20260729-footer-app-link"></script>
   </body>
 </html>

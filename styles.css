@@ -1775,17 +1775,23 @@ body.reply-field-focused .floating-opinion-trigger {
   color: var(--text-hot);
 }
 
+.footer-app-links {
+  display: inline-flex;
+  align-items: center;
+  gap: 16px;
+}
+
 .pwa-install-button {
   display: none;
 }
 
-.footer-social-link {
+.footer-icon-link {
   display: inline-flex;
   align-items: center;
   gap: 6px;
 }
 
-.footer-social-link svg {
+.footer-icon-link svg {
   width: 15px;
   height: 15px;
   fill: none;
@@ -3498,6 +3504,12 @@ body.reply-field-focused .floating-opinion-trigger {
     display: inline-flex;
   }
 
+  .footer-app-links {
+    flex: 0 0 100%;
+    justify-content: center;
+    margin-top: 2px;
+  }
+
   .report-notice {
     left: 12px;
     right: 12px;
@@ -3783,7 +3795,7 @@ body.reply-field-focused .floating-opinion-trigger {
 
   .page-shell {
     width: calc(100% - 28px);
-    padding-bottom: calc(104px + env(safe-area-inset-bottom));
+    padding-bottom: calc(30px + env(safe-area-inset-bottom));
   }
 
   #homeView,
