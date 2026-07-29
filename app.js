@@ -3641,7 +3641,7 @@ function setupPwaInstallTracking() {
   });
 
   window.addEventListener("beforeinstallprompt", (event) => {
-    if (isPwaStandalone()) return;
+    if (isPwaStandalone() || !mobileViewportQuery.matches) return;
     event.preventDefault();
     deferredPwaInstallPrompt = event;
     pwaInstallButton?.classList.remove("hidden");
@@ -3674,6 +3674,12 @@ function setupPwaInstallTracking() {
   };
 
   pwaInstallButton?.addEventListener("click", () => startInstallPrompt("footer_button"));
+  mobileViewportQuery.addEventListener("change", () => {
+    if (!mobileViewportQuery.matches) pwaInstallButton?.classList.add("hidden");
+    if (mobileViewportQuery.matches && deferredPwaInstallPrompt && !isPwaStandalone()) {
+      pwaInstallButton?.classList.remove("hidden");
+    }
+  });
 }
 
 registerServiceWorker();

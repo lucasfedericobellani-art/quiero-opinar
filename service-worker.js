@@ -1,13 +1,13 @@
-const CACHE_NAME = "quiero-opinar-pwa-v6";
+const CACHE_NAME = "quiero-opinar-pwa-v7";
 const APP_SHELL = [
   "/",
   "/index.html",
   "/styles.css?v=20260727-load-performance-35",
   "/site-config.js",
   "/firebase-config.js",
-  "/app.js?v=20260729-pwa-footer-only",
+  "/app.js?v=20260729-pwa-mobile-name",
   "/analytics.js",
-  "/manifest.webmanifest",
+  "/manifest.webmanifest?v=20260729-pwa-mobile-name",
   "/assets/logo.svg",
   "/assets/pwa-icon-192.png",
   "/assets/pwa-icon-512.png",
