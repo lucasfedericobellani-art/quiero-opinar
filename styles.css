@@ -1781,6 +1781,7 @@ body.reply-field-focused .floating-opinion-trigger {
   justify-content: center;
   gap: 18px;
   line-height: 1;
+  min-height: 18px;
 }
 
 .pwa-install-button {
@@ -1793,7 +1794,33 @@ body.reply-field-focused .floating-opinion-trigger {
   justify-content: center;
   gap: 6px;
   line-height: 1;
+  min-height: 18px;
   vertical-align: middle;
+}
+
+.download-icon {
+  position: relative;
+  display: inline-flex;
+  flex: 0 0 15px;
+  width: 15px;
+  height: 15px;
+  align-items: center;
+  justify-content: center;
+  color: currentColor;
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1;
+  transform: translateY(-1px);
+}
+
+.download-icon::after {
+  content: "";
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  bottom: 0;
+  border-bottom: 2px solid currentColor;
+  border-radius: 2px;
 }
 
 .footer-icon-link svg {
@@ -3517,9 +3544,13 @@ body.reply-field-focused .floating-opinion-trigger {
   }
 
   .footer-app-links {
+    display: inline-flex;
     flex: 0 0 100%;
+    align-items: center;
     justify-content: center;
-    margin-top: 2px;
+    gap: 18px;
+    margin-top: 0;
+    min-height: 18px;
   }
 
   .report-notice {
