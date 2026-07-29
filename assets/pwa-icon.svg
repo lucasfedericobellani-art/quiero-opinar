@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Quiero Opinar">
+  <rect width="512" height="512" rx="144" fill="#090501"/>
+  <circle cx="256" cy="234" r="126" fill="none" stroke="#ffb000" stroke-width="38"/>
+  <path d="M325 325 397 397" fill="none" stroke="#ffb000" stroke-width="38" stroke-linecap="round"/>
+  <path d="M181 224c21-38 60-59 101-54M181 277h128" fill="none" stroke="#ff7a00" stroke-width="28" stroke-linecap="round"/>
+  <circle cx="256" cy="234" r="186" fill="none" stroke="#ff7a00" stroke-width="12" opacity=".35"/>
+</svg>
