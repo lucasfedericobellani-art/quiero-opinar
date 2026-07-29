@@ -1,8 +1,8 @@
-const CACHE_NAME = "quiero-opinar-pwa-v12";
+const CACHE_NAME = "quiero-opinar-pwa-v13";
 const APP_SHELL = [
   "/",
   "/index.html",
-  "/styles.css?v=20260727-load-performance-35",
+  "/styles.css?v=20260729-footer-tight-mobile",
   "/site-config.js",
   "/firebase-config.js",
   "/app.js?v=20260729-footer-pwa-fixes",

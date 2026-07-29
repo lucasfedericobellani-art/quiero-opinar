@@ -1776,12 +1776,14 @@ body.reply-field-focused .floating-opinion-trigger {
 }
 
 .footer-app-links {
-  display: inline-flex;
+  display: inline-grid;
+  grid-auto-flow: column;
+  grid-auto-columns: max-content;
   align-items: center;
   justify-content: center;
   gap: 18px;
-  line-height: 1;
-  min-height: 18px;
+  line-height: 18px;
+  min-height: 20px;
 }
 
 .pwa-install-button {
@@ -1789,53 +1791,19 @@ body.reply-field-focused .floating-opinion-trigger {
 }
 
 .footer-icon-link {
-  display: inline-flex;
+  display: inline-grid;
+  grid-template-columns: 15px max-content;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  line-height: 1;
-  min-height: 18px;
+  height: 20px;
+  min-height: 20px;
+  line-height: 18px;
   vertical-align: middle;
 }
 
-.download-icon {
-  position: relative;
-  display: inline-flex;
-  flex: 0 0 15px;
-  width: 15px;
-  height: 15px;
-  align-items: center;
-  justify-content: center;
-  color: currentColor;
-  line-height: 0;
-  background: linear-gradient(currentColor, currentColor) center 1px / 2px 8px no-repeat;
-  transform: none;
-}
-
-.download-icon::before {
-  content: "";
-  position: absolute;
-  top: 5px;
-  left: 4px;
-  width: 5px;
-  height: 5px;
-  border-right: 2px solid currentColor;
-  border-bottom: 2px solid currentColor;
-  border-radius: 1px;
-  transform: rotate(45deg);
-}
-
-.download-icon::after {
-  content: "";
-  position: absolute;
-  left: 2px;
-  right: 2px;
-  bottom: 0;
-  border-bottom: 2px solid currentColor;
-  border-radius: 2px;
-}
-
-.footer-icon-link svg {
+.footer-link-icon {
+  display: block;
   flex: 0 0 15px !important;
   width: 15px !important;
   height: 15px !important;
@@ -1849,7 +1817,8 @@ body.reply-field-focused .floating-opinion-trigger {
 }
 
 .footer-icon-link span {
-  line-height: 1;
+  display: block;
+  line-height: 18px;
 }
 
 .footer-warning {
@@ -4970,7 +4939,7 @@ body.reply-field-focused .floating-opinion-trigger {
 
 @media (max-width: 640px) {
   .page-shell {
-    padding-bottom: calc(8px + env(safe-area-inset-bottom)) !important;
+    padding-bottom: 0 !important;
   }
 
   #homeView .topics-panel {
@@ -4979,8 +4948,12 @@ body.reply-field-focused .floating-opinion-trigger {
 
   .site-footer {
     margin-top: 0 !important;
-    padding-top: 10px !important;
+    padding-top: 0 !important;
     padding-bottom: calc(18px + env(safe-area-inset-bottom)) !important;
+  }
+
+  body:has(#homeView:not(.hidden)) .site-footer {
+    margin-top: -128px !important;
   }
 
   .footer-links {
@@ -4999,39 +4972,44 @@ body.reply-field-focused .floating-opinion-trigger {
   }
 
   .footer-app-links {
-    display: inline-flex !important;
+    display: inline-grid !important;
+    grid-auto-flow: column !important;
+    grid-auto-columns: max-content !important;
     flex: 0 0 100% !important;
     align-items: center !important;
     justify-content: center !important;
     gap: 18px !important;
-    min-height: 18px !important;
+    min-height: 20px !important;
     margin-top: 0 !important;
-    line-height: 18px !important;
+    line-height: 20px !important;
   }
 
   .footer-icon-link {
-    display: inline-flex !important;
+    display: inline-grid !important;
+    grid-template-columns: 15px max-content !important;
     align-items: center !important;
     justify-content: center !important;
     gap: 6px !important;
-    height: 18px !important;
-    min-height: 18px !important;
-    line-height: 18px !important;
+    height: 20px !important;
+    min-height: 20px !important;
+    line-height: 20px !important;
   }
 
-  .footer-icon-link svg,
-  .footer-icon-link .download-icon {
+  .footer-link-icon {
+    display: block !important;
     flex: 0 0 15px !important;
     width: 15px !important;
     height: 15px !important;
     margin: 0 !important;
     transform: none !important;
+    color: currentColor !important;
+    stroke: currentColor !important;
+    stroke-width: 1.8 !important;
   }
 
-  .footer-icon-link > span:not(.download-icon) {
-    display: inline-flex;
-    align-items: center;
-    height: 18px;
-    line-height: 18px;
+  .footer-icon-link > span {
+    display: block !important;
+    height: 20px !important;
+    line-height: 20px !important;
   }
 }
