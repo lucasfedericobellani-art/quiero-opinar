@@ -1807,10 +1807,22 @@ body.reply-field-focused .floating-opinion-trigger {
   align-items: center;
   justify-content: center;
   color: currentColor;
-  font-size: 15px;
-  font-weight: 800;
-  line-height: 1;
-  transform: translateY(-1px);
+  line-height: 0;
+  background: linear-gradient(currentColor, currentColor) center 1px / 2px 8px no-repeat;
+  transform: none;
+}
+
+.download-icon::before {
+  content: "";
+  position: absolute;
+  top: 5px;
+  left: 4px;
+  width: 5px;
+  height: 5px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  border-radius: 1px;
+  transform: rotate(45deg);
 }
 
 .download-icon::after {
@@ -4953,5 +4965,73 @@ body.reply-field-focused .floating-opinion-trigger {
     touch-action: manipulation !important;
     user-select: none !important;
     -webkit-user-select: none !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .page-shell {
+    padding-bottom: calc(8px + env(safe-area-inset-bottom)) !important;
+  }
+
+  #homeView .topics-panel {
+    margin-bottom: 0 !important;
+  }
+
+  .site-footer {
+    margin-top: 0 !important;
+    padding-top: 10px !important;
+    padding-bottom: calc(18px + env(safe-area-inset-bottom)) !important;
+  }
+
+  .footer-links {
+    align-items: center !important;
+    row-gap: 9px !important;
+    column-gap: 18px !important;
+    margin: 10px 0 8px !important;
+  }
+
+  .footer-links > .footer-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 18px;
+    line-height: 18px;
+  }
+
+  .footer-app-links {
+    display: inline-flex !important;
+    flex: 0 0 100% !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 18px !important;
+    min-height: 18px !important;
+    margin-top: 0 !important;
+    line-height: 18px !important;
+  }
+
+  .footer-icon-link {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    height: 18px !important;
+    min-height: 18px !important;
+    line-height: 18px !important;
+  }
+
+  .footer-icon-link svg,
+  .footer-icon-link .download-icon {
+    flex: 0 0 15px !important;
+    width: 15px !important;
+    height: 15px !important;
+    margin: 0 !important;
+    transform: none !important;
+  }
+
+  .footer-icon-link > span:not(.download-icon) {
+    display: inline-flex;
+    align-items: center;
+    height: 18px;
+    line-height: 18px;
   }
 }

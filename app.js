@@ -3629,22 +3629,31 @@ function trackStandalonePwaOpen() {
 }
 
 function setupPwaInstallTracking() {
+  const syncPwaInstallButton = () => {
+    pwaInstallButton?.classList.toggle("hidden", !mobileViewportQuery.matches);
+  };
+
   trackStandalonePwaOpen();
   window.matchMedia?.("(display-mode: standalone)").addEventListener?.("change", trackStandalonePwaOpen);
 
   window.addEventListener("appinstalled", () => {
     deferredPwaInstallPrompt = null;
-    pwaInstallButton?.classList.add("hidden");
+    syncPwaInstallButton();
     trackAnalyticsEvent("pwa_installed", {
       install_source: "browser"
     });
+    setTimeout(() => {
+      if (!isPwaStandalone()) {
+        window.location.assign("/");
+      }
+    }, 400);
   });
 
   window.addEventListener("beforeinstallprompt", (event) => {
-    if (isPwaStandalone() || !mobileViewportQuery.matches) return;
+    if (!mobileViewportQuery.matches) return;
     event.preventDefault();
     deferredPwaInstallPrompt = event;
-    pwaInstallButton?.classList.remove("hidden");
+    syncPwaInstallButton();
     trackAnalyticsEvent("pwa_install_prompt_shown", {
       prompt_source: "footer_button"
     });
@@ -3670,20 +3679,13 @@ function setupPwaInstallTracking() {
       });
     }
     deferredPwaInstallPrompt = null;
-    if (mobileViewportQuery.matches && !isPwaStandalone()) {
-      pwaInstallButton?.classList.remove("hidden");
-    }
+    syncPwaInstallButton();
   };
 
   pwaInstallButton?.addEventListener("click", () => startInstallPrompt("footer_button"));
-  if (mobileViewportQuery.matches && !isPwaStandalone()) {
-    pwaInstallButton?.classList.remove("hidden");
-  }
+  syncPwaInstallButton();
   mobileViewportQuery.addEventListener("change", () => {
-    if (!mobileViewportQuery.matches) pwaInstallButton?.classList.add("hidden");
-    if (mobileViewportQuery.matches && !isPwaStandalone()) {
-      pwaInstallButton?.classList.remove("hidden");
-    }
+    syncPwaInstallButton();
   });
 }
 
