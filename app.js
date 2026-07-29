@@ -219,6 +219,7 @@ const contactMessage = document.querySelector("#contactMessage");
 const contactStatus = document.querySelector("#contactStatus");
 const contactThanks = document.querySelector("#contactThanks");
 const contactShell = document.querySelector(".contact-shell");
+const pwaInstallButton = document.querySelector("#pwaInstallButton");
 const mobileViewportQuery = window.matchMedia("(max-width: 980px)");
 
 let activeTopic = "todos";
@@ -253,6 +254,8 @@ let isLoadingMoreOpinions = false;
 let isLoadingInitialRouteOpinion = false;
 let isLoadingSearchOpinion = false;
 let dataStore = createLocalDataStore();
+let deferredPwaInstallPrompt = null;
+let hasTrackedStandaloneOpen = false;
 
 hydrateInitialContentFromCache();
 
@@ -3595,5 +3598,71 @@ function registerServiceWorker() {
   });
 }
 
+function trackAnalyticsEvent(name, params = {}) {
+  if (typeof window.gtag !== "function") return;
+  window.gtag("event", name, params);
+}
+
+function isPwaStandalone() {
+  return Boolean(
+    window.matchMedia?.("(display-mode: standalone)").matches ||
+    window.matchMedia?.("(display-mode: window-controls-overlay)").matches ||
+    window.navigator.standalone
+  );
+}
+
+function trackStandalonePwaOpen() {
+  if (!isPwaStandalone() || hasTrackedStandaloneOpen) return;
+  hasTrackedStandaloneOpen = true;
+  trackAnalyticsEvent("pwa_opened_standalone", {
+    app_surface: "standalone",
+    operating_system: window.navigator.platform || "unknown"
+  });
+}
+
+function setupPwaInstallTracking() {
+  trackStandalonePwaOpen();
+  window.matchMedia?.("(display-mode: standalone)").addEventListener?.("change", trackStandalonePwaOpen);
+
+  window.addEventListener("appinstalled", () => {
+    deferredPwaInstallPrompt = null;
+    pwaInstallButton?.classList.add("hidden");
+    trackAnalyticsEvent("pwa_installed", {
+      install_source: "browser"
+    });
+  });
+
+  window.addEventListener("beforeinstallprompt", (event) => {
+    if (isPwaStandalone()) return;
+    event.preventDefault();
+    deferredPwaInstallPrompt = event;
+    pwaInstallButton?.classList.remove("hidden");
+    trackAnalyticsEvent("pwa_install_prompt_shown", {
+      prompt_source: "footer_button"
+    });
+  });
+
+  pwaInstallButton?.addEventListener("click", async () => {
+    if (!deferredPwaInstallPrompt) return;
+    trackAnalyticsEvent("pwa_install_prompt_clicked", {
+      prompt_source: "footer_button"
+    });
+    deferredPwaInstallPrompt.prompt();
+    const choice = await deferredPwaInstallPrompt.userChoice;
+    trackAnalyticsEvent("pwa_install_prompt_closed", {
+      prompt_source: "footer_button",
+      outcome: choice?.outcome || "unknown"
+    });
+    if (choice?.outcome === "dismissed") {
+      trackAnalyticsEvent("pwa_install_prompt_dismissed", {
+        prompt_source: "footer_button"
+      });
+    }
+    deferredPwaInstallPrompt = null;
+    pwaInstallButton.classList.add("hidden");
+  });
+}
+
 registerServiceWorker();
+setupPwaInstallTracking();
 initializeAppData();
