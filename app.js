@@ -220,10 +220,6 @@ const contactStatus = document.querySelector("#contactStatus");
 const contactThanks = document.querySelector("#contactThanks");
 const contactShell = document.querySelector(".contact-shell");
 const pwaInstallButton = document.querySelector("#pwaInstallButton");
-const pwaInstallBanner = document.querySelector("#pwaInstallBanner");
-const pwaInstallConfirm = document.querySelector("#pwaInstallConfirm");
-const pwaInstallDismiss = document.querySelector("#pwaInstallDismiss");
-const pwaInstallMessage = document.querySelector("#pwaInstallMessage");
 const mobileViewportQuery = window.matchMedia("(max-width: 980px)");
 
 let activeTopic = "todos";
@@ -260,7 +256,6 @@ let isLoadingSearchOpinion = false;
 let dataStore = createLocalDataStore();
 let deferredPwaInstallPrompt = null;
 let hasTrackedStandaloneOpen = false;
-let hasShownPwaInstallOffer = false;
 
 hydrateInitialContentFromCache();
 
@@ -3624,40 +3619,6 @@ function isPwaLikelyInstalled() {
   return isPwaStandalone();
 }
 
-function showPwaInstallOffer(source = "page_open") {
-  if (!pwaInstallBanner || isPwaLikelyInstalled() || hasShownPwaInstallOffer) return;
-  hasShownPwaInstallOffer = true;
-  updatePwaInstallOfferContent();
-  pwaInstallBanner.classList.remove("hidden");
-  trackAnalyticsEvent("pwa_install_prompt_shown", {
-    prompt_source: source,
-    prompt_type: deferredPwaInstallPrompt ? "browser_prompt" : "manual_instructions"
-  });
-}
-
-function updatePwaInstallOfferContent() {
-  if (!pwaInstallMessage || !pwaInstallConfirm) return;
-  if (!deferredPwaInstallPrompt && isIosBrowser()) {
-    pwaInstallMessage.textContent = "En iPhone: Compartir y después Agregar a pantalla de inicio.";
-    pwaInstallConfirm.textContent = "Entendido";
-  } else if (!deferredPwaInstallPrompt) {
-    pwaInstallMessage.textContent = "Si tu navegador lo permite, podés agregarla a la pantalla de inicio.";
-    pwaInstallConfirm.textContent = "Entendido";
-  } else {
-    pwaInstallMessage.textContent = "Tenela en tu pantalla de inicio para entrar más rápido.";
-    pwaInstallConfirm.textContent = "Instalar";
-  }
-}
-
-function hidePwaInstallOffer(outcome = "dismissed") {
-  pwaInstallBanner?.classList.add("hidden");
-  if (outcome === "dismissed") {
-    trackAnalyticsEvent("pwa_install_prompt_dismissed", {
-      prompt_source: "site_banner"
-    });
-  }
-}
-
 function trackStandalonePwaOpen() {
   if (!isPwaStandalone() || hasTrackedStandaloneOpen) return;
   hasTrackedStandaloneOpen = true;
@@ -3670,12 +3631,10 @@ function trackStandalonePwaOpen() {
 function setupPwaInstallTracking() {
   trackStandalonePwaOpen();
   window.matchMedia?.("(display-mode: standalone)").addEventListener?.("change", trackStandalonePwaOpen);
-  window.setTimeout(() => showPwaInstallOffer("page_open"), 1400);
 
   window.addEventListener("appinstalled", () => {
     deferredPwaInstallPrompt = null;
     pwaInstallButton?.classList.add("hidden");
-    hidePwaInstallOffer("accepted");
     trackAnalyticsEvent("pwa_installed", {
       install_source: "browser"
     });
@@ -3686,8 +3645,9 @@ function setupPwaInstallTracking() {
     event.preventDefault();
     deferredPwaInstallPrompt = event;
     pwaInstallButton?.classList.remove("hidden");
-    updatePwaInstallOfferContent();
-    showPwaInstallOffer("browser_ready");
+    trackAnalyticsEvent("pwa_install_prompt_shown", {
+      prompt_source: "footer_button"
+    });
   });
 
   const startInstallPrompt = async (source) => {
@@ -3696,7 +3656,6 @@ function setupPwaInstallTracking() {
     });
     if (!deferredPwaInstallPrompt) {
       showToast(isIosBrowser() ? "En iPhone: Compartir y Agregar a pantalla de inicio." : "Usá el menú del navegador para agregarla a inicio.");
-      hidePwaInstallOffer("manual_instruction_seen");
       return;
     }
     deferredPwaInstallPrompt.prompt();
@@ -3712,12 +3671,9 @@ function setupPwaInstallTracking() {
     }
     deferredPwaInstallPrompt = null;
     pwaInstallButton?.classList.add("hidden");
-    hidePwaInstallOffer(choice?.outcome || "closed");
   };
 
   pwaInstallButton?.addEventListener("click", () => startInstallPrompt("footer_button"));
-  pwaInstallConfirm?.addEventListener("click", () => startInstallPrompt("site_banner"));
-  pwaInstallDismiss?.addEventListener("click", () => hidePwaInstallOffer("dismissed"));
 }
 
 registerServiceWorker();
