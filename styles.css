@@ -1778,7 +1778,9 @@ body.reply-field-focused .floating-opinion-trigger {
 .footer-app-links {
   display: inline-flex;
   align-items: center;
-  gap: 16px;
+  justify-content: center;
+  gap: 18px;
+  line-height: 1;
 }
 
 .pwa-install-button {
@@ -1788,17 +1790,27 @@ body.reply-field-focused .floating-opinion-trigger {
 .footer-icon-link {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
+  line-height: 1;
+  vertical-align: middle;
 }
 
 .footer-icon-link svg {
-  width: 15px;
-  height: 15px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.8;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+  flex: 0 0 15px !important;
+  width: 15px !important;
+  height: 15px !important;
+  fill: none !important;
+  stroke: currentColor !important;
+  stroke-width: 1.8 !important;
+  stroke-linecap: round !important;
+  stroke-linejoin: round !important;
+  color: currentColor !important;
+  transform: none !important;
+}
+
+.footer-icon-link span {
+  line-height: 1;
 }
 
 .footer-warning {

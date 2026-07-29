@@ -3670,7 +3670,9 @@ function setupPwaInstallTracking() {
       });
     }
     deferredPwaInstallPrompt = null;
-    pwaInstallButton?.classList.add("hidden");
+    if (mobileViewportQuery.matches && !isPwaStandalone()) {
+      pwaInstallButton?.classList.remove("hidden");
+    }
   };
 
   pwaInstallButton?.addEventListener("click", () => startInstallPrompt("footer_button"));
