@@ -24,6 +24,6 @@ assertIncludes(app, "async function submitSearch(value, sourceInput)", "async se
 assertIncludes(app, "getSearchRouteLookupCandidate(searchQuery)", "search exact-number lookup");
 assertIncludes(app, "Buscando opinion...", "search loading state");
 assertIncludes(index, "app.js?v=20260729-footer-pwa-fixes", "app cache bust");
-assertIncludes(index, "styles.css?v=20260729-footer-tight-mobile", "style cache bust");
+assertIncludes(index, "styles.css?v=20260729-footer-no-overlap", "style cache bust");
 
 console.log("load-performance regression checks passed");

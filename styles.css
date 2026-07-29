@@ -4947,13 +4947,9 @@ body.reply-field-focused .floating-opinion-trigger {
   }
 
   .site-footer {
-    margin-top: 0 !important;
+    margin-top: 12px !important;
     padding-top: 0 !important;
     padding-bottom: calc(18px + env(safe-area-inset-bottom)) !important;
-  }
-
-  body:has(#homeView:not(.hidden)) .site-footer {
-    margin-top: -128px !important;
   }
 
   .footer-links {
