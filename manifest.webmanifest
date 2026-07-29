@@ -12,6 +12,13 @@
   "orientation": "portrait",
   "lang": "es-AR",
   "categories": ["social", "news"],
+  "related_applications": [
+    {
+      "platform": "webapp",
+      "url": "https://quieroopinar.com/manifest.webmanifest",
+      "id": "https://quieroopinar.com/?app=quieroopinar"
+    }
+  ],
   "icons": [
     {
       "src": "/assets/pwa-icon-192.png",

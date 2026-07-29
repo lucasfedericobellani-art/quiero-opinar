@@ -256,6 +256,7 @@ let isLoadingSearchOpinion = false;
 let dataStore = createLocalDataStore();
 let deferredPwaInstallPrompt = null;
 let hasTrackedStandaloneOpen = false;
+const pwaInstallPromptWaiters = new Set();
 
 hydrateInitialContentFromCache();
 
@@ -3590,11 +3591,25 @@ async function initializeAppData() {
 }
 
 function registerServiceWorker() {
-  if (!("serviceWorker" in navigator)) return;
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/service-worker.js").catch((error) => {
+  if (!("serviceWorker" in navigator)) return Promise.resolve(null);
+  return navigator.serviceWorker.register("/service-worker.js")
+    .then((registration) => navigator.serviceWorker.ready.then(() => registration))
+    .catch((error) => {
       console.warn("No se pudo registrar la PWA.", error);
+      return null;
     });
+}
+
+function waitForPwaInstallPrompt(timeoutMs = 2200) {
+  if (deferredPwaInstallPrompt) return Promise.resolve(deferredPwaInstallPrompt);
+  return new Promise((resolve) => {
+    const finish = (promptEvent = null) => {
+      window.clearTimeout(timeoutId);
+      pwaInstallPromptWaiters.delete(finish);
+      resolve(promptEvent);
+    };
+    const timeoutId = window.setTimeout(() => finish(null), timeoutMs);
+    pwaInstallPromptWaiters.add(finish);
   });
 }
 
@@ -3615,8 +3630,15 @@ function isIosBrowser() {
   return /iphone|ipad|ipod/i.test(window.navigator.userAgent || "");
 }
 
-function isPwaLikelyInstalled() {
-  return isPwaStandalone();
+async function isPwaLikelyInstalled() {
+  if (isPwaStandalone()) return true;
+  if (typeof window.navigator.getInstalledRelatedApps !== "function") return false;
+  try {
+    const relatedApps = await window.navigator.getInstalledRelatedApps();
+    return relatedApps.some((app) => app.platform === "webapp");
+  } catch (error) {
+    return false;
+  }
 }
 
 function trackStandalonePwaOpen() {
@@ -3653,6 +3675,7 @@ function setupPwaInstallTracking() {
     if (!mobileViewportQuery.matches) return;
     event.preventDefault();
     deferredPwaInstallPrompt = event;
+    pwaInstallPromptWaiters.forEach((resolvePrompt) => resolvePrompt(event));
     syncPwaInstallButton();
     trackAnalyticsEvent("pwa_install_prompt_shown", {
       prompt_source: "footer_button"
@@ -3664,7 +3687,20 @@ function setupPwaInstallTracking() {
       prompt_source: source
     });
     if (!deferredPwaInstallPrompt) {
-      showToast(isIosBrowser() ? "En iPhone: Compartir y Agregar a pantalla de inicio." : "Usá el menú del navegador para agregarla a inicio.");
+      showToast("Preparando instalacion...");
+      await waitForPwaInstallPrompt();
+    }
+    if (!deferredPwaInstallPrompt) {
+      const alreadyInstalled = await isPwaLikelyInstalled();
+      trackAnalyticsEvent("pwa_install_prompt_unavailable", {
+        prompt_source: source,
+        already_installed: alreadyInstalled ? "yes" : "no"
+      });
+      if (alreadyInstalled) {
+        showToast("Ya esta instalada. Abrila desde el icono QuieroOpinar.");
+      } else {
+        showToast(isIosBrowser() ? "En iPhone: Compartir y Agregar a pantalla de inicio." : "Chrome no habilito el instalador todavia. Proba abrirla en Chrome completo y tocar Descargar App de nuevo.");
+      }
       return;
     }
     deferredPwaInstallPrompt.prompt();
