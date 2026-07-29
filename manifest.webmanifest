@@ -1,6 +1,6 @@
 {
   "name": "Quiero Opinar",
-  "short_name": "Opinar",
+  "short_name": "QuieroOpinar",
   "description": "Opiniones anonimas, temas de conversacion y debates abiertos.",
   "id": "/",
   "start_url": "/?source=pwa",
