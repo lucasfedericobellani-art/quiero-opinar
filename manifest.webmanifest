@@ -1,6 +1,6 @@
 {
-  "name": "Quiero Opinar",
-  "short_name": "Quiero Opinar",
+  "name": "QuieroOpinar",
+  "short_name": "QuieroOpinar",
   "description": "Opiniones anonimas, temas de conversacion y debates abiertos.",
   "id": "/?app=quieroopinar",
   "start_url": "/?source=pwa&app=quieroopinar",
@@ -46,8 +46,8 @@
   ],
   "shortcuts": [
     {
-      "name": "Quiero Opinar",
-      "short_name": "Quiero Opinar",
+      "name": "QuieroOpinar",
+      "short_name": "QuieroOpinar",
       "description": "Publicar una opinion anonima",
       "url": "/?source=pwa-shortcut&app=quieroopinar#opinar",
       "icons": [
