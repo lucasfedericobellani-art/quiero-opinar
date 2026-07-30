@@ -1516,12 +1516,14 @@ body.reply-field-focused .floating-opinion-trigger {
   white-space: pre-wrap;
 }
 
+.admin-text-form,
 .admin-topic-form {
   display: grid;
   gap: 8px;
   margin: 12px 0;
 }
 
+.admin-text-edit,
 .admin-topic-edit {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -1529,6 +1531,7 @@ body.reply-field-focused .floating-opinion-trigger {
   align-items: center;
 }
 
+.admin-text-input,
 .admin-topic-input {
   width: 100%;
   min-width: 0;
@@ -1540,6 +1543,13 @@ body.reply-field-focused .floating-opinion-trigger {
   font: inherit;
 }
 
+.admin-text-input {
+  min-height: 90px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.admin-text-input:focus,
 .admin-topic-input:focus {
   outline: 2px solid rgba(255, 122, 0, 0.3);
   border-color: rgba(255, 122, 0, 0.68);
@@ -4062,6 +4072,7 @@ body.reply-field-focused .floating-opinion-trigger {
     align-items: stretch;
   }
 
+  .admin-text-edit,
   .admin-topic-edit {
     grid-template-columns: 1fr;
   }

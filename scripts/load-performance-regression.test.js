@@ -4,6 +4,7 @@ const path = require("path");
 const root = path.resolve(__dirname, "..");
 const app = fs.readFileSync(path.join(root, "app.js"), "utf8");
 const index = fs.readFileSync(path.join(root, "index.html"), "utf8");
+const admin = fs.readFileSync(path.join(root, "admin.html"), "utf8");
 
 function assertIncludes(source, needle, label) {
   if (!source.includes(needle)) {
@@ -25,5 +26,6 @@ assertIncludes(app, "getSearchRouteLookupCandidate(searchQuery)", "search exact-
 assertIncludes(app, "Buscando opinion...", "search loading state");
 assertIncludes(index, "app.js?v=20260729-pwa-safe-browser", "app cache bust");
 assertIncludes(index, "styles.css?v=20260729-footer-no-overlap", "style cache bust");
+assertIncludes(admin, "admin.js?v=20260730-admin-text-edit", "admin cache bust");
 
 console.log("load-performance regression checks passed");

@@ -279,6 +279,13 @@ function renderAdminList() {
         </div>
       </div>
       <p class="admin-opinion-text">${escapeHtml(opinion.text)}</p>
+      <form class="admin-text-form" data-id="${escapeHtml(opinion.id)}">
+        <label class="field-label" for="text-${escapeHtml(opinion.id)}">Texto</label>
+        <div class="admin-text-edit">
+          <textarea id="text-${escapeHtml(opinion.id)}" class="admin-text-input" name="text" maxlength="600" required>${escapeHtml(opinion.text)}</textarea>
+          <button class="ghost-button" type="submit">Guardar texto</button>
+        </div>
+      </form>
       <form class="admin-topic-form" data-id="${escapeHtml(opinion.id)}">
         <label class="field-label" for="topic-${escapeHtml(opinion.id)}">Tema</label>
         <div class="admin-topic-edit">
@@ -907,6 +914,43 @@ async function initializeAdmin() {
   });
 
   adminOpinionList.addEventListener("submit", async (event) => {
+    const textForm = event.target.closest(".admin-text-form");
+    if (textForm) {
+      event.preventDefault();
+
+      const opinionId = textForm.getAttribute("data-id");
+      const opinion = opinions.find((item) => item.id === opinionId);
+      const input = textForm.querySelector(".admin-text-input");
+      const button = textForm.querySelector("button[type='submit']");
+      const nextText = input.value.trim();
+
+      if (!opinion || !nextText) return;
+      if (nextText.length > 600) {
+        window.alert("El texto no puede superar 600 caracteres.");
+        return;
+      }
+      if (nextText === opinion.text) return;
+
+      const { doc, updateDoc } = firestoreModule;
+      button.disabled = true;
+      input.disabled = true;
+
+      try {
+        await updateDoc(doc(db, "opinions", opinionId), {
+          text: nextText,
+          moderatedAt: new Date().toISOString(),
+          moderationReason: opinion.moderationReason || "texto_editado_por_admin"
+        });
+      } catch (error) {
+        console.error("No se pudo actualizar el texto.", error);
+        window.alert("No se pudo guardar el texto. Revisar permisos de administrador.");
+      } finally {
+        button.disabled = false;
+        input.disabled = false;
+      }
+      return;
+    }
+
     const form = event.target.closest(".admin-topic-form");
     if (!form) return;
     event.preventDefault();
