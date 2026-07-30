@@ -239,24 +239,31 @@ function renderAdminList() {
           <h3>Opinión #${getAdminOpinionNumber(opinion) || 0}</h3>
         </div>
         <div class="admin-actions">
-          <button class="ghost-button" type="button" data-action="approve" data-id="${escapeHtml(opinion.id)}">Aprobar</button>
-          <button class="ghost-button" type="button" data-action="toggle-hidden" data-id="${escapeHtml(opinion.id)}">${opinion.hidden ? "Mostrar" : "Ocultar"}</button>
-          <button class="ghost-button danger-button" type="button" data-action="delete" data-id="${escapeHtml(opinion.id)}">Eliminar</button>
+          <button class="admin-menu-button" type="button" data-action="toggle-menu" data-id="${escapeHtml(opinion.id)}" aria-label="Abrir acciones" aria-expanded="false">...</button>
+          <div class="admin-action-menu hidden" data-menu-id="${escapeHtml(opinion.id)}">
+            <button type="button" data-action="edit-text" data-id="${escapeHtml(opinion.id)}">Modificar texto</button>
+            <button type="button" data-action="edit-topic" data-id="${escapeHtml(opinion.id)}">Modificar tema</button>
+            <button type="button" data-action="approve" data-id="${escapeHtml(opinion.id)}">Aprobar</button>
+            <button type="button" data-action="toggle-hidden" data-id="${escapeHtml(opinion.id)}">${opinion.hidden ? "Mostrar" : "Ocultar"}</button>
+            <button class="danger-menu-item" type="button" data-action="delete" data-id="${escapeHtml(opinion.id)}">Eliminar</button>
+          </div>
         </div>
       </div>
       <p class="admin-opinion-text">${escapeHtml(opinion.text)}</p>
-      <form class="admin-text-form" data-id="${escapeHtml(opinion.id)}">
+      <form class="admin-text-form hidden" data-id="${escapeHtml(opinion.id)}">
         <label class="field-label" for="text-${escapeHtml(opinion.id)}">Texto</label>
         <div class="admin-text-edit">
           <textarea id="text-${escapeHtml(opinion.id)}" class="admin-text-input" name="text" maxlength="600" required>${escapeHtml(opinion.text)}</textarea>
           <button class="ghost-button" type="submit">Guardar texto</button>
+          <button class="ghost-button" type="button" data-action="cancel-edit" data-target="text" data-id="${escapeHtml(opinion.id)}">Cancelar</button>
         </div>
       </form>
-      <form class="admin-topic-form" data-id="${escapeHtml(opinion.id)}">
+      <form class="admin-topic-form hidden" data-id="${escapeHtml(opinion.id)}">
         <label class="field-label" for="topic-${escapeHtml(opinion.id)}">Tema</label>
         <div class="admin-topic-edit">
           <input id="topic-${escapeHtml(opinion.id)}" class="admin-topic-input" name="topic" type="text" value="${escapeHtml(opinion.topic)}" maxlength="80" required>
           <button class="ghost-button" type="submit">Guardar tema</button>
+          <button class="ghost-button" type="button" data-action="cancel-edit" data-target="topic" data-id="${escapeHtml(opinion.id)}">Cancelar</button>
         </div>
       </form>
       <div class="admin-meta">
@@ -841,6 +848,38 @@ async function initializeAdmin() {
 
     const opinionId = button.getAttribute("data-id");
     const action = button.getAttribute("data-action");
+    const card = button.closest(".admin-opinion-card");
+
+    if (action === "toggle-menu") {
+      const menu = Array.from(card?.querySelectorAll(".admin-action-menu") || [])
+        .find((item) => item.getAttribute("data-menu-id") === opinionId);
+      const isOpen = menu && !menu.classList.contains("hidden");
+      adminOpinionList.querySelectorAll(".admin-action-menu").forEach((item) => item.classList.add("hidden"));
+      adminOpinionList.querySelectorAll(".admin-menu-button").forEach((item) => item.setAttribute("aria-expanded", "false"));
+      menu?.classList.toggle("hidden", isOpen);
+      button.setAttribute("aria-expanded", String(!isOpen));
+      return;
+    }
+
+    if (action === "edit-text" || action === "edit-topic") {
+      card?.querySelector(".admin-action-menu")?.classList.add("hidden");
+      card?.querySelector(".admin-menu-button")?.setAttribute("aria-expanded", "false");
+      const form = card?.querySelector(action === "edit-text" ? ".admin-text-form" : ".admin-topic-form");
+      form?.classList.remove("hidden");
+      form?.querySelector("textarea, input")?.focus();
+      return;
+    }
+
+    if (action === "cancel-edit") {
+      const target = button.getAttribute("data-target");
+      const form = card?.querySelector(target === "text" ? ".admin-text-form" : ".admin-topic-form");
+      const opinion = opinions.find((item) => item.id === opinionId);
+      const input = form?.querySelector("textarea, input");
+      if (input && opinion) input.value = target === "text" ? opinion.text : opinion.topic;
+      form?.classList.add("hidden");
+      return;
+    }
+
     const opinion = opinions.find((item) => item.id === opinionId);
     if (!opinion) return;
 
@@ -905,6 +944,7 @@ async function initializeAdmin() {
           moderatedAt: new Date().toISOString(),
           moderationReason: opinion.moderationReason || "texto_editado_por_admin"
         });
+        textForm.classList.add("hidden");
       } catch (error) {
         console.error("No se pudo actualizar el texto.", error);
         window.alert("No se pudo guardar el texto. Revisar permisos de administrador.");
@@ -941,6 +981,7 @@ async function initializeAdmin() {
         topic: nextTopic,
         moderatedAt: new Date().toISOString()
       });
+      form.classList.add("hidden");
     } catch (error) {
       console.error("No se pudo actualizar el tema.", error);
       window.alert("No se pudo guardar el tema. Revisar permisos de administrador.");

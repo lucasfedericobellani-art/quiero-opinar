@@ -1488,10 +1488,66 @@ body.reply-field-focused .floating-opinion-trigger {
 }
 
 .admin-actions {
+  position: relative;
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: 8px;
+}
+
+.admin-menu-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 36px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(255, 122, 0, 0.04);
+  color: var(--text-hot);
+  font-weight: 900;
+  line-height: 1;
+}
+
+.admin-menu-button:hover,
+.admin-menu-button[aria-expanded="true"] {
+  border-color: rgba(255, 176, 74, 0.52);
+  background: rgba(255, 122, 0, 0.12);
+}
+
+.admin-action-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 4;
+  display: grid;
+  min-width: 190px;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #101012;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.34);
+}
+
+.admin-action-menu button {
+  width: 100%;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  padding: 10px 12px;
+  font: inherit;
+  font-weight: 750;
+  text-align: left;
+}
+
+.admin-action-menu button:hover {
+  background: rgba(255, 122, 0, 0.1);
+  color: var(--text-hot);
+}
+
+.admin-action-menu .danger-menu-item {
+  color: #ff8c8c;
 }
 
 .danger-button {

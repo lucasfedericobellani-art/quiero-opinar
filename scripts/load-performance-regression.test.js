@@ -26,6 +26,6 @@ assertIncludes(app, "getSearchRouteLookupCandidate(searchQuery)", "search exact-
 assertIncludes(app, "Buscando opinion...", "search loading state");
 assertIncludes(index, "app.js?v=20260729-pwa-safe-browser", "app cache bust");
 assertIncludes(index, "styles.css?v=20260729-footer-no-overlap", "style cache bust");
-assertIncludes(admin, "admin.js?v=20260730-admin-public-numbers", "admin cache bust");
+assertIncludes(admin, "admin.js?v=20260730-admin-action-menu", "admin cache bust");
 
 console.log("load-performance regression checks passed");
