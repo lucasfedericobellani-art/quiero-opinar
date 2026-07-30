@@ -91,6 +91,7 @@ function normalizeOpinion(opinion) {
     author: opinion.author || "Opinion",
     topic: opinion.topic || "sin-tema",
     text: opinion.text || "",
+    publicNumber: Number(opinion.publicNumber || 0),
     views: Number(opinion.views || 0),
     likes: Number(opinion.likes || 0),
     createdAt: normalizeDateValue(opinion.createdAt),
@@ -126,43 +127,10 @@ function normalizeText(value) {
     .replace(/[\u0300-\u036f]/g, "");
 }
 
-function getOpinionNumberMap() {
-  const getContributionNumbers = (sourceOpinions) => {
-    const entries = [];
-
-    sourceOpinions.forEach((opinion) => {
-      entries.push({
-        key: `opinion:${opinion.id}`,
-        createdAt: opinion.createdAt,
-        fallback: opinion.id
-      });
-
-      opinion.replies.forEach((reply, index) => {
-        entries.push({
-          key: `reply:${opinion.id}:${reply.id || index}`,
-          createdAt: reply.createdAt || opinion.createdAt,
-          fallback: `${opinion.id}:${reply.id || index}`
-        });
-      });
-    });
-
-    entries.sort((a, b) => {
-      const dateDiff = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-      if (dateDiff !== 0) return dateDiff;
-      return a.fallback.localeCompare(b.fallback);
-    });
-
-    return new Map(entries.map((entry, index) => [entry.key, index + 1]));
-  };
-
-  const visibleContributionNumbers = getContributionNumbers(opinions.filter((opinion) => !opinion.hidden));
-  const fallbackContributionNumbers = getContributionNumbers(opinions);
-  return new Map(opinions.map((opinion) => [
-    opinion.id,
-    visibleContributionNumbers.get(`opinion:${opinion.id}`)
-      || fallbackContributionNumbers.get(`opinion:${opinion.id}`)
-      || 0
-  ]));
+function getAdminOpinionNumber(opinion) {
+  if (Number(opinion.publicNumber || 0) > 0) return Number(opinion.publicNumber);
+  const authorNumber = String(opinion.author || "").match(/#?(\d+)/)?.[1];
+  return authorNumber ? Number(authorNumber) : 0;
 }
 
 function formatReportReasons(reasons) {
@@ -225,13 +193,12 @@ function getFilteredOpinions() {
     return sourceOpinions;
   }
 
-  const numberMap = getOpinionNumberMap();
   const normalizedQuery = normalizeText(query).replace(/^opinion\s*#?\s*/, "").trim();
   const exactNumber = normalizedQuery.match(/^#?(\d+)$/)?.[1] || "";
   const terms = normalizedQuery.split(/[^a-z0-9.:-]+/).filter(Boolean);
 
   return sourceOpinions.filter((opinion) => {
-    const opinionNumber = String(numberMap.get(opinion.id) || "");
+    const opinionNumber = String(getAdminOpinionNumber(opinion) || "");
     if (exactNumber && opinionNumber === exactNumber) return true;
 
     const repliesText = opinion.replies.map((reply) => {
@@ -253,7 +220,6 @@ function getFilteredOpinions() {
 
 function renderAdminList() {
   const visibleOpinions = getFilteredOpinions();
-  const numberMap = getOpinionNumberMap();
 
   if (!visibleOpinions.length) {
     const emptyMessage = adminSearchQuery.trim()
@@ -270,7 +236,7 @@ function renderAdminList() {
       <div class="admin-opinion-head">
         <div>
           <p class="section-label">${escapeHtml(opinion.topic)} · ${formatDate(opinion.createdAt)}</p>
-          <h3>Opinión #${numberMap.get(opinion.id) || 0}</h3>
+          <h3>Opinión #${getAdminOpinionNumber(opinion) || 0}</h3>
         </div>
         <div class="admin-actions">
           <button class="ghost-button" type="button" data-action="approve" data-id="${escapeHtml(opinion.id)}">Aprobar</button>
@@ -639,9 +605,8 @@ function renderAnalytics() {
     renderDonut("Dispositivos", deviceRows)
   ].join("");
 
-  const numberMap = getOpinionNumberMap();
   const tableColumns = [
-    { label: "#", value: (opinion) => `Opinión #${numberMap.get(opinion.id) || 0}` },
+    { label: "#", value: (opinion) => `Opinión #${getAdminOpinionNumber(opinion) || 0}` },
     { label: "Tema", value: (opinion) => opinion.topic },
     { label: "Texto", value: (opinion) => opinion.text.slice(0, 90) },
     { label: "Vistas", value: (opinion) => String(opinion.views) },
@@ -660,7 +625,7 @@ function renderAnalytics() {
   ].join("");
 
   const alerts = [];
-  mostViewed.filter((opinion) => opinion.views >= 100).slice(0, 3).forEach((opinion) => alerts.push(`Opinión #${numberMap.get(opinion.id)} puede estar volviéndose viral.`));
+  mostViewed.filter((opinion) => opinion.views >= 100).slice(0, 3).forEach((opinion) => alerts.push(`Opinión #${getAdminOpinionNumber(opinion)} puede estar volviéndose viral.`));
   topTopics.filter((topic) => topic.value >= 10).slice(0, 3).forEach((topic) => alerts.push(`El tema ${topic.label} está creciendo rápido.`));
   if (stats.reportCount >= 5) alerts.push("Hay muchos reportes acumulados en el período.");
   if (!stats.events.length) alerts.push("Se detecta caída de actividad para el filtro seleccionado.");
@@ -668,14 +633,13 @@ function renderAnalytics() {
 }
 
 function getExportRows() {
-  const numberMap = getOpinionNumberMap();
   return getFilteredAnalyticsOpinions().map((opinion) => {
     const createdAt = new Date(opinion.createdAt);
     return {
       Fecha: createdAt.toLocaleDateString("es-AR"),
       Hora: createdAt.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" }),
       "ID de opinión": opinion.id,
-      "Número": `Opinión #${numberMap.get(opinion.id) || 0}`,
+      "Número": `Opinión #${getAdminOpinionNumber(opinion) || 0}`,
       Tema: opinion.topic,
       Hashtag: "",
       Texto: opinion.text,
