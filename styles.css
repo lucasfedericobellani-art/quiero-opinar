@@ -4206,23 +4206,43 @@ body.reply-field-focused .floating-opinion-trigger {
   }
 
   .opinion-meta {
-    gap: 8px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 6px 10px;
     align-items: center;
     margin-bottom: 13px;
   }
 
   .opinion-meta-left {
-    gap: 6px;
+    display: contents;
   }
 
   .topic {
+    grid-column: 1 / -1;
     font-size: 0.78rem;
+    line-height: 1.25;
+    white-space: normal;
   }
 
   .date-stamp,
-  .author,
-  .date-stamp::before {
+  .author {
     font-size: 0.74rem;
+    line-height: 1.2;
+  }
+
+  .date-stamp {
+    grid-column: 1;
+    margin-left: 11px;
+  }
+
+  .date-stamp::before {
+    display: none;
+  }
+
+  .author {
+    grid-column: 2;
+    justify-self: end;
+    margin-left: 0;
   }
 
   .opinion-text {

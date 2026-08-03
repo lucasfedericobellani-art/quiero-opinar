@@ -1,0 +1,25 @@
+(() => {
+  "use strict";
+
+  const revealItems = document.querySelectorAll(".reveal");
+
+  revealItems.forEach((item) => {
+    const delay = item.dataset.delay;
+    if (delay) item.style.setProperty("--delay", `${delay}ms`);
+  });
+
+  const observer = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add("is-visible");
+          observer.unobserve(entry.target);
+        }
+      });
+    },
+    { threshold: 0.16 }
+  );
+
+  revealItems.forEach((item) => observer.observe(item));
+
+})();

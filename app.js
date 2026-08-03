@@ -702,6 +702,12 @@ function getOpinionByRouteId(routeId) {
   return null;
 }
 
+function isResolvingSelectedOpinionRoute() {
+  const routeOpinionId = selectedOpinionId || getOpinionIdFromLocation();
+  if (!routeOpinionId) return false;
+  return !hasLoadedOpinions || isLoadingInitialRouteOpinion || !hasHandledInitialOpinion;
+}
+
 function getTopicOpinions(topicId) {
   const visibleOpinions = getVisibleOpinions();
   if (topicId === "todos") return visibleOpinions;
@@ -1205,8 +1211,16 @@ function updateRouteMetadata(viewName) {
     description = topic?.description || "Opiniones de este tema en Quiero Opinar.";
   } else if (viewName === "detail") {
     const opinion = getOpinionByRouteId(selectedOpinionId);
-    title = opinion ? `Opinión #${getOpinionNumber(opinion)} | Quiero Opinar` : "Opinión no encontrada | Quiero Opinar";
-    description = opinion ? truncateText(opinion.text, 140) : "No encontramos esta opinión.";
+    if (opinion && !opinion.hidden) {
+      title = `Opinión #${getOpinionNumber(opinion)} | Quiero Opinar`;
+      description = truncateText(opinion.text, 140);
+    } else if (isResolvingSelectedOpinionRoute()) {
+      title = "Cargando opinión | Quiero Opinar";
+      description = "Estamos cargando la opinión solicitada.";
+    } else {
+      title = "Opinión no encontrada | Quiero Opinar";
+      description = "No encontramos esta opinión.";
+    }
   } else if (viewName === "search") {
     title = searchQuery.trim() ? `Resultados para "${searchQuery.trim()}" | Quiero Opinar` : "Buscar | Quiero Opinar";
     description = "Resultados de búsqueda en Quiero Opinar.";
@@ -2191,18 +2205,22 @@ async function loadMoreOpinions() {
 
 function renderFeedSkeletons() {
   for (let index = 0; index < 2; index += 1) {
-    const card = document.createElement("article");
-    card.className = "opinion-card opinion-skeleton";
-    card.setAttribute("aria-label", "Cargando opiniones");
-    card.append(
-      createSkeletonElement("skeleton-line meta"),
-      createSkeletonElement("skeleton-line title"),
-      createSkeletonElement("skeleton-line body"),
-      createSkeletonElement("skeleton-line body short"),
-      createSkeletonElement("skeleton-actions")
-    );
-    feedList.append(card);
+    feedList.append(createOpinionSkeletonCard("Cargando opiniones"));
   }
+}
+
+function createOpinionSkeletonCard(label = "Cargando opinión") {
+  const card = document.createElement("article");
+  card.className = "opinion-card opinion-skeleton";
+  card.setAttribute("aria-label", label);
+  card.append(
+    createSkeletonElement("skeleton-line meta"),
+    createSkeletonElement("skeleton-line title"),
+    createSkeletonElement("skeleton-line body"),
+    createSkeletonElement("skeleton-line body short"),
+    createSkeletonElement("skeleton-actions")
+  );
+  return card;
 }
 
 function getSearchResults(sourceOpinions, queryValue = searchQuery) {
@@ -2293,6 +2311,11 @@ function renderDetail() {
   const opinion = getOpinionByRouteId(selectedOpinionId);
 
   if (!opinion || opinion.hidden) {
+    if (isResolvingSelectedOpinionRoute()) {
+      detailShell.append(createOpinionSkeletonCard("Cargando opinión"));
+      return;
+    }
+
     const empty = document.createElement("p");
     empty.className = "opinion-card";
     empty.textContent = "No se encontró esta opinión.";
@@ -3564,6 +3587,7 @@ async function openInitialOpinionFromUrl() {
 
   hasHandledInitialOpinion = true;
   syncUrlForView(currentView);
+  render();
 }
 
 async function initializeAppData() {
