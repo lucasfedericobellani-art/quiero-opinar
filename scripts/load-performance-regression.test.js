@@ -31,10 +31,10 @@ assertIncludes(app, "createOpinionSkeletonCard(\"Cargando opinión\")", "detail 
 assertIncludes(app, "Cargando opinión | Quiero Opinar", "detail route loading metadata");
 assertIncludes(styles, "grid-template-columns: minmax(0, 1fr) auto;", "mobile opinion meta grid");
 assertIncludes(styles, "grid-column: 1 / -1;", "mobile topic full row");
-assertIncludes(index, "app.js?v=20260803-opinion-link-loading", "app cache bust");
-assertIncludes(serviceWorker, "const CACHE_NAME = \"quiero-opinar-pwa-v18\";", "service worker cache bust");
+assertIncludes(index, "app.js?v=20260804-conspiraciones-topic", "app cache bust");
+assertIncludes(serviceWorker, "const CACHE_NAME = \"quiero-opinar-pwa-v19\";", "service worker cache bust");
 assertIncludes(serviceWorker, "/styles.css?v=20260803-opinion-meta-mobile", "service worker style cache bust");
-assertIncludes(serviceWorker, "/app.js?v=20260803-opinion-link-loading", "service worker app cache bust");
+assertIncludes(serviceWorker, "/app.js?v=20260804-conspiraciones-topic", "service worker app cache bust");
 assertIncludes(index, "styles.css?v=20260803-opinion-meta-mobile", "style cache bust");
 assertIncludes(admin, "admin.js?v=20260730-admin-action-menu", "admin cache bust");
 

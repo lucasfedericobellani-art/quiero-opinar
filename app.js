@@ -6,6 +6,7 @@ let topics = [
   { id: "economia", name: "Economía", description: "Precios, trabajo y empresas", icon: "assets/icons/economia.svg" },
   { id: "agro", name: "Agro", description: "Campo, producción rural y sector agropecuario", icon: "assets/icons/agro.svg" },
   { id: "politica", name: "Política", description: "Gobierno, partidos y debate público", icon: "assets/icons/politica.svg" },
+  { id: "conspiraciones", name: "Conspiraciones", description: "Teorías, misterios y versiones alternativas", icon: "assets/icons/generic.svg" },
   { id: "sociedad", name: "Sociedad", description: "Comunidad, vínculos y vida cotidiana", icon: "assets/icons/generic.svg" },
   { id: "clima", name: "Clima", description: "Tiempo, pronóstico y fenómenos meteorológicos", icon: "assets/icons/generic.svg" },
   { id: "seguridad", name: "Seguridad", description: "Ciudad, justicia y prevención", icon: "assets/icons/seguridad.svg" },
@@ -31,6 +32,7 @@ const topicRules = [
   { id: "agro", words: ["agro", "campo", "rural", "agricultura", "ganaderia", "grano", "granos", "soja", "maiz", "trigo", "cosecha", "siembra", "tambo", "estancia", "chacra", "productor agropecuario", "sector agropecuario"] },
   { id: "economia", words: ["economia", "precio", "precios", "inflacion", "dolar", "sueldo", "trabajo", "empresa", "impuesto", "alquiler", "tarifa", "mercado"] },
   { id: "politica", words: ["politica", "gobierno", "presidente", "diputado", "senado", "partido", "eleccion", "voto", "ministro", "congreso", "estado", "derecha", "izquierda", "milei", "miley", "libertario", "libertarios", "libertontos", "peronismo", "peronista", "peronistas"] },
+  { id: "conspiraciones", words: ["conspiracion", "conspiraciones", "conspiranoico", "conspiranoica", "teoria conspirativa", "teorias conspirativas", "misterio", "misterios", "version alternativa", "versiones alternativas", "ovni", "ovnis", "ufo", "illuminati", "nuevo orden mundial", "agenda oculta", "encubrimiento", "secreto", "secretos"] },
   { id: "sociedad", words: ["sociedad", "comunidad", "gente", "vecinos", "barrio", "familia", "relaciones", "convivencia", "costumbres", "social"] },
   { id: "clima", words: ["clima", "tiempo", "pronostico", "pronóstico", "lluvia", "llueve", "llover", "tormenta", "granizo", "nieve", "nevar", "nevando", "frio", "frío", "calor", "humedad", "viento", "temporal", "alerta meteorologica", "alerta meteorológica"] },
   { id: "seguridad", words: ["seguridad", "robo", "delito", "policia", "justicia", "barrio", "calle", "violencia", "denuncia", "prevención"] },
@@ -93,6 +95,7 @@ const topicIconPaths = {
   economia: '<path d="M3 3v18h18"></path><path d="m7 15 4-4 3 3 5-7"></path><path d="M18 7h1v1"></path>',
   agro: '<path d="M12 22V8"></path><path d="M5 12c4 0 7 3 7 7-4 0-7-3-7-7z"></path><path d="M19 5c-4 0-7 3-7 7 4 0 7-3 7-7z"></path>',
   politica: '<path d="M3 21h18"></path><path d="M5 21V10"></path><path d="M19 21V10"></path><path d="M12 3 4 8h16z"></path><path d="M9 21v-6h6v6"></path>',
+  conspiraciones: '<path d="M12 3 3 21h18L12 3z"></path><path d="M7.5 12c1.2-1.8 2.7-2.7 4.5-2.7s3.3.9 4.5 2.7c-1.2 1.8-2.7 2.7-4.5 2.7S8.7 13.8 7.5 12z"></path><circle cx="12" cy="12" r="1.7"></circle><path d="M8.7 16h6.6"></path>',
   clima: '<path d="M17.5 18H8a5 5 0 1 1 1.2-9.85A6 6 0 0 1 20 12.5 3.5 3.5 0 0 1 17.5 18z"></path><path d="M8 22v-1"></path><path d="M12 22v-1"></path><path d="M16 22v-1"></path>',
   seguridad: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="m9 12 2 2 4-5"></path>',
   cine: '<rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="M7 5v14"></path><path d="M17 5v14"></path><path d="M3 9h4"></path><path d="M17 9h4"></path><path d="M3 15h4"></path><path d="M17 15h4"></path>',
@@ -121,6 +124,7 @@ const topicIconPaths = {
 };
 const topicAccentClasses = {
   politica: "topic-accent-red",
+  conspiraciones: "topic-accent-violet",
   deportes: "topic-accent-green",
   clima: "topic-accent-blue",
   economia: "topic-accent-gold",
